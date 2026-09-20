@@ -1354,7 +1354,14 @@ local function RenderBossList()
         local open = (e.mapID == state.openInst)
         row.mapID = e.mapID
         row.label:SetText(e.inst.name or "?")
-        row.sub:SetText(e.inst.levelRange and ("Level " .. e.inst.levelRange) or "")
+        -- Dungeons carry a level line; raids are level 60 and get none (Alex),
+        -- so their name sits centred in the row instead of at its top.
+        local range = e.inst.type ~= "raid" and e.inst.levelRange or nil
+        row.sub:SetText(range and ("Level " .. range) or "")
+        row.label:ClearAllPoints()
+        if range then row.label:SetPoint("TOPLEFT", row, "TOPLEFT", 22, -5)
+        else row.label:SetPoint("LEFT", row, "LEFT", 22, 0) end
+        row.label:SetPoint("RIGHT", row, "RIGHT", -44, 0)
         row.count:SetText(open and "-" or "+")
         row:SetScript("OnClick", function()
             -- (not `open and nil or inst`: nil falls through the `or`)

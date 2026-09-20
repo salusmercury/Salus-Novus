@@ -340,7 +340,8 @@ def main():
         w("    mapID = %d," % map_id)
         w("    type = %s," % lua_str(ref["type"]))
         w("    level = %s," % (level if level else "nil"))
-        if level and level_max:
+        # Dungeons only: raids are level 60 and say nothing (Alex).
+        if level and level_max and ref["type"] == "dungeon":
             w("    levelMax = %d, levelRange = %s," % (level_max, lua_str("%d-%d" % (level, level_max))))
         if ref.get("coming"):
             w("    coming = true,   -- on Blizzard's chart, not in the client tables yet")

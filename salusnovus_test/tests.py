@@ -1809,6 +1809,11 @@ def _():
     ok("Krol'dok Stronghold/Level 40-45" in labels, "Stronghold range wrong: %s" % labels)
     ok("Dire Maul: East/Level 55-60" in labels and "Dire Maul: North/Level 59-60" in labels, "wing ranges: %s" % labels)
     ok("(" not in labels.split("|")[0].split("/")[0], "range still inline in the name")
+    # raids are level 60 and say nothing; their name is centred in the row
+    ok(h.lua("for _, e in ipairs(ns.Visualizer.Instances('raids')) do if e.inst.levelRange then return false end end return true"), "a raid carries a level range")
+    h.lua("SalusNovusVisualizer.modeButtons[2]:Click()")
+    ok(h.lua("local r = ns.Visualizer._instRows[1] return r.sub:GetText() == '' and select(1, r.label:GetPoint()) == 'LEFT'"), "raid row should have no level line and a centred name")
+    h.lua("SalusNovusVisualizer.modeButtons[1]:Click()")
     eq(int(h.lua("return #ns.Data[42901].bosses + #ns.Data[42902].bosses + #ns.Data[42903].bosses")), 19, "Dire Maul wings should hold all 19 bosses")
     eq(int(h.lua("return #ns.Data[900002].bosses")), 0, "a coming dungeon has no bosses")
     ok(h.lua("return ns.Data[900002].coming == true"), "coming flag")

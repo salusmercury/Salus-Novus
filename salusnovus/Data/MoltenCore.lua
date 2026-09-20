@@ -7,7 +7,6 @@ ns.Data[409] = {
     mapID = 409,
     type = "raid",
     level = 60,
-    levelMax = 60, levelRange = "60-60",
     pulls = 0,
     bosses = {
         {
