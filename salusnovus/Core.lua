@@ -207,7 +207,9 @@ end
 
 function ns.AnchorScale()
     local g = ns.db and ns.db.anchorsGlobal
-    return ((g and g.scale) or 100) / 100
+    local scale = (g and tonumber(g.scale)) or 100
+    if not scale or scale ~= scale or scale <= 0 or scale > 500 then scale = 100 end
+    return scale / 100
 end
 
 -- ---------------------------------------------------------------- anchors

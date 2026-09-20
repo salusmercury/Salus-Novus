@@ -427,12 +427,14 @@ def main():
                 if pct is not None:
                     # Cast at the same health in every pull, at different times:
                     # a HEALTH trigger. Not timed; drawn on the Health Bars anchor.
-                    w("                  health = { pct = %d, pulls = %d, samples = { %s } }," % (
+                    w("                  health = { pct = %d, pulls = %d, samples = { %s } } }," % (
                         pct, len(samples), ", ".join("%.1f" % hp for _, _, hp in samples)))
-                lc, lsp, lsu, lcast = lanes(a["casts"])
-                w("                  lanes = { casts = { %s }, spread = { %s }, support = { %s }, cast = %.1f } }," % (
-                    ", ".join("%.1f" % t for t in lc), ", ".join("%.1f" % s for s in lsp),
-                    ", ".join(str(s) for s in lsu), lcast))
+                else:
+                    # Timed ability: show lanes clustering
+                    lc, lsp, lsu, lcast = lanes(a["casts"])
+                    w("                  lanes = { casts = { %s }, spread = { %s }, support = { %s }, cast = %.1f } }," % (
+                        ", ".join("%.1f" % t for t in lc), ", ".join("%.1f" % s for s in lsp),
+                        ", ".join(str(s) for s in lsu), lcast))
             w("            },")
             w("        },")
         w("    },")

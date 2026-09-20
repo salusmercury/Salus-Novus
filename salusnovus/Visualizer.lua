@@ -431,17 +431,19 @@ local function BuildForm()
     form.sound = MakeCheck(form, "Raid-warning sound when it lands")
     form.sound:SetPoint("TOPLEFT", 14, -258)
 
-    form.save = T.MakeButton(form)
-    form.save:SetSize(90, 26)
-    form.save:SetPoint("BOTTOMLEFT", 14, 12)
-    form.save:SetText("Save")
+    -- Save / Cancel sit bottom RIGHT, Cancel outermost (Alex); Remove,
+    -- shown only for an existing reminder, takes the bottom left.
     form.cancel = T.MakeButton(form)
     form.cancel:SetSize(80, 26)
-    form.cancel:SetPoint("LEFT", form.save, "RIGHT", 8, 0)
+    form.cancel:SetPoint("BOTTOMRIGHT", -14, 12)
     form.cancel:SetText("Cancel")
+    form.save = T.MakeButton(form)
+    form.save:SetSize(90, 26)
+    form.save:SetPoint("RIGHT", form.cancel, "LEFT", -8, 0)
+    form.save:SetText("Save")
     form.delete = T.MakeButton(form)
     form.delete:SetSize(90, 26)
-    form.delete:SetPoint("BOTTOMRIGHT", -14, 12)
+    form.delete:SetPoint("BOTTOMLEFT", 14, 12)
     form.delete:SetText("Remove")
 
     -- Icon picker: the ability's own icon, none, then the player's spells.
@@ -1520,7 +1522,7 @@ Refresh = function(fromSlider)
         local cr, cg, cb = ns.Abilities.Color(a.spellID)
         lane.name:SetTextColor(cr or T.TEXT[1], cg or T.TEXT[2], cb or T.TEXT[3], 1)
         lane.desc:SetText((L.cast or 0) > 0 and string.format("%.1fs cast", L.cast) or "")
-        lane.count:SetText("x" .. #L.casts)
+        lane.count:SetText("")          -- no cast count on abilities (Alex)
         lane.abilityName, lane.spellId = lane.name:GetText(), a.spellID
         local r, g, b = ar, ag, ab
         local k = 0

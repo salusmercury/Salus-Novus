@@ -476,6 +476,30 @@ MUTATIONS = [
     ("a /reload while unlocked stays unlocked", "Options.lua",
      "    if ns.db and ns.db.unlocked then ns.db.unlocked = false end",
      "    -- (removed)"),
+    # ---- bug hunt 3
+    ("AnchorScale takes a zero or negative stored scale at face value", "Core.lua",
+     "    if not scale or scale ~= scale or scale <= 0 or scale > 500 then scale = 100 end",
+     "    -- (removed)"),
+    ("Bars ignores the ability's roles", "Bars.lua",
+     "        if RoleOK(b) then",
+     "        if true then"),
+    ("a health-triggered ability ships with timed lanes as well", "Data/HallOfThanes.lua",
+     "                  health = { pct = 48, pulls = 2, samples = { 47.4, 47.8 } } },",
+     "                  health = { pct = 48, pulls = 2, samples = { 47.4, 47.8 } },\n"
+     "                  lanes = { casts = { 13.4 }, spread = { 2.5 }, support = { 2 }, cast = 0.0 } },"),
+    # ---- 2026-09-20 UI trims
+    ("ability lanes get their cast count back", "Visualizer.lua",
+     '        lane.count:SetText("")          -- no cast count on abilities (Alex)',
+     '        lane.count:SetText("x" .. #L.casts)'),
+    ("the check box border ignores the pixel unit", "Theme.lua",
+     "    b.border:Layout(b, px, 0)",
+     "    b.border:Layout(b, 1, 0)"),
+    ("the check box fill is not snapped to pixels", "Theme.lua",
+     "    b.fill:SetSize(box - 2 * inset, box - 2 * inset)",
+     "    b.fill:SetSize((size or 18) - 6, (size or 18) - 6)"),
+    ("Save goes back to the bottom left", "Visualizer.lua",
+     '    form.save:SetPoint("RIGHT", form.cancel, "LEFT", -8, 0)',
+     '    form.save:SetPoint("BOTTOMLEFT", 14, 12)'),
 ]
 
 

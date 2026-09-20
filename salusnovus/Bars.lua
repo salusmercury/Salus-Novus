@@ -128,6 +128,12 @@ local function Build()
     return frame
 end
 
+--- Fakes, placeholders and records without a spell id show for everyone.
+local function RoleOK(b)
+    if not ns.Abilities or b.fake or not b.spellID then return true end
+    return ns.Abilities.RoleOK(b.spellID)
+end
+
 local function Entries(placeholder)
     local opts = O() or {}
     local count = math.min(opts.max or 4, MAX_BARS)
@@ -139,8 +145,12 @@ local function Entries(placeholder)
     local now = GetTime()
     local list = {}
     for _, b in ipairs(state.previewBars or ns.Timers.Sorted()) do
-        local left = state.preview and (b.duration or 0) * 0.6 or (b.at - now)
-        list[#list + 1] = { bar = b, key = b.key, left = left, dur = b.duration or 0 }
+        -- Roles gate every anchor (Abilities.Routed does it for the routed
+        -- ones); Bars has no route, so it asks about the role itself.
+        if RoleOK(b) then
+            local left = state.preview and (b.duration or 0) * 0.6 or (b.at - now)
+            list[#list + 1] = { bar = b, key = b.key, left = left, dur = b.duration or 0 }
+        end
     end
     for i = 1, math.min(count, #list) do out[i] = list[i] end
     return out

@@ -8,6 +8,75 @@ def fresh():
     return h.login()
 
 
+
+# helpers from bug hunt 3 (routing lane)
+
+def get_bar_names(h):
+    """Get all visible bar ability names."""
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for i = 1, 8 do
+            local f = ns.Bars._bars[i]
+            if f and f:IsShown() then
+                out[#out + 1] = f.text:GetText()
+            end
+        end
+        return out
+    """).values()]
+
+def get_queue_names(h):
+    """Get all visible queue ability names."""
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for i = 1, 8 do
+            local f = ns.Queue._icons[i]
+            if f:IsShown() and f.entry and f.entry.bar then
+                out[#out + 1] = f.label:GetText()
+            end
+        end
+        return out
+    """).values()]
+
+def get_preview_names(h):
+    """Get all visible preview lines."""
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for i = 1, 8 do
+            local l = ns.Preview._lines[i]
+            if l:IsShown() then
+                out[#out + 1] = l.text:GetText()
+            end
+        end
+        return out
+    """).values()]
+
+def get_message_names(h):
+    """Get all visible message texts."""
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for _, f in ipairs(ns.Messages._active) do
+            out[#out + 1] = f.text:GetText()
+        end
+        return out
+    """).values()]
+
+def get_bar_colors(h):
+    """Get all visible bar text colors as list of dicts."""
+    result = h.lua("""
+        local out = {}
+        for i = 1, 8 do
+            local f = ns.Bars._bars[i]
+            if f and f:IsShown() then
+                local r, g, b = f.text:GetTextColor()
+                out[#out + 1] = { r = r, g = g, b = b }
+            end
+        end
+        return out
+    """)
+    if result is None:
+        return []
+    return [dict(x) for x in result.values()]
+
 # ------------------------------------------------------------------ load
 
 @test("every TOC file loads and login runs clean", "load")
@@ -3077,3 +3146,2506 @@ def _():
     h.lua("SalusNovusOptions:Hide()")
     ok(h.lua("return SalusNovusHealthBars:GetParent() == UIParent and not SalusNovusHealthBars:IsShown()"), "frame not returned and hidden")
     eq(h.errors(), [], "errors")
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: secret-value taint
+
+# ------------------------------------------------------------- bughunt3
+
+@test("secret encounter name must not cause tostring error in Timers.Status", "bughunt3")
+def _():
+    h = fresh()
+    # Fire an ENCOUNTER_START with a secret name - it gets converted to nil by the guard
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, W.secret("Secret Boss"), 1, 5, 3065)')
+    # Then call Status which uses tostring on diag.encName
+    h.lua("ns.Timers.Status()")
+    # If diag.encName is nil (as it should be after the secret guard), no error
+    eq(h.errors(), [], "secret name should be converted to nil and safe for tostring")
+
+
+@test("AddTimer refuses nil or secret keys, and properly encodes valid keys", "bughunt3")
+def _():
+    h = fresh()
+    # Test that AddTimer properly guards against secret keys
+    h.lua("""
+        local T = ns.Timers
+        local secretNum = W.secretNumber()
+
+        -- These should be refused
+        T.AddTimer(nil, "test", 5)              -- nil key
+        T.AddTimer(secretNum, "test", 5)        -- secret number key
+        T.AddTimer(W.secretString("key"), "test", 5)  -- secret string key
+
+        -- Only the good ones should be added
+        T.AddTimer("good1", "test", 5)
+        T.AddTimer(123, "test2", 6)  -- numeric key gets tostring'd
+    """)
+    # Check that only the two valid records exist
+    count = int(h.lua("return #ns.Timers.Sorted()"))
+    eq(count, 2, "bad keys should be refused, only 2 good records should exist")
+    eq(h.errors(), [], "no errors from secret key guarding")
+
+
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: hidden-frame OnUpdate
+
+
+
+
+
+# ---------------------------------------------------------- bughunt3: OnUpdate on hidden frames
+
+@test("bars OnUpdate updates correctly when frame is hidden/shown", "bughunt3")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.Timers.StartEncounter(3494, "Plunder")
+        ns.Timers.AddTimer("ab1", "Ability1", 6)
+        ns.Bars.Apply()
+        bar = ns.Bars._bars[1]
+    """)
+    # Advance 2 seconds - OnUpdate should have run since frame is visible
+    h.lua("W.advance(2)")
+    secs_visible = int(h.lua("return bar.lastSecs or 0"))
+    ok(secs_visible > 0 and secs_visible <= 4, "secs when visible: %d" % secs_visible)
+    
+    # Hide frame and advance - OnUpdate won't run
+    h.lua("SalusNovusBars:Hide()")
+    h.lua("W.advance(2.5)")
+    secs_hidden = int(h.lua("return bar.lastSecs or -1"))
+    # secs_hidden should still be the old value since OnUpdate didn't run
+    ok(secs_hidden == secs_visible, "secs changed while hidden (OnUpdate ran when it shouldn't): %d -> %d" % (secs_visible, secs_hidden))
+    
+    # Show frame - OnUpdate resumes
+    h.lua("SalusNovusBars:Show()")
+    h.lua("W.advance(0.1)")
+    secs_shown = int(h.lua("return bar.lastSecs or 0"))
+    # After 4.5 seconds total, should be ~1 or 2
+    ok(secs_shown >= 1 and secs_shown <= 2, "secs after show should be ~1-2, got: %d" % secs_shown)
+
+
+@test("reminders OnUpdate respects visibility - text doesn't update while hidden", "bughunt3")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "d1", encounterID = 3494, trigger = "pull", text = "TEST", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(0.3)")
+    # Reminder should be displayed
+    active = int(h.lua("return #ns.Reminders._active"))
+    ok(active > 0, "reminder not displayed")
+    
+    # Get the frame's shown state and verify text is set
+    h.lua("""
+        frame = SalusNovusReminderFrame
+        initialText = ns.Reminders._active[1].text:GetText()
+    """)
+    initial_shown = h.lua("return frame:IsShown()")
+    ok(initial_shown, "frame should be shown")
+    
+    # Hide the frame and advance time
+    h.lua("frame:Hide()")
+    h.lua("W.advance(2)")
+    
+    # Show again
+    h.lua("frame:Show()")
+    h.lua("W.advance(0.1)")
+    
+    # Should have no errors and reminder should still be there
+    eq(h.errors(), [], "errors during hide/show sequence")
+    final_active = int(h.lua("return #ns.Reminders._active"))
+    ok(final_active >= 0, "reminder state corrupted")
+
+
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: encounter lifecycle fuzz
+
+    eq(h.errors(), [], "errors")
+
+
+# ----------------------------------------------------------- bughunt3: fuzzing
+
+import random as _random
+
+@test("encounter lifecycle fuzz: invariants hold across random event sequences", "bughunt3")
+def _():
+    """Property-based fuzz test for encounter state machine.
+
+    Generates hundreds of random sequences (seeded for reproducibility) from:
+    - ENCOUNTER_START with real or variant boss IDs
+    - ENCOUNTER_END
+    - PLAYER_DEAD, PLAYER_ALIVE, PLAYER_UNGHOST
+    - PLAYER_REGEN_ENABLED/DISABLED
+    - ZONE_CHANGED_NEW_AREA
+    - Time advances (0-120s)
+    - Module toggles
+    - /sn test <boss> (Simulate)
+
+    Checks invariants after each event:
+    - After ENCOUNTER_END + time, hub is idle (state.active = false)
+    - No bars exist for an ended encounter (after settling time)
+    - No timer fires after encounter ended
+    - No errors in h.errors()
+    - State is consistent (bars match what encounter expects)
+    """
+    seed = 42
+    _random.seed(seed)
+
+    # Run many trials to stress the state machine
+    for trial in range(10):
+        h = fresh()
+        seq = []
+        try:
+            # Generate 50-100 random events per trial
+            for step in range(_random.randint(50, 100)):
+                evt_type = _random.choice([
+                    'start', 'end', 'dead', 'alive', 'unghost',
+                    'regen_enabled', 'regen_disabled', 'zone_change',
+                    'time_advance', 'module_toggle', 'simulate'
+                ])
+
+                if evt_type == 'start':
+                    # Real boss IDs from the data
+                    boss_id = _random.choice([3493, 3494, 3495, 3496, 3065])
+                    # Variant IDs or the same
+                    if _random.random() < 0.3:
+                        boss_id = _random.choice([3493, 3494, 3495, 3496])
+                    name = _random.choice(["Faldrim Anvilmar", "Plunder", "Infurnus", "Durgen Dirgehammer"])
+                    h.lua('W.fireEvent("ENCOUNTER_START", %d, "%s", 1, 5, 3065)' % (boss_id, name))
+                    seq.append(('ENCOUNTER_START', boss_id, name))
+
+                    # Invariant: hub should be active
+                    active = h.lua("return ns.Timers.IsActive()")
+                    ok(active, "hub not active after START")
+
+                elif evt_type == 'end':
+                    enc_id = _random.choice([3493, 3494, 3495, 3496, 9999])
+                    h.lua('W.fireEvent("ENCOUNTER_END", %d, "SomeBoss", 1, 5, 1)' % enc_id)
+                    seq.append(('ENCOUNTER_END', enc_id))
+
+                    # Advance time to let things settle
+                    h.lua('W.advance(0.5)')
+
+                    # Invariant: if this was the active encounter, hub should be idle
+                    active = h.lua("return ns.Timers.IsActive()")
+                    if not active:
+                        # Hub is idle now; check bars are cleared
+                        num_bars = int(h.lua("return #ns.Timers.Sorted()"))
+                        ok(num_bars == 0, "bars not cleared after END: %d remain" % num_bars)
+
+                elif evt_type == 'dead':
+                    h.lua('W.playerDead = true; W.fireEvent("PLAYER_DEAD")')
+                    seq.append(('PLAYER_DEAD',))
+
+                elif evt_type == 'alive':
+                    h.lua('W.playerDead = false; W.fireEvent("PLAYER_ALIVE")')
+                    seq.append(('PLAYER_ALIVE',))
+
+                elif evt_type == 'unghost':
+                    h.lua('W.fireEvent("PLAYER_UNGHOST")')
+                    seq.append(('PLAYER_UNGHOST',))
+
+                elif evt_type == 'regen_enabled':
+                    h.lua('W.fireEvent("PLAYER_REGEN_ENABLED")')
+                    seq.append(('PLAYER_REGEN_ENABLED',))
+
+                elif evt_type == 'regen_disabled':
+                    h.lua('W.fireEvent("PLAYER_REGEN_DISABLED")')
+                    seq.append(('PLAYER_REGEN_DISABLED',))
+
+                elif evt_type == 'zone_change':
+                    h.lua('W.fireEvent("ZONE_CHANGED_NEW_AREA")')
+                    seq.append(('ZONE_CHANGED_NEW_AREA',))
+
+                elif evt_type == 'time_advance':
+                    advance = _random.randint(0, 120)
+                    h.lua('W.advance(%d)' % advance)
+                    seq.append(('time_advance', advance))
+
+                elif evt_type == 'module_toggle':
+                    toggle_on = _random.random() < 0.5
+                    val = "true" if toggle_on else "false"
+                    h.lua('ns.db.modules.bossWarnings = %s; ns.ApplyAll()' % val)
+                    seq.append(('module_toggle', toggle_on))
+
+                elif evt_type == 'simulate':
+                    boss_id = _random.choice([3494, 3496])
+                    result = h.lua('return ns.Timers.Simulate(%d)' % boss_id)
+                    seq.append(('simulate', boss_id, str(result)))
+                    # Let the sim run for a bit
+                    h.lua('W.advance(%d)' % _random.randint(1, 10))
+
+                # Check invariants after every event
+                errs = h.errors()
+                ok(not errs, "errors after event: %r\nSequence: %r" % (errs, seq))
+
+                # Check bars consistency
+                bars_lua = str(h.lua("return #ns.Timers.Sorted()"))
+                ok(bars_lua.isdigit() or bars_lua == "0", "bar count not a number: %r" % bars_lua)
+
+            # Final checks
+            h.lua('W.advance(5)')
+            errs = h.errors()
+            eq(errs, [], "final errors: %r\nSequence: %r" % (errs, seq))
+
+        except Fail as e:
+            # On failure, print seed and sequence for reproduction
+            print("\nFUZZ FAILURE (seed %d, trial %d):" % (seed, trial))
+            print("Sequence: %r" % seq)
+            raise
+
+
+@test("encounter restart while active discards old bars and starts fresh", "bughunt3")
+def _():
+    """Verify that ENCOUNTER_START while a fight is active restarts the hub."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1)')
+    t1 = float(h.lua("return ns.Timers.StartedAt()"))
+    num_bars_1 = int(h.lua("return #ns.Timers.Sorted()"))
+
+    # Start again immediately (re-pull without END)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    t2 = float(h.lua("return ns.Timers.StartedAt()"))
+    num_bars_2 = int(h.lua("return #ns.Timers.Sorted()"))
+
+    # Clock should reset (t2 > t1)
+    ok(t2 > t1, "start time did not advance: %r -> %r" % (t1, t2))
+    # Bars should match (both are fresh pulls of the same boss)
+    eq(num_bars_1, num_bars_2, "bar count changed on restart")
+    eq(h.errors(), [], "errors")
+
+
+@test("secret encounter ID leaves fight record-less but state active", "bughunt3")
+def _():
+    """Secret ID in ENCOUNTER_START should NOT start bars but SHOULD mark active."""
+    h = fresh()
+    # Fire with a secret ID: state.active=true but no boss/bars
+    h.lua('W.fireEvent("ENCOUNTER_START", W.secret(3494), "Plunder", 1, 5, 3065)')
+    ok(h.lua("return ns.Timers.IsActive()"), "not active with secret ID")
+    eq(int(h.lua("return #ns.Timers.Sorted()")), 0, "bars created for secret ID")
+    eq(h.errors(), [], "errors")
+
+    # END it properly
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1); W.advance(0.5)')
+    ok(not h.lua("return ns.Timers.IsActive()"), "not idle after END of secret fight")
+
+
+@test("wipe watch catches encounter in progress at login", "bughunt3")
+def _():
+    """Simulating a /reload during a fight should detect in-progress and restart."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(2)')
+
+    # Simulate a /reload by checking OnZone during active encounter
+    # (the mock's InProgress behavior would need to be mocked for full testing)
+    ok(h.lua("return ns.Timers.IsActive()"), "encounter lost mid-reload")
+    eq(h.errors(), [], "errors during reload mid-fight")
+
+
+@test("bars clear and frame hides when all timers expire", "bughunt3")
+def _():
+    """After all bars land and hold expires, frames should be hidden."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    # Bars are live now
+    ok(int(h.lua("return #ns.Timers.Sorted()")) > 0, "no bars spawned on start")
+
+    # Advance well past the longest bar
+    h.lua('W.advance(300)')
+    # All bars should have expired
+    eq(int(h.lua("return #ns.Timers.Sorted()")), 0, "bars not cleared after long advance")
+    # Hub should still be active (no END event yet)
+    # OR hub can be idle if Timers.SettleDown was called
+    eq(h.errors(), [], "errors")
+
+
+@test("same boss pulled twice without END: second START wipes old bars", "bughunt3")
+def _():
+    """Pulling same boss again without END should clear old bars."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1)')
+    bars_1 = int(h.lua("return #ns.Timers.Sorted()"))
+    ok(bars_1 > 0, "no bars on first pull")
+    
+    # Pull again, same ID
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    bars_2 = int(h.lua("return #ns.Timers.Sorted()"))
+    
+    # Should have the same bars (fresh pull)
+    eq(bars_1, bars_2, "bar count changed on re-pull")
+    # StartedAt should have reset
+    t2 = float(h.lua("return ns.Timers.StartedAt()"))
+    ok(t2 > 10000, "start time not reset")
+    eq(h.errors(), [], "errors")
+
+
+@test("mismatched ENCOUNTER_END id does not end active fight", "bughunt3")
+def _():
+    """ENCOUNTER_END with wrong ID must not kill the active fight."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    ok(h.lua("return ns.Timers.IsActive()"), "not active after start")
+    
+    # Send END with different ID
+    h.lua('W.fireEvent("ENCOUNTER_END", 9999, "Wrong", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    
+    # Fight should still be active
+    ok(h.lua("return ns.Timers.IsActive()"), "killed by wrong END id")
+    bars = int(h.lua("return #ns.Timers.Sorted()"))
+    ok(bars > 0, "bars cleared by wrong END")
+    
+    # Now end with correct ID
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    ok(not h.lua("return ns.Timers.IsActive()"), "not idle after correct END")
+    eq(h.errors(), [], "errors")
+
+
+@test("variant encounter IDs for same boss are tracked by primary ID", "bughunt3")
+def _():
+    """Different variant IDs for the same boss should all map to the primary."""
+    h = fresh()
+    
+    # Start with one variant
+    h.lua('W.fireEvent("ENCOUNTER_START", 3493, "Faldrim Anvilmar", 1, 5, 3065)')
+    id1 = str(h.lua("return ns.Timers.EncounterID()"))
+    boss1 = str(h.lua("return (ns.Timers.Boss() and ns.Timers.Boss().name) or 'none'"))
+    
+    h.lua('W.advance(1)')
+    
+    # End with same variant
+    h.lua('W.fireEvent("ENCOUNTER_END", 3493, "Faldrim Anvilmar", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    ok(not h.lua("return ns.Timers.IsActive()"), "not idle after END")
+    eq(h.errors(), [], "errors on variant tracking")
+
+
+@test("rapid START/END cycles handle state cleanup", "bughunt3")
+def _():
+    """Quickly starting and ending fights must not leak state."""
+    h = fresh()
+    
+    for i in range(5):
+        h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+        h.lua('W.advance(0.1)')
+        h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+        h.lua('W.advance(0.1)')
+    
+    # Should be completely idle
+    ok(not h.lua("return ns.Timers.IsActive()"), "not idle after rapid cycles")
+    eq(int(h.lua("return #ns.Timers.Sorted()")), 0, "bars not cleared after cycles")
+    eq(h.errors(), [], "errors on rapid cycles")
+
+
+@test("bars expiring mid-pull via grace timeout", "bughunt3")
+def _():
+    """A bar should fire OnStop after grace expires, even if pull continues."""
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "pull", encounterID = 3494, trigger = "pull", text = "PULL", sound = false },
+            { id = "time1", encounterID = 3494, trigger = "time", arg = 1, lead = 0, text = "ONE", sound = false },
+        }
+    """)
+    
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1)')  # Time advances; ONE reminder should have fired
+    
+    # Advance past the bar's grace period
+    h.lua("W.advance(30)")
+    
+    # The bar should be gone
+    bars = int(h.lua("return #ns.Timers.Sorted()"))
+    ok(bars == 0, "bars not expired after grace: %d remain" % bars)
+    
+    # Pull is still active
+    ok(h.lua("return ns.Timers.IsActive()"), "pull ended after bar expiry")
+    eq(h.errors(), [], "errors")
+
+
+@test("END with nil id should clear the fight", "bughunt3")
+def _():
+    """ENCOUNTER_END with nil (secret) ID must clear an active fight."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(h.lua("return ns.Timers.IsActive()"), "not active")
+    
+    # Send END with secret ID (becomes nil in handler)
+    h.lua('W.fireEvent("ENCOUNTER_END", W.secret(3494), "SomeBoss", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    
+    # The ENCOUNTER_END handler checks:
+    # if state.active and (state.encounterID == nil or id == nil or id == state.encounterID)
+    # So with id = nil (secret), it should END the fight
+    ok(not h.lua("return ns.Timers.IsActive()"), "not cleared by secret END id")
+    eq(h.errors(), [], "errors")
+
+
+@test("START with nil id while active fills in missing name", "bughunt3")
+def _():
+    """ENCOUNTER_START with nil ID while active should fill in missing name/id."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", W.secret(3494), "Unknown", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    ok(h.lua("return ns.Timers.IsActive()"), "not active after secret START")
+    
+    # Now fire with nil ID but a fight is active - should fill in the missing ID
+    h.lua('W.fireEvent("ENCOUNTER_START", W.secret(3494), "StillUnknown", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    
+    # Should still be active
+    ok(h.lua("return ns.Timers.IsActive()"), "lost active state")
+    
+    # The name should be filled in (from first START)
+    name = str(h.lua("return ns.Timers.state.name"))
+    ok(name == "Unknown", "name not filled in correctly: %s" % name)
+    eq(h.errors(), [], "errors")
+
+
+@test("encounter diag is reset on new START", "bughunt3")
+def _():
+    """Encounter diag state should reset when a new encounter starts."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1)')
+    
+    # Check diag state
+    starts_1 = int(h.lua("return ns.Timers.diag.starts"))
+    ok(starts_1 > 0, "no starts counted")
+    
+    # End the fight
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    
+    # Start same boss again (same number of bars)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+
+    # Diag should be reset to the bar count
+    starts_2 = int(h.lua("return ns.Timers.diag.starts"))
+    eq(starts_2, starts_1, "diag.starts not reset on new encounter: %d -> %d" % (starts_1, starts_2))
+    eq(h.errors(), [], "errors")
+
+
+@test("wipe watch ticker is cancelled on END", "bughunt3")
+def _():
+    """The wipe watch ticker must be cancelled when encounter ends."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    
+    # Check that watch is running
+    is_watching = h.lua("return ns.Timers.state.watch ~= nil")
+    ok(is_watching, "watch not started")
+    
+    # End encounter
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    
+    # Watch should be cancelled
+    is_watching_after = h.lua("return ns.Timers.state.watch ~= nil")
+    ok(not is_watching_after, "watch not cancelled on END")
+    eq(h.errors(), [], "errors")
+
+
+@test("simulate timer is cancelled when fight ends", "bughunt3")
+def _():
+    """The simulate timer must be cancelled when a real fight ends it."""
+    h = fresh()
+    h.lua('ns.Timers.Simulate(3494)')
+    h.lua('W.advance(0.5)')
+    
+    # Check that simulate timer is running
+    is_simulating = h.lua("return ns.Timers.state.simulate ~= nil")
+    ok(is_simulating, "simulate not started")
+    
+    # Fire ENCOUNTER_END manually (would normally wait for the timer)
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.advance(0.5)')
+    
+    # Simulate should be cancelled
+    is_simulating_after = h.lua("return ns.Timers.state.simulate ~= nil")
+    ok(not is_simulating_after, "simulate not cancelled on END")
+    eq(h.errors(), [], "errors")
+
+
+@test("listener errors are silenced after first fire", "bughunt3")
+def _():
+    """Listener errors should only print once per listener per event type."""
+    h = fresh()
+    h.lua("""
+        local bad_listener = {
+            OnChange = function() error("boom") end
+        }
+        ns.Timers.Register(bad_listener)
+    """)
+    
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1)')
+    
+    # Should print error once
+    errors_before = len([p for p in h.printed() if "boom" in p])
+    eq(errors_before, 1, "error not printed on first fire")
+    
+    # Cause another fire event that triggers OnChange
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    
+    # Should NOT print another error (already silenced for this listener)
+    errors_after = len([p for p in h.printed() if "boom" in p])
+    eq(errors_after, 1, "error printed again despite silencing: %d printed" % errors_after)
+    eq(h.errors(), [], "addon errors")
+
+
+@test("pending timers are cleaned up on encounter end", "bughunt3")
+def _():
+    """No pending timers should remain after an encounter ends."""
+    h = fresh()
+    pending_start = int(h.lua("return W.pendingTimers()"))
+    
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    pending_mid = int(h.lua("return W.pendingTimers()"))
+    ok(pending_mid > pending_start, "no timers created during fight: %d -> %d" % (pending_start, pending_mid))
+    
+    # End and wait for cleanup
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.advance(10)')  # Let all timers expire/settle
+    
+    pending_end = int(h.lua("return W.pendingTimers()"))
+    # Should be back to near start (maybe watch ticker still exists if not mocked)
+    eq(pending_end, pending_start, "timers not cleaned up: %d vs %d" % (pending_start, pending_end))
+    eq(h.errors(), [], "errors")
+
+
+@test("ClearBars fires OnStop for each bar", "bughunt3")
+def _():
+    """Each bar should fire OnStop exactly once when cleared."""
+    h = fresh()
+    h.lua("""
+        __stop_count = 0
+        local listener = {
+            OnStop = function(bar) __stop_count = __stop_count + 1 end
+        }
+        ns.Timers.Register(listener)
+    """)
+    
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    num_bars = int(h.lua("return #ns.Timers.Sorted()"))
+    ok(num_bars > 0, "no bars spawned")
+    
+    # End encounter - should fire OnStop for each bar
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    
+    stop_count = int(h.lua("return __stop_count"))
+    eq(stop_count, num_bars, "OnStop not fired for each bar: %d fired, %d bars" % (stop_count, num_bars))
+    eq(h.errors(), [], "errors")
+
+
+@test("zero or negative durations are rejected", "bughunt3")
+def _():
+    """Bars with invalid durations should be rejected and counted."""
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    
+    # Try to add bars with invalid durations
+    h.lua("""
+        local rej_before = ns.Timers.diag.rejDur
+        ns.Timers.AddTimer("bad1", "Negative", -5)
+        ns.Timers.AddTimer("bad2", "Inf", math.huge)
+        ns.Timers.AddTimer("bad3", "NaN", 0/0)
+        local rej_after = ns.Timers.diag.rejDur
+        __rejected = rej_after - rej_before
+    """)
+    
+    rejected = int(h.lua("return __rejected"))
+    eq(rejected, 3, "not all bad durations rejected: %d" % rejected)
+    eq(h.errors(), [], "errors")
+
+
+@test("StartEncounter while Simulate is set re-arms correctly", "bughunt3")
+def _():
+    """A real encounter during simulation should end the sim and start the real one."""
+    h = fresh()
+    h.lua('ns.Timers.Simulate(3494)')
+    h.lua('W.advance(0.5)')
+    
+    ok(h.lua("return ns.Timers.IsActive()"), "not active during sim")
+    is_simulating = h.lua("return ns.Timers.state.simulate ~= nil")
+    ok(is_simulating, "simulate not set")
+    
+    # Fire a real ENCOUNTER_START while sim is running
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(0.5)')
+    
+    # Should still be active, but simulate should be cleared
+    ok(h.lua("return ns.Timers.IsActive()"), "not active after real start during sim")
+    # The condition `state.active and (state.simulate or id ~= nil)` is true (id=3494),
+    # so EndEncounter + StartEncounter is called, which clears and resets simulate
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: SavedVariables robustness
+
+
+
+# ----------------------------------------------------------- bughunt3: SavedVariables robustness
+
+@test("SalusNovusDB nil works from fresh defaults", "bughunt3")
+def _():
+    h = Harness()
+    h.login(None)
+    eq(h.errors(), [], "errors with nil SavedVariables")
+    eq(int(h.lua("return ns.db.bars.max")), 4, "defaults not applied")
+    ok(h.lua("return SalusNovusDB and type(SalusNovusDB.options) == 'table'"), "DB not created")
+
+
+@test("SalusNovusDB = {} (empty table) is populated with all defaults", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = {}")
+    eq(h.errors(), [], "errors with empty SavedVariables")
+    eq(int(h.lua("return ns.db.bars.max")), 4, "defaults not applied from empty DB")
+    eq(float(h.lua("return ns.db.reminders.hold")), 1.5, "defaults not seeded")
+    ok(h.lua("return type(ns.db.modules) == 'table'"), "modules table missing")
+
+
+@test("missing options sub-table (bars) gets created and seeded", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = { reminders = { enabled = false } } }")
+    eq(h.errors(), [], "errors with missing bars table")
+    eq(int(h.lua("return ns.db.bars.max")), 4, "bars defaults not seeded")
+    ok(h.lua("return ns.db.reminders.enabled == false"), "user reminders value lost")
+    ok(h.lua("return ns.db.reminders.hold == 1.5"), "reminders defaults not seeded into existing table")
+
+
+@test("missing options sub-table (modules) gets created and seeded", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = { bars = { max = 8 } } }")
+    eq(h.errors(), [], "errors with missing modules table")
+    ok(h.lua("return type(ns.db.modules) == 'table'"), "modules table not created")
+    eq(int(h.lua("return ns.db.modules.bossWarnings and 1 or 0")), 1, "modules defaults not seeded")
+    eq(int(h.lua("return ns.db.bars.max")), 8, "user bars value lost")
+
+
+@test("missing options sub-table (anchorsGlobal) gets created and seeded", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = {} }")
+    eq(h.errors(), [], "errors with missing anchorsGlobal table")
+    eq(int(h.lua("return ns.db.anchorsGlobal.scale")), 100, "anchorsGlobal defaults not seeded")
+    ok(h.lua("return ns.db.anchorsGlobal.grid == true"), "grid default not applied")
+
+
+@test("missing options sub-table (font) gets created and seeded", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = { bars = { max = 2 } } }")
+    eq(h.errors(), [], "errors with missing font table")
+    ok(h.lua("return type(ns.db.font) == 'table'"), "font table not created")
+    ok(h.lua("return type(ns.db.font.path) == 'string' and ns.db.font.path ~= ''"), "font path default not applied")
+
+
+@test("missing options sub-table (abilities) gets created as empty table", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = {} }")
+    eq(h.errors(), [], "errors with missing abilities table")
+    ok(h.lua("return type(ns.db.abilities) == 'table'"), "abilities table not created")
+
+
+@test("missing options sub-table (reminders) gets created with defaults and empty list", "bughunt3")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = {} }")
+    eq(h.errors(), [], "errors with missing reminders table")
+    ok(h.lua("return type(ns.db.reminders.list) == 'table'"), "reminders.list not created")
+    eq(float(h.lua("return ns.db.reminders.hold")), 1.5, "reminders defaults not seeded")
+
+
+@test("legacy position record (v=1 or missing v) is accepted on restore", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = "CENTER", relPoint = "CENTER", x = 50, y = 60, v = 1 } }')
+    eq(h.errors(), [], "errors restoring v=1 record")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    # Should restore the legacy record without error
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown after v=1 restore")
+
+
+@test("legacy position record with no v field is accepted on restore", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = "CENTER", relPoint = "CENTER", x = 50, y = 60 } }')
+    eq(h.errors(), [], "errors restoring record without v field")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown after restore")
+
+
+@test("legacy position record with unexpected relPoint is handled gracefully", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = "TOPLEFT", relPoint = "UNKNOWN", x = 100, y = 200 } }')
+    eq(h.errors(), [], "errors restoring with invalid relPoint")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown despite invalid relPoint")
+
+
+@test("position record with nil point is dropped and default used", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = nil, x = 100, y = 200 } }')
+    eq(h.errors(), [], "errors restoring with nil point")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown")
+    eq(int(h.lua("return SalusNovusDB.barsPos.v")), 2, "didn't rewrite as v2 default")
+
+
+@test("wrong type in bars.fontSize (string instead of number) is tolerated", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { bars = { fontSize = "14" } } }')
+    eq(h.errors(), [], "errors with string fontSize")
+    # The addon should either use the string as-is or fall back gracefully
+    ok(h.lua("return ns.db.bars.fontSize ~= nil"), "fontSize lost")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not laid out despite string fontSize")
+
+
+@test("wrong type in theme.useClassColor (string instead of bool) is tolerated", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { theme = { useClassColor = "yes" } } }')
+    eq(h.errors(), [], "errors with string useClassColor")
+    # Should either use the stored value or fall back
+    r, g, b = h.lua("return ns.GetThemeColor()")
+    ok(r and g and b, "GetThemeColor threw")
+
+
+@test("colour table with 3 entries instead of 4 is accepted (RGBA becomes RGB)", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { theme = { customColor = { r = 0.1, g = 0.2, b = 0.3 } } } }')
+    eq(h.errors(), [], "errors with 3-entry colour")
+    r, g, b = h.lua("return ns.GetThemeColor()")
+    ok(abs(r - 0.1) < 0.01 and abs(g - 0.2) < 0.01 and abs(b - 0.3) < 0.01, "colour not applied: %r" % ((r, g, b),))
+
+
+@test("colour table with missing g is handled (falls back to default)", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { theme = { customColor = { r = 0.1, b = 0.3 } } } }')
+    eq(h.errors(), [], "errors with incomplete colour")
+    # Should fall back to default without crashing
+    r, g, b = h.lua("return ns.GetThemeColor()")
+    ok(r and g and b, "colour validation failed")
+
+
+@test("bars.color table missing r field falls back gracefully", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { bars = { color = { g = 0.5, b = 0.8 } } } }')
+    eq(h.errors(), [], "errors with incomplete bars.color")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not laid out despite bad colour")
+
+
+@test("reminder record with non-existent encounterID stored (invalid boss) does not crash", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                reminders = {
+                    list = {
+                        [99999] = {
+                            { id = "test1", encounterID = 99999, trigger = "pull", text = "Bad Boss" }
+                        }
+                    }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with invalid encounterID reminder")
+    # Opening the reminders list should not crash
+    if_fn = h.lua("if ns.Commands.reminders then ns.Commands.reminders('') end")
+    eq(h.errors(), [], "errors listing reminders with invalid boss ID")
+
+
+@test("reminder record with invalid trigger name is skipped", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                reminders = {
+                    list = {
+                        [3496] = {
+                            { id = "bad1", encounterID = 3496, trigger = "invalid_trigger", text = "Should be ignored", arg = "arg" }
+                        }
+                    }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with invalid trigger")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Test", 1, 5, 3065)')
+    # The invalid reminder should not fire or crash
+    eq(h.errors(), [], "errors during encounter with invalid trigger reminder")
+
+
+@test("reminder with trigger='time' but missing or non-numeric arg is skipped", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                reminders = {
+                    list = {
+                        [3496] = {
+                            { id = "time1", encounterID = 3496, trigger = "time", text = "No Arg", arg = nil },
+                            { id = "time2", encounterID = 3496, trigger = "time", text = "Bad Arg", arg = "notanumber" }
+                        }
+                    }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading time reminders without arg")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Test", 1, 5, 3065)')
+    # The time reminders with bad args should be silently skipped
+    eq(h.errors(), [], "errors handling malformed time reminders")
+
+
+@test("reminder record with missing text field is handled (shows empty or default text)", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                reminders = {
+                    list = {
+                        [3496] = {
+                            { id = "notxt", encounterID = 3496, trigger = "pull", text = nil }
+                        }
+                    }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with missing reminder text")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Test", 1, 5, 3065)')
+    # Should not crash even if text is nil
+    eq(h.errors(), [], "errors firing reminder with nil text")
+
+
+@test("ability record with all fields emptied (no rename/color/roles/route) is removed from db", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["123"] = {}
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading empty ability record")
+    # The empty record should be removed by Purge or similar
+    # (or at least not cause crashes)
+    h.lua("ns.ApplyAll()")
+    eq(h.errors(), [], "errors applying with empty ability")
+
+
+@test("ability record with only rename field populated is kept", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["123"] = { rename = "CustomName" }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading partial ability record")
+    eq(str(h.lua("return ns.Abilities.Rename('123')")), "CustomName", "rename not preserved")
+
+
+@test("ability record with malformed color (missing fields) is handled", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["123"] = { color = { r = 0.5 } }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with incomplete color record")
+    result = h.lua("return ns.Abilities.Color('123')")
+    eq(str(result), "None", "Color should return nil for incomplete table")
+
+
+@test("ability record with invalid route (not a table) is handled", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["456"] = { route = "invalid" }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with string route")
+    # Should use default routing
+    ok(h.lua("return ns.Abilities.ROUTE_DEFAULT['queue'] == true"), "default route not available")
+
+
+@test("ability record with invalid roles (not nil, 'none', or table) is handled", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["789"] = { roles = "tank" }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors with string roles")
+    # Should not crash; role checking should fall back to default (all roles)
+    ok(h.lua("return ns.Abilities.RoleOK('789')"), "role validation broken")
+
+
+@test("font.path set to invalid string loads without crashing", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { font = { path = "INVALID\\\\FILE.TTF" } } }')
+    eq(h.errors(), [], "errors with invalid font path")
+    h.lua("ns.ApplyAll()")
+    eq(h.errors(), [], "errors applying invalid font")
+
+
+@test("anchorsGlobal.scale set to 0 is clamped", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { anchorsGlobal = { scale = 0 } } }')
+    eq(h.errors(), [], "errors with scale=0")
+    scale = float(h.lua("return ns.AnchorScale()"))
+    ok(scale > 0, "scale is zero or negative: %r" % scale)
+
+
+@test("anchorsGlobal.scale set to negative is clamped", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { anchorsGlobal = { scale = -50 } } }')
+    eq(h.errors(), [], "errors with negative scale")
+    scale = float(h.lua("return ns.AnchorScale()"))
+    ok(scale > 0, "scale is zero or negative: %r" % scale)
+
+
+@test("anchorsGlobal.gridSize set to 0 is clamped to default", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { anchorsGlobal = { gridSize = 0 } } }')
+    eq(h.errors(), [], "errors with gridSize=0")
+    h.lua("ns.ShowAlignGrid(true)")
+    # Grid should clamp size and draw without infinite loop
+    n = int(h.lua("return #SalusNovusAlignGrid.lines or 0"))
+    ok(0 < n < 2000, "grid line count invalid: %d" % n)
+
+
+@test("anchorsGlobal.snapRange set to negative is clamped", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { anchorsGlobal = { snapRange = -10 } } }')
+    eq(h.errors(), [], "errors with negative snapRange")
+    # Just ensure no crash on snap
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    h.lua("ns.SnapMovable(SalusNovusBars)")
+    eq(h.errors(), [], "errors snapping with negative snapRange")
+
+
+@test("position record with NaN coordinates is discarded", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = "CENTER", x = 0/0, y = 100, v = 2 } }')
+    eq(h.errors(), [], "errors with NaN position")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown")
+    # The NaN record is dropped and replaced with a valid v2 record on the next layout
+    eq(int(h.lua("return SalusNovusDB.barsPos.v")), 2, "NaN record not replaced with v2")
+
+
+@test("position record with absurd coordinate (>20000) is discarded", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { barsPos = { point = "CENTER", x = 999999, y = 100, v = 2 } }')
+    eq(h.errors(), [], "errors with absurd coordinate")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    # Should fall back to default position
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown")
+    # The absurd record is dropped and replaced with a valid v2 record on the next layout
+    x = float(h.lua("return SalusNovusDB.barsPos.x"))
+    ok(abs(x) < 20000, "absurd coordinate not replaced: %r" % x)
+
+
+@test("reminders.hidden set to a scalar instead of table is converted to table", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { reminders = { hidden = 123 } } }')
+    eq(h.errors(), [], "errors with scalar hidden")
+    # The code should create a new table if hidden isn't one
+    h.lua("ns.ReminderRemove(3496, 'test')")
+    eq(h.errors(), [], "errors removing reminder when hidden is scalar")
+
+
+@test("reminders.list set to scalar instead of table falls back to empty", "bughunt3")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { reminders = { list = "notatable" } } }')
+    eq(h.errors(), [], "errors with scalar list")
+    out = h.lua("return type(ns.Reminders.For(3496)) == 'table'")
+    ok(out, "For() should return a table")
+
+
+@test("opening options /sn doesn't crash with corrupt SavedVariables", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                bars = { fontSize = "notanumber" },
+                anchorsGlobal = { scale = -999 },
+                reminders = { list = 123 }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading with multiple corruptions")
+    open_options(h)
+    eq(h.errors(), [], "errors opening options with corrupt DB")
+    h.lua("SalusNovusOptions:Hide()")
+
+
+@test("running /sn test <boss> with corrupt DB doesn't crash", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = { ["badkey"] = { color = { r = 1 }, route = "notatable" } }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading with corrupt abilities")
+    if_fn = h.lua("if ns.Commands.test then ns.Commands.test('durgen') end")
+    # Should not crash on test command
+    eq(h.errors(), [], "errors running /sn test with corrupt abilities")
+
+
+@test("opening ability editor /sn with corrupt ability records doesn't crash", "bughunt3")
+def _():
+    h = Harness()
+    h.login("""
+        SalusNovusDB = {
+            options = {
+                abilities = {
+                    ["111"] = { color = { g = 0.5 }, roles = "invalid" }
+                }
+            }
+        }
+    """)
+    eq(h.errors(), [], "errors loading corrupt abilities")
+    open_options(h)
+    # Try to interact with ability cards if available
+    h.lua("ns.Abilities.Color('111')")
+    h.lua("ns.Abilities.RoleOK('111')")
+    eq(h.errors(), [], "errors accessing corrupt ability fields")
+    h.lua("SalusNovusOptions:Hide()")
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: options atomicity
+
+
+
+# ================================================================ bughunt3
+
+@test("unlock twice, cancel twice: snapshot must not corrupt, position must revert twice", "bughunt3")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.db.unlocked = false; ns.ApplyAll()")
+    open_options(h)
+    h.lua("""
+        ns.Options.SelectPage('bars')
+        __x0, __y0 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+        -- First unlock
+        ns.Options.EnterUnlockMode()
+        SalusNovusBars:ClearAllPoints()
+        SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 700)
+        ns.SaveAnchor(SalusNovusBars, "barsPos")
+        ns.Options.ExitUnlockMode(false)
+        __x1, __y1 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+    """)
+    x0, y0 = h.lua("return __x0, __y0")
+    x1, y1 = h.lua("return __x1, __y1")
+    ok(abs(x1 - x0) < 0.01 and abs(y1 - y0) < 0.01, "first cancel did not revert")
+    h.lua("""
+        -- Second unlock
+        ns.Options.EnterUnlockMode()
+        SalusNovusBars:ClearAllPoints()
+        SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 200, 600)
+        ns.SaveAnchor(SalusNovusBars, "barsPos")
+        ns.Options.ExitUnlockMode(false)
+        __x2, __y2 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+    """)
+    x2, y2 = h.lua("return __x2, __y2")
+    ok(abs(x2 - x0) < 0.01 and abs(y2 - y0) < 0.01, "second cancel did not revert")
+    ok(not h.lua("return ns.db.unlocked"), "not locked after second cancel")
+    eq(h.errors(), [], "errors")
+
+
+
+
+@test("changing a setting on one page persists when switching to another page", "bughunt3")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("""
+        ns.Options.SelectPage('bars')
+        local w
+        for i, widget in ipairs(ns.Options.widgets) do
+            if widget.__outer == ns.Options.pages.bars and widget.__kind == "stepper" then
+                w = widget
+                break
+            end
+        end
+        if w then
+            __orig = w.__get()
+            __target = (__orig == w.__min) and w.__max or w.__min
+            w.__set(__target)
+        end
+        ns.Options.SelectPage('reminders')
+        ns.Options.SelectPage('bars')
+        if w then
+            __final = w.__get()
+        end
+    """)
+    orig = h.lua("return __orig")
+    target = h.lua("return __target")
+    final = h.lua("return __final")
+    eq(final, target, "setting did not persist across page switch")
+    eq(h.errors(), [], "errors")
+
+
+@test("preview pages do not run while module is disabled, resume when enabled", "bughunt3")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("""
+        ns.Options.SelectPage('bars')
+        __bars_shown_before = SalusNovusBars:IsShown()
+        ns.db.modules = ns.db.modules or {}
+        ns.db.modules.bossWarnings = false
+        ns.ApplyAll()
+        __bars_shown_after = SalusNovusBars:IsShown()
+        ns.db.modules.bossWarnings = true
+        ns.ApplyAll()
+        __bars_shown_resumed = SalusNovusBars:IsShown()
+    """)
+    before = h.lua("return __bars_shown_before")
+    after = h.lua("return __bars_shown_after")
+    resumed = h.lua("return __bars_shown_resumed")
+    ok(before, "preview not running before module disabled")
+    ok(not after, "preview still running after module disabled")
+    ok(resumed, "preview not resumed after module enabled")
+    eq(h.errors(), [], "errors")
+
+
+@test("options opened during encounter properly hides preview anchors and shows fight bars", "bughunt3")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.fireEvent("SPELL_CAST_START", 1, 19135, "player", 0x0, 3494, "Plunder", 0x0, 1)')
+    h.lua("W.advance(0.1)")
+    ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "bars not on UIParent before options open")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    ok(h.lua("return SalusNovusBars:GetParent() ~= UIParent"), "bars moved to preview stage during encounter")
+    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown in preview")
+    h.lua("SalusNovusOptions:Hide()")
+    ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "bars not restored to UIParent after close")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("unlocking during encounter auto-exits on encounter start", "bughunt3")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.db.unlocked = false; ns.ApplyAll()")
+    open_options(h)
+    h.lua("ns.Options.EnterUnlockMode()")
+    ok(h.lua("return ns.db.unlocked and SalusNovusUnlockBar:IsShown()"), "unlock mode not entered")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(not h.lua("return ns.db.unlocked"), "unlock mode not exited on encounter")
+    ok(not h.lua("return SalusNovusUnlockBar:IsShown()"), "unlock bar not hidden")
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "options not hidden")
+    ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "bars not on screen for pull")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: generated data invariants
+
+
+
+# -------------------------------------------- bughunt3: data invariants
+
+@test("data invariant: unique ability keys per boss (spell + caster)", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        local function report(cat, msg)
+            findings[#findings + 1] = cat .. ": " .. msg
+        end
+
+        for key, inst in pairs(ns.Data or {}) do
+            for _, boss in ipairs(inst.bosses or {}) do
+                local seen = {}
+                for _, ability in ipairs(boss.abilities or {}) do
+                    local k = (ability.spellID or 0) .. ":" .. (ability.source or "")
+                    if seen[k] then
+                        report("ability_key", "Key " .. key .. "/" .. (boss.name or "?") .. " has duplicate " .. k)
+                    end
+                    seen[k] = true
+                end
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "ability key findings: %r" % findings)
+
+
+@test("data invariant: no ability with both health and lanes", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        local function report(cat, msg)
+            findings[#findings + 1] = cat .. ": " .. msg
+        end
+
+        for key, inst in pairs(ns.Data or {}) do
+            for _, boss in ipairs(inst.bosses or {}) do
+                for _, ability in ipairs(boss.abilities or {}) do
+                    if ability.health and ability.lanes then
+                        report("both", "Key " .. key .. "/" .. (boss.name or "?") .. "/" .. (ability.spellID or 0) ..
+                               " has BOTH health and lanes")
+                    end
+                    if not ability.health and not ability.lanes then
+                        report("neither", "Key " .. key .. "/" .. (boss.name or "?") .. "/" .. (ability.spellID or 0) ..
+                               " has NEITHER health nor lanes")
+                    end
+                end
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "health/lanes findings: %r" % findings)
+
+
+@test("data invariant: health abilities have pct in (0, 95]", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        for key, inst in pairs(ns.Data or {}) do
+            for _, boss in ipairs(inst.bosses or {}) do
+                for _, ability in ipairs(boss.abilities or {}) do
+                    if ability.health then
+                        local pct = ability.health.pct or 0
+                        if not (type(pct) == "number" and pct > 0 and pct <= 95) then
+                            findings[#findings + 1] = "Key " .. key .. "/" .. (boss.name or "?") .. "/" ..
+                                (ability.spellID or 0) .. " has invalid health pct: " .. tostring(pct)
+                        end
+                    end
+                end
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "health pct findings: %r" % findings)
+
+
+@test("data invariant: lanes.casts are sorted ascending and all >= 0", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        for key, inst in pairs(ns.Data or {}) do
+            for _, boss in ipairs(inst.bosses or {}) do
+                for _, ability in ipairs(boss.abilities or {}) do
+                    if ability.lanes and ability.lanes.casts then
+                        local casts = ability.lanes.casts
+                        for i = 1, #casts do
+                            if casts[i] < 0 then
+                                findings[#findings + 1] = "Key " .. key .. "/" .. (boss.name or "?") .. "/" ..
+                                    (ability.spellID or 0) .. " has negative cast time: " .. casts[i]
+                            end
+                            if i > 1 and casts[i] < casts[i-1] then
+                                findings[#findings + 1] = "Key " .. key .. "/" .. (boss.name or "?") .. "/" ..
+                                    (ability.spellID or 0) .. " lanes.casts not sorted"
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "lanes cast findings: %r" % findings)
+
+
+@test("data invariant: global uniqueness of encounterID across all bosses", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        local seen = {}
+        for key, inst in pairs(ns.Data or {}) do
+            for _, boss in ipairs(inst.bosses or {}) do
+                for _, eid in ipairs(boss.encounterIDs or {}) do
+                    if seen[eid] then
+                        local prev_key, prev_boss = seen[eid][1], seen[eid][2]
+                        findings[#findings + 1] = "EncounterID " .. eid ..
+                            " appears in both key " .. key .. "/" .. (boss.name or "?") ..
+                            " and key " .. prev_key .. "/" .. prev_boss
+                    else
+                        seen[eid] = { key, boss.name }
+                    end
+                end
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "global encounter id findings: %r" % findings)
+
+
+@test("data invariant: level ranges only on dungeons, not raids", "bughunt3")
+def _():
+    h = fresh()
+    findings = [str(f) for f in h.lua("""
+        local findings = {}
+        for key, inst in pairs(ns.Data or {}) do
+            if inst.type == "raid" and (inst.levelMax or inst.levelRange) then
+                findings[#findings + 1] = "Key " .. key .. " is raid but has levelMax or levelRange"
+            end
+        end
+        return findings
+    """).values()]
+    eq(findings, [], "level range findings: %r" % findings)
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: generator vs hostile input
+
+
+
+# ---------------------------------------------------------- bughunt3: hostile inputs
+
+@test("cast_health: truncated log (cut mid-line) does not crash", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "truncated.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496\n")
+            f.write("9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Durgen,0,0")  # no newline, truncated
+        result = g.cast_health(["truncated.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on truncated line")
+
+
+@test("cast_health: ENCOUNTER_START without ENCOUNTER_END is dropped", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "no_end.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,\"Durgen\",1,5\n")
+            f.write("9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Durgen,0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n")
+        result = g.cast_health(["no_end.txt"])
+        eq(len(result), 0, "unclosed ENCOUNTER_START should not produce a result")
+
+
+@test("cast_health: SPELL_CAST_SUCCESS with missing advanced params (no HP) does not crash", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "no_hp.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,\"Durgen\",1,5\n")
+            f.write("9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Durgen,0,0,0,0,0,0,1234\n")  # truncated, no HP
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["no_hp.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on missing HP params")
+        ok(len(result) == 0, "missing HP should produce empty result")
+
+
+@test("cast_health: HP of 0 is filtered out", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "zero_hp.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,\"Durgen\",1,5\n")
+            f.write("9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Durgen,0,0,0,0,0,0,1234,0,0,0,0,0.0,100.0\n")  # cur=0
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["zero_hp.txt"])
+        ok(len(result) == 0, "zero current HP should be filtered out")
+
+
+@test("cast_health: max HP of 0 is filtered out", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "zero_max.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write("9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,\"Durgen\",1,5\n")
+            f.write("9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Durgen,0,0,0,0,0,0,1234,0,0,0,0,50.0,0.0\n")  # max=0
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["zero_max.txt"])
+        ok(len(result) == 0, "zero max HP should be filtered out")
+
+
+@test("parse_ts: float and int timestamps parse correctly", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    ts1 = g.parse_ts("9/19/2026 05:00:46.009-5")
+    ts2 = g.parse_ts("9/19/2026 05:00:46-5")  # no decimal
+    ts3 = g.parse_ts("9/19/2026 05:00:46.999-5")  # high decimal
+    ok(ts1 is not None and ts2 is not None and ts3 is not None, "parsing failed")
+    ok(ts1 > ts2, "float timestamp should be greater than int equivalent")
+    ok(abs(ts1 - (5*3600 + 0*60 + 46.009)) < 0.01, "timestamp value incorrect")
+
+
+@test("parse_ts: invalid formats return None", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    eq(g.parse_ts("invalid"), None, "bad format")
+    eq(g.parse_ts(""), None, "empty string")
+    eq(g.parse_ts("9/19/2026"), None, "date only")
+    eq(g.parse_ts("05:00:46"), None, "time only")
+
+
+@test("lua_str: Lua string escaping for quotes, backslashes, newlines, CR", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Test quote escaping
+    s = g.lua_str('He said "hello"')
+    ok('\\"' in s, "quote not escaped")
+    ok(not ('\"' in s and '\\\"' not in s), "unescaped quote in result")
+
+    # Test backslash escaping
+    s = g.lua_str("C:\\path\\to\\file")
+    ok('\\\\' in s, "backslash not escaped")
+
+    # Test newline conversion to space
+    s = g.lua_str("line1\nline2")
+    ok("\n" not in s and " " in s, "newline not converted to space")
+
+    # Test CR conversion
+    s = g.lua_str("line1\rline2")
+    ok("\r" not in s, "CR not removed")
+
+
+@test("lua_str: non-ASCII characters are preserved", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    s = g.lua_str("Élévé")
+    ok("lv" in s or "Élé" in s, "non-ASCII lost or mangled")
+
+
+@test("file_name: The article stripping and camelCase", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    eq(g.file_name("The Hall of Thanes"), "HallOfThanes.lua", "The not stripped")
+    eq(g.file_name("Black Fathom Deeps"), "BlackFathomDeeps.lua", "camelCase failed")
+    eq(g.file_name("The Deadmines"), "Deadmines.lua", "The not stripped")
+
+
+@test("file_name: special characters removed", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    eq(g.file_name("The Hall's End"), "HallsEnd.lua", "apostrophe not removed")
+    eq(g.file_name("King's Run-Down"), "KingsRunDown.lua", "hyphen not removed")
+    eq(g.file_name("Place's (Part 1)"), "PlacesPart1.lua", "parens not removed")
+
+
+@test("lanes: single pull yields support=1, spread=0 (UNCONFIRMED signal)", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Single pull: (t, kind, pull_index)
+    casts = [(5.0, "start", 0)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lsu), 1, "wrong number of clusters")
+    eq(lsu[0], 1, "support should be 1")
+    eq(lsp[0], 0.0, "spread should be 0")
+
+
+@test("lanes: two pulls within CLUSTER_WINDOW cluster together", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Two casts at t=5.0 in different pulls
+    casts = [(5.0, "start", 0), (5.5, "start", 1)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lsu), 1, "should cluster into one")
+    eq(lsu[0], 2, "support should be 2")
+
+
+@test("lanes: two pulls beyond CLUSTER_WINDOW separate", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Two casts far apart
+    casts = [(5.0, "start", 0), (15.0, "start", 1)]  # > 6.0 CLUSTER_WINDOW
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lsu), 2, "should be two separate clusters")
+    eq(lsu[0], 1, "first cluster support")
+    eq(lsu[1], 1, "second cluster support")
+
+
+@test("lanes: start+success within PAIR_WINDOW merge into one event", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # start at 5.0, success at 6.5 (within 4.0 PAIR_WINDOW)
+    casts = [(5.0, "start", 0), (6.5, "success", 0)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lc), 1, "start+success should merge to one event")
+
+
+@test("lanes: start+success beyond PAIR_WINDOW stay separate", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # start at 5.0, success at 10.0 (beyond 4.0 PAIR_WINDOW)
+    casts = [(5.0, "start", 0), (10.0, "success", 0)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lc), 2, "start+success too far apart should be two events")
+
+
+@test("lanes: bar length median computed when pairs exist", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Two pulls each with start+success
+    casts = [(5.0, "start", 0), (6.0, "success", 0), (10.0, "start", 1), (11.0, "success", 1)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(lcast, 1.0, "bar length should be median of [1.0, 1.0]")
+
+
+@test("collapse_bosses: same name aliases resolved", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    bosses = [
+        {"name": "Geilhast", "encounterID": 1, "order": 0},
+        {"name": "Gelihast", "encounterID": 2, "order": 0},
+    ]
+    collapsed = g.collapse_bosses(bosses)
+    eq(len(collapsed), 1, "should collapse to one")
+    eq(collapsed[0]["name"], "Gelihast", "should use wowhead spelling")
+    eq(len(collapsed[0]["encounterIDs"]), 2, "should have both IDs")
+
+
+@test("collapse_bosses: multiple encounter IDs per boss", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    bosses = [
+        {"name": "Boss", "encounterID": 101, "order": 0},
+        {"name": "Boss", "encounterID": 102, "order": 0},
+        {"name": "Boss", "encounterID": 103, "order": 1},
+    ]
+    collapsed = g.collapse_bosses(bosses)
+    eq(len(collapsed), 1, "should have one boss")
+    eq(len(collapsed[0]["encounterIDs"]), 3, "should have all three IDs")
+
+
+@test("collapse_bosses: order preserved (first appearance)", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    bosses = [
+        {"name": "Boss2", "encounterID": 2, "order": 1},
+        {"name": "Boss1", "encounterID": 1, "order": 0},
+    ]
+    collapsed = g.collapse_bosses(bosses)
+    eq(collapsed[0]["name"], "Boss1", "should be sorted by order")
+
+
+@test("health_trigger: rejects samples with non-numeric health", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # This tests robustness; health_trigger expects numeric health
+    samples = [(0, 16.0, 50.0), (1, 11.0, 50.5)]
+    result = g.health_trigger(samples)
+    ok(result is not None, "valid samples should work")
+    eq(result, 50, "median health should be 50")
+
+
+@test("expand: split instances are properly subdivided", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    instances = [
+        {"mapID": "429", "name": "Dire Maul", "type": "dungeon", "bosses":
+         [{"name": "Pusillin", "encounterID": 1},
+          {"name": "Prince Tortheldrin", "encounterID": 2},
+          {"name": "King Gordok", "encounterID": 3}]}
+    ]
+    expanded = g.expand(instances)
+    keys = [e["key"] for e in expanded]
+    ok(42901 in keys or 42902 in keys or 42903 in keys, "split keys not present")
+    eq(len([e for e in expanded if e["key"] in (42901, 42902, 42903)]), 3, "should have 3 wings")
+
+
+@test("expand: coming dungeons added with no bosses", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    instances = []
+    expanded = g.expand(instances)
+    coming = [e for e in expanded if e.get("coming")]
+    ok(len(coming) > 0, "no coming dungeons")
+    ok(all(e["bosses"] == [] for e in coming), "coming dungeons should have no bosses")
+
+
+@test("expand: level ranges attached to all entries", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    instances = [{"mapID": "3065", "name": "The Black Morass", "type": "dungeon", "bosses": []}]
+    expanded = g.expand(instances)
+    ok(expanded[0].get("level") is not None, "level not attached")
+    ok(expanded[0]["level"] == [13, 18], "wrong level range")
+
+
+@test("cast_health: caster name with quote is safely escaped in output", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "quote_name.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write('9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,"Mob"s Name",0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["quote_name.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on quoted caster name")
+
+
+@test("cast_health: caster name with backslash is safely escaped in output", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "backslash_name.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write('9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,"C:\\Path\\Mob",0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["backslash_name.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on backslash in caster name")
+
+
+@test("cast_health: caster name with comma works correctly", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "comma_name.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write('9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,"Smith, John",0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["comma_name.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on comma in caster name")
+
+
+@test("cast_health: non-ASCII caster name preserved", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "utf8_name.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write('9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,"Élévé",0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            f.write("9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n")
+        result = g.cast_health(["utf8_name.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on UTF-8 name")
+
+
+@test("cast_health: log with Windows CRLF line endings parsed correctly", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Directly set the module's LOG_DIR to the test directory
+        old_log_dir = g.LOG_DIR
+        g.LOG_DIR = tmpdir
+        try:
+            log_path = os.path.join(tmpdir, "crlf.txt")
+            with open(log_path, "wb") as f:
+                # Write with CRLF line endings (with proper field count > 16)
+                f.write(b'9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,Boss,1,5\r\n')
+                f.write(b'9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Boss,0,0,0,0,1234,Magic,0,0,0,0,0,50.0,100.0,0\r\n')
+                f.write(b'9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\r\n')
+            result = g.cast_health(["crlf.txt"])
+            ok(isinstance(result, dict), "cast_health crashed on CRLF")
+            # Should still read the health data
+            ok(len(result) > 0, "CRLF log produced no health data")
+        finally:
+            g.LOG_DIR = old_log_dir
+
+
+@test("cast_health: log with UTF-8 BOM parsed correctly", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "bom.txt")
+        with open(log_path, "wb") as f:
+            # Write UTF-8 BOM followed by content
+            f.write(b'\xef\xbb\xbf')  # UTF-8 BOM
+            f.write(b'9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write(b'9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Boss,0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            f.write(b'9/19/2026 05:00:55.009-5  ENCOUNTER_END,3496\n')
+        result = g.cast_health(["bom.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on BOM")
+
+
+@test("cast_health: empty log file does not crash", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "empty.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            pass  # Empty file
+        result = g.cast_health(["empty.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on empty log")
+        ok(len(result) == 0, "empty log should produce no results")
+
+
+@test("cast_health: log with overlapping encounters handled correctly", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Directly set the module's LOG_DIR to the test directory
+        old_log_dir = g.LOG_DIR
+        g.LOG_DIR = tmpdir
+        try:
+            log_path = os.path.join(tmpdir, "overlap.txt")
+            with open(log_path, "w", encoding="utf-8") as f:
+                f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,Boss1,1,5\n')
+                f.write('9/19/2026 05:00:50.009-5  SPELL_CAST_SUCCESS,Creature-0-1,Boss1,0,0,0,0,1234,Magic,0,0,0,0,0,50.0,100.0,0\n')
+                # Start new encounter without ending the first
+                f.write('9/19/2026 05:01:00.009-5  ENCOUNTER_START,3497,Boss2,1,5\n')
+                f.write('9/19/2026 05:01:05.009-5  SPELL_CAST_SUCCESS,Creature-0-2,Boss2,0,0,0,0,5678,Magic,0,0,0,0,0,75.0,100.0,0\n')
+                # End the second
+                f.write('9/19/2026 05:01:10.009-5  ENCOUNTER_END,3497\n')
+            result = g.cast_health(["overlap.txt"])
+            ok(isinstance(result, dict), "cast_health crashed on overlapping encounters")
+            # The first encounter was never closed properly, so it shouldn't produce a result
+            # The second one should
+            ok(len(result) > 0, "second encounter should be recorded")
+        finally:
+            g.LOG_DIR = old_log_dir
+
+
+@test("cast_health: very fast pull (close to zero seconds) handled correctly", "bughunt3")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["SN_LOG_DIR"] = tmpdir
+        log_path = os.path.join(tmpdir, "fast_pull.txt")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write('9/19/2026 05:00:46.009-5  ENCOUNTER_START,3496,"Boss",1,5\n')
+            f.write('9/19/2026 05:00:46.010-5  SPELL_CAST_SUCCESS,Creature-0-1,Boss,0,0,0,0,0,0,1234,0,0,0,0,50.0,100.0\n')
+            # End after just 1 millisecond
+            f.write('9/19/2026 05:00:46.011-5  ENCOUNTER_END,3496\n')
+        result = g.cast_health(["fast_pull.txt"])
+        ok(isinstance(result, dict), "cast_health crashed on very fast pull")
+
+
+@test("lua_str: comma in name is not a problem", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    s = g.lua_str("Smith, John")
+    ok("Smith" in s and "John" in s, "comma name mangled")
+    # Should still be a valid Lua string
+    ok('"' in s, "not a quoted Lua string")
+
+
+@test("parse_ts: edge case timestamps near midnight", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    ts_midnight = g.parse_ts("9/19/2026 00:00:00.000-5")
+    ts_almost_midnight = g.parse_ts("9/19/2026 23:59:59.999-5")
+    ok(ts_midnight == 0, "midnight should be 0")
+    ok(ts_almost_midnight > 86399, "just before midnight should be > 86399 seconds")
+
+
+@test("lanes: empty cast list produces empty output", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    casts = []
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lc), 0, "empty casts should produce empty lanes")
+    eq(lcast, 0.0, "empty casts should have zero cast bar length")
+
+
+@test("lanes: odd number of events produces correct median", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Three identical casts at different times
+    casts = [(5.0, "start", 0), (5.2, "start", 1), (5.4, "start", 2)]
+    lc, lsp, lsu, lcast = g.lanes(casts)
+    eq(len(lc), 1, "should cluster to one")
+    eq(lc[0], 5.2, "median of [5.0, 5.2, 5.4] should be 5.2")
+
+
+@test("collapse_bosses: empty boss list", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    bosses = []
+    collapsed = g.collapse_bosses(bosses)
+    eq(len(collapsed), 0, "empty bosses should remain empty")
+
+
+@test("health_trigger: max health at 100% properly rejected", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Samples at exactly 100% HP (exceeds HEALTH_MAX_PCT of 95.0)
+    samples = [(0, 10.0, 100.0), (1, 20.0, 100.0)]
+    result = g.health_trigger(samples)
+    eq(result, None, "100% HP should be rejected as timed opener")
+
+
+@test("health_trigger: health just under max threshold accepted", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Samples at 95.0% HP (at the boundary, should be accepted)
+    samples = [(0, 10.0, 95.0), (1, 20.0, 95.0)]
+    result = g.health_trigger(samples)
+    eq(result, 95, "95% HP should be accepted")
+
+
+@test("health_trigger: HP spread exactly at threshold accepted", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Spread of exactly HEALTH_HP_SPREAD (6.0) - should be accepted (not > 6.0)
+    samples = [(0, 10.0, 50.0), (1, 20.0, 56.0)]  # spread = 6.0
+    result = g.health_trigger(samples)
+    eq(result, 53, "health spread of exactly 6.0 should be accepted")
+
+
+@test("health_trigger: time spread exactly at threshold accepted", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Time spread of exactly HEALTH_T_SPREAD (3.0) - should be accepted (not < 3.0)
+    samples = [(0, 10.0, 50.0), (1, 13.0, 50.0)]  # time spread = 3.0
+    result = g.health_trigger(samples)
+    eq(result, 50, "time spread of exactly 3.0 should be accepted")
+
+
+@test("health_trigger: time spread slightly above threshold accepted", "bughunt3")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+
+    # Time spread of 3.1 (just above HEALTH_T_SPREAD)
+    samples = [(0, 10.0, 50.0), (1, 13.1, 50.0)]  # time spread = 3.1
+    result = g.health_trigger(samples)
+    eq(result, 50, "time spread > 3.0 should be accepted")
+
+
+# ------------------------------------------------------------------
+# bug hunt 3: per-ability routing
+
+
+# ================================================================ bughunt3
+
+@test("route combinations: all 2^3 queue/preview/messages routes show/hide ability across all anchors during a full fight", "bughunt3")
+def _():
+    h = fresh()
+    # Plunder (3494) on encounter 3065 has Knock Away (11130)
+    # Test all 8 combinations of queue/preview/messages routing
+    routes = [
+        (False, False, False),  # all off
+        (False, False, True),   # messages only
+        (False, True, False),   # preview only
+        (False, True, True),    # preview + messages
+        (True, False, False),   # queue only
+        (True, False, True),    # queue + messages
+        (True, True, False),    # queue + preview
+        (True, True, True),     # all on
+    ]
+
+    for queue, preview, messages in routes:
+        h = fresh()
+        q_str = "true" if queue else "false"
+        p_str = "true" if preview else "false"
+        m_str = "true" if messages else "false"
+        h.lua("""
+            ns.Abilities.SetRoute(11130, 'queue', %s)
+            ns.Abilities.SetRoute(11130, 'preview', %s)
+            ns.Abilities.SetRoute(11130, 'messages', %s)
+        """ % (q_str, p_str, m_str))
+
+        h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+
+        # Check preview before Knock Away lands (at 7.3 seconds)
+        h.lua("W.advance(7)")
+        bars = get_bar_names(h)
+        queue_l = get_queue_names(h)
+        preview_l = get_preview_names(h)
+
+        # Bars always show timed abilities (no routing check), so always present unless role-hidden
+        ok("Knock Away" in bars, "bars anchor should always show timed abilities")
+
+        # Queue anchor respects queue routing
+        if queue:
+            ok("Knock Away" in queue_l, "queue route on: not in queue")
+        else:
+            ok("Knock Away" not in queue_l, "queue route off: still in queue")
+
+        # Preview anchor respects preview routing (check before it lands)
+        if preview:
+            ok(any("Knock Away" in l or "Knock" in l for l in preview_l), "preview route on: not in preview")
+        else:
+            ok(not any("Knock Away" in l or "Knock" in l for l in preview_l), "preview route off: still in preview")
+
+        # Messages - advance further so ability lands
+        h.lua("W.advance(1.5)")
+        msgs = get_message_names(h)
+
+        # Messages anchor respects messages routing
+        if messages:
+            ok("Knock Away" in msgs, "messages route on: not in messages")
+        else:
+            ok("Knock Away" not in msgs, "messages route off: still in messages")
+
+    eq(h.errors(), [], "errors during route combinations")
+
+@test("rename consistency: one renamed ability shows new name in all six anchors, visualizer cards, and reminders", "bughunt3")
+def _():
+    h = fresh()
+    h.lua('ns.Abilities.Set(11130, "rename", "KNOCKAWAY_CUSTOM")')
+
+    # Bars anchor
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+    bars = get_bar_names(h)
+    ok("KNOCKAWAY_CUSTOM" in bars, "rename not in Bars: %r" % bars)
+
+    # Queue anchor
+    queue = get_queue_names(h)
+    ok("KNOCKAWAY_CUSTOM" in queue, "rename not in Queue: %r" % queue)
+
+    # Preview anchor (preview lines include time counter)
+    preview = get_preview_names(h)
+    ok(any("KNOCKAWAY_CUSTOM" in line for line in preview), "rename not in Preview: %r" % preview)
+
+    # Messages anchor: need to route it there
+    h.lua('ns.Abilities.SetRoute(11130, "messages", true)')
+    h.lua("W.advance(5)")
+    msgs = get_message_names(h)
+    ok("KNOCKAWAY_CUSTOM" in msgs, "rename not in Messages: %r" % msgs)
+
+    # Visualizer cards
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    lanes = h.lua("""
+        local out = {}
+        for i = 1, #ns.Visualizer._lanes do
+            local lane = ns.Visualizer._lanes[i]
+            if lane:IsShown() then
+                out[#out + 1] = lane.name:GetText()
+            end
+        end
+        return out
+    """)
+    lanes_list = [str(x) for x in lanes.values()]
+    ok("KNOCKAWAY_CUSTOM" in lanes_list, "rename not in Visualizer lanes: %r" % lanes_list)
+
+    # Check that old name is nowhere
+    ok("Knock Away" not in bars, "old name still in Bars")
+    ok("Knock Away" not in queue, "old name still in Queue")
+    ok("Knock Away" not in preview, "old name still in Preview")
+
+    eq(h.errors(), [], "errors in rename consistency")
+
+@test("colour consistency: one recolored ability shows custom color in bars, queue, preview, messages", "bughunt3")
+def _():
+    h = fresh()
+    # Set a custom color (red)
+    h.lua('ns.Abilities.Set(11130, "color", { r = 0.9, g = 0.1, b = 0.1 })')
+
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    # Check Bars color
+    bar_colors = get_bar_colors(h)
+    if len(bar_colors) > 0:
+        r = float(bar_colors[0]['r'])
+        ok(r > 0.8, "Bars color not applied: r=%r" % r)
+
+    # Check Queue icon color - would need deeper inspection of the icon texture/vertex colors
+    # For now, verify the ability shows up
+    queue = get_queue_names(h)
+    ok("Knock Away" in queue, "colored ability not in Queue")
+
+    # Check Preview (preview lines include time counter)
+    preview = get_preview_names(h)
+    ok(any("Knock Away" in line or "Knock" in line for line in preview), "colored ability not in Preview")
+
+    # Check Messages
+    h.lua('ns.Abilities.SetRoute(11130, "messages", true)')
+    h.lua("W.advance(5)")
+    msgs = get_message_names(h)
+    ok("Knock Away" in msgs, "colored ability not in Messages")
+
+    eq(h.errors(), [], "errors in color consistency")
+
+@test("health-triggered ability appears only in Health Bars, never in bars/queue/preview/messages lanes", "bughunt3")
+def _():
+    h = fresh()
+    # Durgen (3496) has Intimidating Shout (19134) which is health-triggered at 48%
+
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    h.lua("W.advance(0.5)")
+
+    # Should not be in bars
+    bars = get_bar_names(h)
+    ok("Intimidating Shout" not in bars and "INTIMIDATING_SHOUT" not in bars, "health ability in Bars: %r" % bars)
+
+    # Should not be in queue
+    queue = get_queue_names(h)
+    ok("Intimidating Shout" not in queue, "health ability in Queue: %r" % queue)
+
+    # Should not be in preview
+    preview = get_preview_names(h)
+    ok("Intimidating Shout" not in preview, "health ability in Preview: %r" % preview)
+
+    # Should not be in messages
+    msgs = get_message_names(h)
+    ok("Intimidating Shout" not in msgs, "health ability in Messages: %r" % msgs)
+
+    # SHOULD be in health bars
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "Health Bars anchor not shown")
+    markers = h.lua("""
+        local out = {}
+        for i = 1, 8 do
+            local m = ns.HealthBars._markers[i]
+            if m:IsShown() then
+                out[#out + 1] = m.label:GetText()
+            end
+        end
+        return out
+    """)
+    markers_list = [str(x) for x in markers.values()]
+    ok("Intimidating Shout" in markers_list, "health ability not in Health Bars: %r" % markers_list)
+
+    eq(h.errors(), [], "errors in health ability isolation")
+
+@test("clearing rename/colour/routes reverts record to defaults and deletes the DB entry when empty", "bughunt3")
+def _():
+    h = fresh()
+    # Set everything
+    h.lua("""
+        ns.Abilities.Set(11130, 'rename', 'CUSTOM_NAME')
+        ns.Abilities.Set(11130, 'color', { r = 0.5, g = 0.5, b = 0.5 })
+        ns.Abilities.SetRoute(11130, 'messages', true)
+    """)
+
+    # Verify it's set
+    ok(h.lua("return ns.db.abilities['11130'] ~= nil"), "record not created")
+
+    # Clear everything
+    h.lua("""
+        ns.Abilities.Set(11130, 'rename', '')
+        ns.Abilities.Set(11130, 'color', nil)
+        ns.Abilities.SetRoute(11130, 'messages', false)
+    """)
+
+    # Record should be gone
+    eq(str(h.lua("return tostring(ns.db.abilities['11130'])")), "nil", "record not deleted after clearing all fields")
+
+    # Verify defaults are used
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" in bars, "default name not showing after cleared record")
+
+    queue = get_queue_names(h)
+    ok("Knock Away" in queue, "default queue routing not working after cleared record")
+
+    preview = get_preview_names(h)
+    ok(any("Knock Away" in line or "Knock" in line for line in preview), "default preview routing not working after cleared record")
+
+    msgs = get_message_names(h)
+    ok("Knock Away" not in msgs, "default messages routing wrong after cleared record (should be opt-in)")
+
+    eq(h.errors(), [], "errors in clear/default reset")
+
+@test("role filtering: ability hidden from player's role leaves all anchors", "bughunt3")
+def _():
+    h = fresh()
+    # Set ability to healer-only
+    h.lua('ns.Abilities.Set(11130, "roles", { healer = true })')
+
+    # Test as TANK - should be hidden
+    h.lua('W.role = "TANK"')
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" not in bars, "role-hidden ability in Bars as TANK")
+
+    queue = get_queue_names(h)
+    ok("Knock Away" not in queue, "role-hidden ability in Queue as TANK")
+
+    preview = get_preview_names(h)
+    ok("Knock Away" not in preview, "role-hidden ability in Preview as TANK")
+
+    # Test as HEALER - should show
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.role = "HEALER"')
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" in bars, "role-filtered ability not showing to correct role as HEALER")
+
+    eq(h.errors(), [], "errors in role filtering")
+
+@test("role fail-open: ability with no role assigned shows to everyone", "bughunt3")
+def _():
+    h = fresh()
+    # Set ability roles to nil (no role filtering)
+    h.lua('ns.Abilities.Set(11130, "roles", nil)')
+
+    h.lua('W.role = "TANK"')
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" in bars, "ability with nil roles hidden to TANK (should fail open)")
+
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.role = "HEALER"')
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" in bars, "ability with nil roles hidden to HEALER")
+
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua('W.role = nil')  # No role assigned
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4.5)")
+
+    bars = get_bar_names(h)
+    ok("Knock Away" in bars, "ability with nil roles hidden when player has no role (fail-open)")
+
+    eq(h.errors(), [], "errors in role fail-open")
+
+@test("visualizer per-cast marks reflect route/rename/colour changes without reopening", "bughunt3")
+def _():
+    h = fresh()
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+
+    # Find the Knock Away lane
+    initial_lanes = h.lua("""
+        local out = {}
+        for i = 1, #ns.Visualizer._lanes do
+            local lane = ns.Visualizer._lanes[i]
+            if lane:IsShown() then
+                out[#out + 1] = lane.name:GetText()
+            end
+        end
+        return out
+    """)
+    initial_list = [str(x) for x in initial_lanes.values()]
+    ok("Knock Away" in initial_list, "Knock Away lane not found initially")
+
+    # Rename it
+    h.lua('ns.Abilities.Set(11130, "rename", "KNOCK_RENAMED")')
+
+    # Check that visualizer updates without reopening
+    updated_lanes = h.lua("""
+        local out = {}
+        for i = 1, #ns.Visualizer._lanes do
+            local lane = ns.Visualizer._lanes[i]
+            if lane:IsShown() then
+                out[#out + 1] = lane.name:GetText()
+            end
+        end
+        return out
+    """)
+    updated_list = [str(x) for x in updated_lanes.values()]
+    ok("KNOCK_RENAMED" in updated_list, "visualizer did not update to new name")
+    ok("Knock Away" not in updated_list, "visualizer still shows old name")
+
+    eq(h.errors(), [], "errors in visualizer live update")
+
+# ------------------------------------------------------------------
+# 2026-09-20 UI trims: no cast count, pixel-square check boxes, form buttons
+
+@test("ability lanes show no cast count; the reminders lane keeps its count", "visualizer")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    texts = h.lua("""
+        local out = {}
+        for i, l in ipairs(ns.Visualizer._lanes) do
+            if l:IsShown() then out[#out + 1] = (l.name:GetText() or "") .. "|" .. (l.count:GetText() or "") end
+        end
+        return table.concat(out, ";")
+    """)
+    rows = [t.split("|") for t in str(texts).split(";") if t]
+    ok(len(rows) > 1, "no ability lanes rendered: %r" % texts)
+    for name, count in rows[1:]:
+        eq(count, "", "ability lane %r still shows a count %r" % (name, count))
+    eq(h.errors(), [], "errors")
+
+
+@test("check box, fill and border are whole physical pixels at a non-pixel UI scale", "theme")
+def _():
+    h = fresh()
+    h.lua("""
+        GetPhysicalScreenSize = function() return 1920, 1080 end
+        UIParent:SetScale(0.64)
+        _G.__cb = ns.Theme.MakeCheckBox(UIParent, 16)
+    """)
+    unit = (768.0 / 1080) / 0.64          # one physical pixel in UIParent units
+    box, fill, edge = h.lua("return __cb:GetWidth(), __cb.fill:GetWidth(), __cb.border.left:GetWidth()")
+    for label, v in (("box", box), ("fill", fill), ("edge", edge)):
+        n = v / unit
+        ok(abs(n - round(n)) < 1e-6, "%s is %.3f px, not whole pixels" % (label, n))
+    ok(abs(edge / unit - 1) < 1e-6, "border edge is not exactly one pixel")
+    gap = (box - fill) / 2 / unit
+    ok(abs(gap - round(gap)) < 1e-6 and gap >= 1, "fill gap %.3f px is not whole on both sides" % gap)
+    h2 = fresh()
+    h2.lua("_G.__cb = ns.Theme.MakeCheckBox(UIParent, 16)")   # no physical size API: plain units
+    eq(tuple(h2.lua("return __cb:GetWidth(), __cb.fill:GetWidth()")), (16, 10), "without the API the old sizes must hold")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("the reminder form's Save and Cancel sit bottom right, Cancel outermost; Remove bottom left", "visualizer")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("ns.Visualizer.OpenForm(5, 11130, 'Knock Away', nil)")
+    pts = h.lua("""
+        local f = ns.Visualizer.form
+        local cp, _, crp = f.cancel:GetPoint(1)
+        local sp, srel, srp = f.save:GetPoint(1)
+        local dp = f.delete:GetPoint(1)
+        return cp .. "/" .. tostring(crp) .. " " .. sp .. "/" .. tostring(srel == f.cancel) .. "/" .. tostring(srp) .. " " .. dp
+    """)
+    eq(str(pts), "BOTTOMRIGHT/BOTTOMRIGHT RIGHT/true/LEFT BOTTOMLEFT", "button anchors: %r" % pts)

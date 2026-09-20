@@ -457,22 +457,51 @@ end
 
 --- The card look: faint panel, thin border INSIDE the rect (a ScrollFrame
 -- clipped the outside right edge), 3px accent edge on the left, hover pop.
+--- One physical screen pixel in `frame`'s own units. At a UI scale that
+-- is not 768/screen-height a "1px" edge is a fraction of a pixel, and the
+-- client rounds each edge on its own: one side lands 1px, the other 2px
+-- (Alex: the boxes look cut off / lopsided). Sizes built from this unit
+-- land on whole pixels on every side.
+function T.PixelUnit(frame)
+    local ph
+    if type(GetPhysicalScreenSize) == "function" then
+        local ok, _, h = pcall(GetPhysicalScreenSize)
+        if ok and type(h) == "number" and h > 0 then ph = h end
+    end
+    if not ph then return 1 end
+    local s = frame and frame.GetEffectiveScale and frame:GetEffectiveScale() or 1
+    if not s or s <= 0 then s = 1 end
+    return (768 / ph) / s
+end
+
+--- `v` rounded to whole pixels of `unit`, never below one pixel.
+function T.SnapPx(v, unit)
+    local n = math.floor(v / unit + 0.5)
+    if n < 1 then n = 1 end
+    return n * unit
+end
+
 --- The square check box (a filled square in the accent when on): the
 -- options pages' style, and the ability cards' (Alex: "the checkbox
 -- style, not the slider style").
 function T.MakeCheckBox(parent, size)
     local b = CreateFrame("Button", nil, parent)
-    b:SetSize(size or 18, size or 18)
+    -- Box, inset and edge are whole pixels so the fill sits centred with
+    -- the same gap on every side and the border is 1px all round.
+    local px = T.PixelUnit(b)
+    local box = T.SnapPx(size or 18, px)
+    local inset = T.SnapPx(3, px)
+    b:SetSize(box, box)
     b.bg = T.SolidTex(b, "BACKGROUND", 1, 1, 1, 0.06)
     b.bg:SetAllPoints()
     b.fill = T.SolidTex(b, "ARTWORK", 1, 1, 1, 1)
     -- Sized and centred, not inset from the corners: two insets round
     -- apart on a fractional pixel and the square sits lopsided (Alex).
-    b.fill:SetSize((size or 18) - 6, (size or 18) - 6)
+    b.fill:SetSize(box - 2 * inset, box - 2 * inset)
     b.fill:SetPoint("CENTER", 0, 0)
     b.fill:Hide()
     b.border = ns.CreateBorder(b)
-    b.border:Layout(b, 1, 0)
+    b.border:Layout(b, px, 0)
     b.border:SetColor(1, 1, 1, 0.25)
     b.border:Show()
     b.text = b:CreateFontString(nil, "OVERLAY")
