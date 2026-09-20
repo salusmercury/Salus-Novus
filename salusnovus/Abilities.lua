@@ -22,7 +22,7 @@ ns.Abilities = A
 -- Which anchors an ability goes to when it says nothing: opt-out for the
 -- queue and the preview, opt-in for Messages (big text is for the casts
 -- you pick -- Alex).
-A.ROUTE_DEFAULT = { queue = true, preview = true, messages = false }
+A.ROUTE_DEFAULT = { queue = true, preview = true, messages = false, health = true }
 A.ROLES = { "tank", "healer", "dps" }
 
 -- Keys are spell ids from OUR data files, never the client's secret ids;

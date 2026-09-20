@@ -49,7 +49,7 @@ for _, m in ipairs(MODULES) do MODULE_BY_SECTION[m.label] = m end
 
 local GROUPS = {
     { section = "Global",                                 key = "global",     label = "Settings",        pages = { "global" } },
-    { section = "Boss Warnings", module = "bossWarnings", key = "anchors",    label = "Anchors",         pages = { "bars", "queue", "preview", "messages", "reminders" } },
+    { section = "Boss Warnings", module = "bossWarnings", key = "anchors",    label = "Anchors",         pages = { "bars", "queue", "preview", "messages", "health", "reminders" } },
     { section = "Boss Warnings", module = "bossWarnings", key = "visualizer", label = "Boss Visualizer", launch = true },
 }
 local PAGE_GROUP, PAGE_MODULE = {}, {}
@@ -78,7 +78,7 @@ local function LayoutSidebar()
 end
 LayoutSidebar()
 
-local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", reminders = "Reminders", global = "Settings" }
+local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings" }
 
 local panel
 local shell
@@ -1115,7 +1115,7 @@ PAGE_BODY.queue = function()
         function(v) return v .. " %" end, qOn)
     -- The draining edge is the only time-on-icon; no setting for it (Alex).
 
-    local sLabels = MakeSection(pg, nil, "LABELS", 2)
+    local sLabels = MakeSection(pg, nil, "TEXT", 2)
     local qLabels = MakeDropdown(pg, "Ability names:", sLabels,
         { "none", "lead", "all" }, { none = "None", lead = "Next only", all = "All icons" },
         function() return q().labels or "lead" end, function(v) q().labels = v end, qOn)
@@ -1202,6 +1202,36 @@ PAGE_BODY.messages = function()
         function() return ms().color end, msOn)
     -- Which abilities show here is chosen per ability on the Boss
     -- Visualizer's cards (opt-in).
+end
+
+PAGE_BODY.health = function()
+    local pg = pages.health.__content
+    local t = MakeTitle(pg, "Health Bars")
+    local hb = function() return ns.db.healthBars end
+    local hbOn = function() return ns.db.healthBars.enabled end
+    local stage = MakePreview(pg, t, 96,
+        function(s) ns.HealthBarsPreviewStart(s) end,
+        function() ns.HealthBarsPreviewStop() end,
+        hbOn)
+    local sLayout = MakeSection(pg, stage, "LAYOUT")
+    local hbBox = MakeCheckbox(pg, "Enable Health Bars", sLayout,
+        function() return hb().enabled end, function(v) hb().enabled = v end)
+    local hbWidth = MakeStepper(pg, "Width:", hbBox, 120, 600,
+        function() return hb().width or 260 end, function(v) hb().width = v end,
+        function(v) return v .. " px" end, hbOn)
+    local hbHeight = MakeStepper(pg, "Height:", hbWidth, 8, 40,
+        function() return hb().height or 16 end, function(v) hb().height = v end,
+        function(v) return v .. " px" end, hbOn)
+    MakeColorSwatch(pg, "Bar color:", hbHeight,
+        function() return hb().color end, hbOn)
+    local sText = MakeSection(pg, nil, "TEXT", 2)
+    local hbName = MakeCheckbox(pg, "Show the boss's name", sText,
+        function() return hb().showName ~= false end, function(v) hb().showName = v end, hbOn)
+    MakeStepper(pg, "Marker label size:", hbName, 8, 16,
+        function() return hb().labelSize or 11 end, function(v) hb().labelSize = v end,
+        function(v) return v .. " pt" end, hbOn)
+    -- Which abilities get a marker is decided by the logs (cast at a health,
+    -- not a time) and per ability on the Boss Visualizer's cards.
 end
 
 PAGE_BODY.reminders = function()
@@ -1354,6 +1384,7 @@ local function BuildPanel()
     MakeTab("queue", "Ability Queue")
     MakeTab("preview", "Ability Preview")
     MakeTab("messages", "Messages")
+    MakeTab("health", "Health Bars")
     MakeTab("reminders", "Reminders")
     -- The Boss Visualizer row sits under Anchors in its module: a launcher,
     -- not a page, so it is made here rather than by MakeTab.

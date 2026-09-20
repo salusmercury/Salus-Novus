@@ -9,7 +9,8 @@ What it does
   a colour, limit it to roles, or choose which anchors show it; click a lane to
   place a reminder.
 - **Anchors** (all movable, all previewed on their settings page): Bars, Ability
-  Queue, Ability Preview, Messages, Reminders.
+  Queue, Ability Preview, Messages, Health Bars (the boss's health with a
+  marker per health-triggered ability), Reminders.
 - **Whole-UI font**: one font for the addon and, optionally, the whole game UI.
 
 Nothing is predicted beyond what the logs recorded. The client keeps most live
@@ -17,8 +18,13 @@ values secret on Forever, so timings come from the log files, not from combat
 events. See `wow_forever_notes.md` for what the client does and does not allow.
 
 Install
-- Copy the `salusnovus` folder into `Interface\AddOns\` and rename it
-  `SalusNovus`, or run `python install_probe.py --addon SalusNovus --install wow_classic_beta`.
+- Easiest: download `SalusNovus-<version>.zip` from the Releases page and
+  extract it into `World of Warcraft\_classic_beta_\Interface\AddOns\`
+  (it unpacks as a `SalusNovus` folder).
+- From source: copy the `salusnovus` folder into `Interface\AddOns\` and
+  rename it `SalusNovus`, or run
+  `python install_probe.py --addon SalusNovus --install wow_classic_beta`.
+- `python make_release.py` builds the release zip into `dist/`.
 
 Data
 - `build_salusnovus_data.py` regenerates `salusnovus/Data/*.lua` from

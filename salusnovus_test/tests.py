@@ -1799,14 +1799,16 @@ def _():
     for coming in ("The Drowned City", "Krol'dok Stronghold", "Alcaz Prison", "Blackmaw Hold", "The Shapers' Terrace"):
         ok(coming in names, "%s missing" % coming)
     # the sidebar rows carry the chart's level ranges; the Stronghold is 40-45 (Alex)
+    # the range sits on its own smaller line under the name (Alex)
     labels = str(h.lua("""
         local out = {}
-        for i = 1, 40 do local r = ns.Visualizer._instRows and ns.Visualizer._instRows[i] if r and r:IsShown() then out[#out + 1] = r.label:GetText() end end
+        for i = 1, 40 do local r = ns.Visualizer._instRows and ns.Visualizer._instRows[i] if r and r:IsShown() then out[#out + 1] = r.label:GetText() .. "/" .. r.sub:GetText() end end
         return table.concat(out, "|")
     """))
-    ok("Deadmines (18-24)" in labels, "level range missing from the row: %s" % labels)
-    ok("Krol'dok Stronghold (40-45)" in labels, "Stronghold range wrong: %s" % labels)
-    ok("Dire Maul: East (55-60)" in labels and "Dire Maul: North (59-60)" in labels, "wing ranges: %s" % labels)
+    ok("Deadmines/Level 18-24" in labels, "level range missing under the name: %s" % labels)
+    ok("Krol'dok Stronghold/Level 40-45" in labels, "Stronghold range wrong: %s" % labels)
+    ok("Dire Maul: East/Level 55-60" in labels and "Dire Maul: North/Level 59-60" in labels, "wing ranges: %s" % labels)
+    ok("(" not in labels.split("|")[0].split("/")[0], "range still inline in the name")
     eq(int(h.lua("return #ns.Data[42901].bosses + #ns.Data[42902].bosses + #ns.Data[42903].bosses")), 19, "Dire Maul wings should hold all 19 bosses")
     eq(int(h.lua("return #ns.Data[900002].bosses")), 0, "a coming dungeon has no bosses")
     ok(h.lua("return ns.Data[900002].coming == true"), "coming flag")
@@ -2675,7 +2677,7 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("five anchor pages on the strip, none clipped; five anchors on screen and pairwise clear; section titles centred on their band", "options")
+@test("six anchor pages on the strip, none clipped; six anchors on screen and pairwise clear; section titles centred on their band", "options")
 def _():
     h = fresh()
     open_options(h)
@@ -2697,7 +2699,7 @@ def _():
     """))
     eq(bad, "", bad)
     h.lua("SalusNovusOptions:Hide(); ns.db.unlocked = true; ns.ApplyAll()")
-    names = ["SalusNovusBars", "SalusNovusQueue", "SalusNovusPreview", "SalusNovusMessages", "SalusNovusReminderFrame"]
+    names = ["SalusNovusBars", "SalusNovusQueue", "SalusNovusPreview", "SalusNovusMessages", "SalusNovusHealthBars", "SalusNovusReminderFrame"]
     for n in names:
         eq(float(h.lua("return W.offscreen(%s).any" % n)), 0.0, "%s off screen" % n)
     for i in range(len(names)):
@@ -2931,4 +2933,142 @@ def _():
     ok("switched off" in note, "stage should explain the anchor is off: %r" % note)
     h.lua("__en:Click()")
     ok(h.lua("return ns.db.bars.enabled and SalusNovusBars:GetParent() ~= UIParent and SalusNovusBars:IsShown()"), "preview did not resume")
+    eq(h.errors(), [], "errors")
+
+
+
+# ------------------------------------------------------------ health bars
+# Durgen Dirgehammer (3496): Intimidating Shout 19134 is cast at ~48% health
+# in both logged pulls (16 s and 11 s in) -> tagged health = { pct = 48 }.
+
+def health_units(h, hp=1922, mx=1922, unit="target"):
+    h.lua("__units['%s'] = { name = 'Durgen Dirgehammer', hp = %d, max = %d }" % (unit, hp, mx))
+
+
+@test("health_trigger: same health at different times across 2+ pulls, below full health", "health")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    eq(g.health_trigger([(0, 16.0, 47.4), (1, 11.0, 47.8)]), 48, "Durgen's shout")
+    eq(g.health_trigger([(0, 16.0, 47.4)]), None, "one pull is no evidence")
+    eq(g.health_trigger([(0, 6.5, 80.0), (1, 6.4, 79.0)]), None, "same time AND same health reads as timed")
+    eq(g.health_trigger([(0, 16.0, 47.4), (1, 11.0, 60.0)]), None, "health spread too wide")
+    eq(g.health_trigger([(0, 1.0, 99.0), (1, 5.0, 98.5)]), None, "an opener at full health is timed")
+    eq(g.health_trigger([(0, 16.0, 47.4), (1, 11.0, 47.8), (2, 20.0, 50.1)]), 48, "three pulls")
+
+
+@test("a health-triggered ability leaves the timed world: no lane, no record, no queue or preview entry; the cards keep it with a HEALTH tag", "health")
+def _():
+    h = fresh()
+    eq(int(h.lua("local b = ns.BossByEncounter(3496) for _, a in ipairs(b.abilities) do if a.spellID == 19134 then return a.health.pct end end return -1")), 48, "data tag missing")
+    ok(not h.lua("for _, o in ipairs(ns.Schedule.Lanes(ns.BossByEncounter(3496))) do if o.a.spellID == 19134 then return true end end return false"), "still on the lanes")
+    eq(int(h.lua("return #ns.Schedule.HealthAbilities(ns.BossByEncounter(3496))")), 1, "HealthAbilities")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(not h.lua("for _, b in ipairs(ns.Timers.Sorted()) do if b.spellID == 19134 then return true end end return false"), "the hub made a timed record for it")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.BossByEncounter(3496))")
+    ok("Intimidating Shout" not in lane_names(h), "lane drawn for a health ability")
+    last = h.lua("""
+        local n = 0
+        for i = 1, #SalusNovusVisualizer.descRows do if SalusNovusVisualizer.descRows[i]:IsShown() then n = i end end
+        local r = SalusNovusVisualizer.descRows[n]
+        return { name = r.name:GetText(), pill = r.pill:IsShown() and r.pill.text:GetText() or "", n = n }
+    """)
+    eq(str(last["name"]), "Intimidating Shout", "health ability should be the last card")
+    eq(str(last["pill"]), "HEALTH  48%", "HEALTH tag")
+    ok(not h.lua("return SalusNovusVisualizer.descRows[1].pill:IsShown()"), "a timed ability got a tag")
+    # its editor offers Health Bars only
+    h.lua("local r = SalusNovusVisualizer.descRows[%d] r:GetScript('OnMouseUp')(r)" % int(last["n"]))
+    ed = "SalusNovusVisualizer.descRows[%d].editor" % int(last["n"])
+    ok(h.lua("return %s.healthRoute:IsShown() and not %s.routes.queue:IsShown() and not %s.routes.messages:IsShown()" % (ed, ed, ed)), "show-on row wrong for a health ability")
+    h.lua("%s.healthRoute:Click()" % ed)
+    ok(not h.lua("return ns.Abilities.Routed(19134, 'health')"), "Health Bars route did not write")
+    h.lua("local r = SalusNovusVisualizer.descRows[1] r:GetScript('OnMouseUp')(r)")
+    ok(h.lua("return SalusNovusVisualizer.descRows[1].editor.routes.queue:IsShown() and not SalusNovusVisualizer.descRows[1].editor.healthRoute:IsShown()"), "timed ability's editor lost its routes")
+    eq(h.errors(), [], "errors")
+
+
+@test("the health bar appears on a pull of a boss with a health-triggered ability, finds the unit, shows the value and a marker at the threshold", "health")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "bar not shown")
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "target", "unit not found")
+    eq(str(h.lua("return SalusNovusHealthBars.name:GetText()")), "Durgen Dirgehammer", "boss name")
+    shown = h.lua("local out = {} for i = 1, 8 do local m = ns.HealthBars._markers[i] if m:IsShown() then out[#out + 1] = m.label:GetText() end end return out")
+    eq([str(x) for x in shown.values()], ["Intimidating Shout"], "markers")
+    x = float(h.lua("local m = ns.HealthBars._markers[1] return m:GetLeft() + m:GetWidth() / 2 - SalusNovusHealthBars.bar:GetLeft()"))
+    ok(abs(x - 260 * 0.48) < 0.6, "marker not at 48%% of the bar: %r" % x)
+    health_units(h, hp=911)
+    h.lua("W.advance(0.3)")
+    lo, hi, v = h.lua("local b = SalusNovusHealthBars.bar local lo, hi = b:GetMinMaxValues() return lo, hi, b:GetValue()")
+    ok(int(hi) == 1922 and int(v) == 911, "bar not fed from the unit: %r" % ((lo, hi, v),))
+    # a rename and a colour reach the marker
+    h.lua("ns.Abilities.Set(19134, 'rename', 'FEAR'); ns.Abilities.Set(19134, 'color', { r = 0.1, g = 0.2, b = 0.9 })")
+    eq(str(h.lua("return ns.HealthBars._markers[1].label:GetText()")), "FEAR", "rename not on the marker")
+    c = h.lua("return { ns.HealthBars._markers[1].label:GetTextColor() }")
+    ok(abs(float(c[3]) - 0.9) < 0.01, "colour not on the marker")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "bar survived the end")
+    eq(h.errors(), [], "errors")
+
+
+@test("the health bar finds a late unit, dims when the client refuses the value, stays hidden for a boss with no health abilities or with the route off", "health")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown() and ns.HealthBars.state.unit == nil"), "should show with markers while the unit is unknown")
+    h.lua("__units['target'] = { name = 'Lesser Stone Golem', hp = 300, max = 300 }")   # a decoy: the add, not the boss
+    health_units(h, unit="nameplate3")
+    h.lua("W.advance(1.3)")
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "nameplate3", "late unit not found by name")
+    # the client refuses the secret value: pcall catches it, the fill dims, the markers stay
+    h.lua("""
+        __orig = SalusNovusHealthBars.bar.SetValue
+        SalusNovusHealthBars.bar.SetValue = function() error("secret value") end
+        W.advance(0.3)
+    """)
+    ok(h.lua("return ns.HealthBars.state.refused and SalusNovusHealthBars:GetAlpha() == 1 and SalusNovusHealthBars.bar:GetAlpha() < 0.5"), "refusal not handled")
+    ok(h.lua("return ns.HealthBars._markers[1]:IsShown()"), "markers dropped on refusal")
+    h.lua("SalusNovusHealthBars.bar.SetValue = __orig; W.advance(0.3)")
+    ok(not h.lua("return ns.HealthBars.state.refused") and h.lua("return SalusNovusHealthBars.bar:GetAlpha() == 1"), "did not recover")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "shown for a boss with no health abilities")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua("ns.Abilities.SetRoute(19134, 'health', false)")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "shown with its only ability routed off")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    ok("refused" in "".join(h.lua("SlashCmdList['SALUSNOVUS']('health') return table.concat(W.printed, '|')")), "/sn health prints nothing")
+    eq(h.errors(), [], "errors")
+
+
+@test("health bars anchor: unlock shows placeholders and is draggable; disabled/module-off hide it; the page preview drains and stops", "health")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusHealthBars:IsShown() and SalusNovusHealthBars:IsMouseEnabled()"), "unlock placeholders missing")
+    eq(int(h.lua("local n = 0 for i = 1, 8 do if ns.HealthBars._markers[i]:IsShown() then n = n + 1 end end return n")), 2, "placeholder markers")
+    h.lua("ns.db.unlocked = false; ns.db.healthBars.enabled = false; ns.ApplyAll()")
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "disabled still shown")
+    h.lua("ns.db.healthBars.enabled = true; ns.db.modules.bossWarnings = false; ns.ApplyAll()")
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "module off still shown")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1); ns.db.modules.bossWarnings = true; ns.ApplyAll()')
+    open_options(h)
+    h.lua("ns.Options.SelectPage('health')")
+    eq(str(h.lua("return ns.Options.shell.pageTitle:GetText()")), "Health Bars", "page title")
+    ok(h.lua("return SalusNovusHealthBars:GetParent() ~= UIParent and SalusNovusHealthBars:IsShown()"), "page preview not running")
+    v0 = float(h.lua("return SalusNovusHealthBars.bar:GetValue()"))
+    h.lua("W.advance(3)")
+    v1 = float(h.lua("return SalusNovusHealthBars.bar:GetValue()"))
+    ok(v1 < v0, "preview fill not draining: %r -> %r" % (v0, v1))
+    h.lua("SalusNovusOptions:Hide()")
+    ok(h.lua("return SalusNovusHealthBars:GetParent() == UIParent and not SalusNovusHealthBars:IsShown()"), "frame not returned and hidden")
     eq(h.errors(), [], "errors")

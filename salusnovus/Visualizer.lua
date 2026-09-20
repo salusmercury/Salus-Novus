@@ -777,6 +777,12 @@ local function MakeCardEditor(row)
     ed.showCap = T.MakeText(ed, 11, T.TEXT_MUTE)
     ed.showCap:SetPoint("TOPLEFT", ed.rolesCap, "BOTTOMLEFT", 0, -22)
     ed.showCap:SetText("SHOW ON")
+    ed.healthRoute = T.MakeLabelledCheckBox(ed, "Health Bars", 16)
+    ed.healthRoute:SetPoint("LEFT", ed.showCap, "RIGHT", 10, 0)
+    ed.healthRoute:HookScript("OnClick", function(self)
+        local k = key()
+        if k then A.SetRoute(k, "health", self:GetChecked()); Rerender() end
+    end)
     ed.routes = {}
     prev = nil
     for _, r in ipairs({ { "queue", "Ability Queue" }, { "preview", "Ability Preview" }, { "messages", "Messages" } }) do
@@ -811,11 +817,17 @@ local function MakeCardEditor(row)
         self.swatch:SetShown(r ~= nil)     -- the swatch only exists for a custom colour
         if r then self.swatch.fill:SetVertexColor(r, g, b, 1) end
         for role, cb in pairs(self.roles) do cb:SetChecked(A.HasRole(k, role)) end
+        local timed = not row.health
         for anchor, cb in pairs(self.routes) do
             local v = A.Route(k, anchor)
             if v == nil then v = A.ROUTE_DEFAULT[anchor] ~= false end
             cb:SetChecked(v)
+            cb:SetShown(timed)
         end
+        local hv = A.Route(k, "health")
+        if hv == nil then hv = true end
+        self.healthRoute:SetChecked(hv)
+        self.healthRoute:SetShown(not timed)
     end
     return ed
 end
@@ -859,6 +871,9 @@ local function DescRow(i)
         self.desc:SetTextColor(T.TEXT_DIM[1], T.TEXT_DIM[2], T.TEXT_DIM[3], 1)
     end)
     -- The real name, muted, after a rename.
+    row.pill = T.MakePill(row)
+    row.pill:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
+    row.pill:Hide()
     row.real = T.MakeText(row, 12, T.TEXT_MUTE)
     row.real:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
     row.real:SetWordWrap(false)
@@ -876,6 +891,11 @@ end
 RenderDesc = function(f)
     if not win then return end
     local lanes = f and ns.Schedule.Lanes(f) or {}
+    -- Health-triggered abilities have no lane but keep their card, after
+    -- the timed ones, tagged with the health they fire at.
+    for _, ha in ipairs(f and ns.Schedule.HealthAbilities(f) or {}) do
+        lanes[#lanes + 1] = { a = ha, health = true }
+    end
     local content = win.descScroll.child
     local w = math.max(200, (win.descScroll:GetWidth() or 200))
     content:SetWidth(w)
@@ -896,6 +916,14 @@ RenderDesc = function(f)
         row.realName = real
         row.name:SetText(mine or real)
         row.real:SetText(mine and real or "")
+        row.health = a.health and a.health.pct or nil
+        if row.health then
+            row.pill:Set(string.format("HEALTH  %d%%", row.health), 1.00, 0.55, 0.30)
+            row.real:ClearAllPoints(); row.real:SetPoint("LEFT", row.pill, "RIGHT", 8, 0)
+        else
+            row.pill:Hide()
+            row.real:ClearAllPoints(); row.real:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
+        end
         local cr, cg, cb = A.Color(a.spellID)
         row.nameColor = cr and { cr, cg, cb } or nil
         row.name:SetTextColor(cr or T.TEXT[1], cg or T.TEXT[2], cb or T.TEXT[3], 1)
@@ -1297,12 +1325,18 @@ end
 
 local function MakeInstRow(width)
     local r = CreateFrame("Button", nil, win.bossList.child)
-    r:SetSize(width, 34)
+    r:SetSize(width, 40)
     for _, part in ipairs(T.DecorateNavRow(r)) do shell:Register(part) end
     T.NavLabel(r, "")
+    r.label:ClearAllPoints()
+    r.label:SetPoint("TOPLEFT", r, "TOPLEFT", 22, -5)
     r.label:SetPoint("RIGHT", r, "RIGHT", -44, 0)
     r.label:SetJustifyH("LEFT")
     r.label:SetWordWrap(false)
+    -- The level range on its own line, smaller (Alex: the names were cut off).
+    r.sub = T.MakeText(r, 10, T.TEXT_MUTE)
+    r.sub:SetPoint("TOPLEFT", r.label, "BOTTOMLEFT", 0, -1)
+    r.sub:SetWordWrap(false)
     r.count = T.MakeText(r, 11, T.TEXT_MUTE)
     r.count:SetPoint("RIGHT", r, "RIGHT", -14, 0)
     r:SetScript("OnEnter", function(self) self.label:SetTextColor(1, 1, 1, 1) end)
@@ -1319,10 +1353,8 @@ local function RenderBossList()
         local row = Pool(instRows, ni, function() return MakeInstRow(width) end)
         local open = (e.mapID == state.openInst)
         row.mapID = e.mapID
-        -- The level range after the name (Alex): "Deadmines (18-24)".
-        local nm = e.inst.name or "?"
-        if e.inst.levelRange then nm = nm .. " (" .. e.inst.levelRange .. ")" end
-        row.label:SetText(nm)
+        row.label:SetText(e.inst.name or "?")
+        row.sub:SetText(e.inst.levelRange and ("Level " .. e.inst.levelRange) or "")
         row.count:SetText(open and "-" or "+")
         row:SetScript("OnClick", function()
             -- (not `open and nil or inst`: nil falls through the `or`)
@@ -1331,7 +1363,7 @@ local function RenderBossList()
         end)
         T.SetNavActive(row, open)
         row:ClearAllPoints(); row:SetPoint("TOPLEFT", win.bossList.child, "TOPLEFT", 0, -y); row:Show()
-        y = y + 34
+        y = y + 40
         if open then
             for _, b in ipairs(e.inst.bosses or {}) do
                 nr = nr + 1

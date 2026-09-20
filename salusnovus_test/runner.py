@@ -96,6 +96,15 @@ class Harness:
             SOUNDKIT = SOUNDKIT or { RAID_WARNING = 8959 }
             -- Hostility of a unit: set __hostile[unit] = false to make one friendly.
             __hostile = {}
+            -- Units for the health bar: __units[unit] = { name=, hp=, max= }.
+            __units = {}
+            do
+                local origName, origExists, origHP, origMax = UnitName, UnitExists, UnitHealth, UnitHealthMax
+                UnitName = function(u) local r = __units[u] if r then return r.name end return origName(u) end
+                UnitExists = function(u) if __units[u] then return true end return origExists(u) end
+                UnitHealth = function(u) local r = __units[u] if r then return r.hp end return origHP(u) end
+                UnitHealthMax = function(u) local r = __units[u] if r then return r.max end return origMax(u) end
+            end
             UnitCanAttack = UnitCanAttack or function(_, unit)
                 if __hostile[unit] == nil then return true end
                 return __hostile[unit]

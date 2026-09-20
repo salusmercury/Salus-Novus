@@ -29,6 +29,77 @@ from collections import defaultdict
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(HERE, "salusnovus", "Data")
+# The raw combat logs the pulls came from: the caster's health at each cast
+# lives only there (advanced-logging params). Missing dir = no health data.
+LOG_DIR = os.environ.get("SN_LOG_DIR") or r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\Logs"
+
+HEALTH_HP_SPREAD = 6.0    # % points: casts at the same health across pulls...
+HEALTH_T_SPREAD = 3.0     # ...but not at the same time -> a health trigger
+HEALTH_MAX_PCT = 95.0     # an opener at full health is a timed ability
+
+
+def parse_ts(ts):
+    """'9/19/2026 05:00:46.009-5' -> seconds (within a file; days ignored)."""
+    m = re.match(r"\d+/\d+/\d+ (\d+):(\d+):([\d.]+)", ts)
+    if not m:
+        return None
+    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+
+
+def cast_health(files):
+    """Per (file, encounter id, pull length): {(spellID, source name, t) -> hp%}
+    from SPELL_CAST_SUCCESS lines whose advanced params carry the caster's
+    current and max health. Returns {} when the logs are not on disk."""
+    out = {}
+    for fname in sorted(set(files)):
+        path = os.path.join(LOG_DIR, fname)
+        if not os.path.isfile(path):
+            continue
+        block, t0, enc = None, None, None
+        for line in io.open(path, encoding="utf-8", errors="replace"):
+            parts = line.rstrip("\n").split("  ", 1)
+            if len(parts) < 2:
+                continue
+            ts, body = parts
+            f = body.split(",")
+            ev = f[0]
+            if ev == "ENCOUNTER_START":
+                enc, t0, block = int(f[1]), parse_ts(ts), {}
+            elif ev == "ENCOUNTER_END" and block is not None:
+                t = parse_ts(ts)
+                if t is not None and t0 is not None:
+                    out[(fname, enc, round(t - t0, 1))] = block
+                block, t0, enc = None, None, None
+            elif ev == "SPELL_CAST_SUCCESS" and block is not None and len(f) > 16 and f[1].startswith("Creature-"):
+                try:
+                    sid = int(f[9])
+                    cur, mx = float(f[14]), float(f[15])
+                    t = parse_ts(ts)
+                except (ValueError, IndexError):
+                    continue
+                if mx <= 0 or t is None or t0 is None:
+                    continue
+                src = f[2].strip('"')
+                block[(sid, src, round(t - t0, 1))] = 100.0 * cur / mx
+    return out
+
+
+def health_trigger(samples):
+    """samples = [(pull, t, hp%)] of an ability's FIRST cast per pull. A
+    health trigger: seen in 2+ pulls, at the same health (within
+    HEALTH_HP_SPREAD) but not at the same time (HEALTH_T_SPREAD or more),
+    below full health. Returns the rounded mean hp% or None."""
+    if len(samples) < 2:
+        return None
+    hps = [h for _, _, h in samples]
+    ts = [t for _, t, _ in samples]
+    if max(hps) - min(hps) > HEALTH_HP_SPREAD:
+        return None
+    if max(ts) - min(ts) < HEALTH_T_SPREAD:
+        return None
+    if max(hps) > HEALTH_MAX_PCT:
+        return None
+    return int(round(sum(hps) / len(hps)))
 
 # Which maps ship. Measured split (wow_forever_notes.md): a map present in
 # Classic Era 1.15.9 is SoD content, one absent is new to Forever. SoD-only
@@ -228,6 +299,11 @@ def main():
     by_enc = defaultdict(list)
     for p in pulls:
         by_enc[int(p["encounter_id"])].append(p)
+    health = cast_health([p["file"] for p in pulls if p.get("file")])
+    if health:
+        print("cast health read from %d pull(s) in %s" % (len(health), LOG_DIR))
+    else:
+        print("no raw logs at %s: no health triggers this run" % LOG_DIR)
 
     if not os.path.isdir(OUT_DIR):
         os.makedirs(OUT_DIR)
@@ -311,9 +387,14 @@ def main():
                         continue          # players and pets
                     # One record per (spell, caster): an add's Sunder Armor is
                     # not the boss's, and the Lua filters on source.
-                    a = abil.setdefault((sid, src), {"name": sname, "source": src, "casts": [], "pulls": set()})
+                    a = abil.setdefault((sid, src), {"name": sname, "source": src, "casts": [], "pulls": set(), "hp": {}})
                     a["casts"].append((round(t, 1), kind, pi))
                     a["pulls"].add(pi)
+                    # the caster's health at this cast, when the raw log is on disk
+                    blk = health.get((p["file"], int(p["encounter_id"]), round(p["length"], 1)), {})
+                    hp = blk.get((sid, src, round(t, 1)))
+                    if hp is not None and pi not in a["hp"]:
+                        a["hp"][pi] = (round(t, 1), hp)     # first cast of the pull
 
             # The boss is called what its NPC is called. An encounter whose
             # name is not an NPC (Infurnus) shows as the NPC that was picked
@@ -340,6 +421,13 @@ def main():
                     sid, lua_str(a["name"]), lua_str(a["source"]), len(a["pulls"])))
                 w("                  casts = { %s }," % ", ".join(
                     "{ %.1f, %s, %d }" % (t, lua_str(kind), pi + 1) for t, kind, pi in a["casts"]))
+                samples = [(pi, t, hp) for pi, (t, hp) in sorted(a["hp"].items())]
+                pct = health_trigger(samples)
+                if pct is not None:
+                    # Cast at the same health in every pull, at different times:
+                    # a HEALTH trigger. Not timed; drawn on the Health Bars anchor.
+                    w("                  health = { pct = %d, pulls = %d, samples = { %s } }," % (
+                        pct, len(samples), ", ".join("%.1f" % hp for _, _, hp in samples)))
                 lc, lsp, lsu, lcast = lanes(a["casts"])
                 w("                  lanes = { casts = { %s }, spread = { %s }, support = { %s }, cast = %.1f } }," % (
                     ", ".join("%.1f" % t for t in lc), ", ".join("%.1f" % s for s in lsp),

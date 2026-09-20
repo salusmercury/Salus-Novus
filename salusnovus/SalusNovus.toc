@@ -53,6 +53,7 @@ Bars.lua
 Queue.lua
 Preview.lua
 Messages.lua
+HealthBars.lua
 Reminders.lua
 Visualizer.lua
 Options.lua

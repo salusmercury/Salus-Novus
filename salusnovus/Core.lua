@@ -96,6 +96,12 @@ ns.defaults = {
         enabled = true, max = 3, hold = 2.5, spacing = 4, direction = "up",
         showIcon = true, size = 24, color = { r = 1, g = 0.82, b = 0 },
     },
+    -- Health Bars: the engaged boss's health with a marker per
+    -- health-triggered ability (cast at a health, not a time).
+    healthBars = {
+        enabled = true, width = 260, height = 16, showName = true, labelSize = 11,
+        color = { r = 0.25, g = 0.80, b = 0.30 },
+    },
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing

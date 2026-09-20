@@ -528,7 +528,8 @@ local function BuildPicker()
     picker = CreateFrame("Frame", "SalusNovusColorPicker", UIParent)
     picker:SetSize(W, H)
     picker:SetPoint("CENTER", 0, 60)
-    picker:SetFrameStrata("DIALOG")
+    picker:SetFrameStrata("FULLSCREEN_DIALOG")   -- above the options window (Alex: it opened behind)
+    picker:SetToplevel(true)
     picker:SetClampedToScreen(true)
     picker:EnableMouse(true)
     picker:SetMovable(true)
@@ -644,6 +645,7 @@ function T.OpenColorPicker(c, onChange, onCancel)
     p.hex:SetText(Hex(r0, g0, b0))
     p.onChange = onChange
     p:Show()
+    p:Raise()
     return true
 end
 T.ColorPicker = function() return BuildPicker() end
