@@ -1,0 +1,4879 @@
+{
+ "build": "1.60.1.69913",
+ "mapTypeCounts": {
+  "world": 16,
+  "dungeon": 38,
+  "battleground": 5,
+  "raid": 13,
+  "arena": 1
+ },
+ "instances": [
+  {
+   "mapID": 13,
+   "name": "Test Dungeon",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "test",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3078,
+     "name": "Rahuz",
+     "order": 0,
+     "faction": -1,
+     "npcID": 232216,
+     "displayIDs": [
+      123260
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 29,
+   "name": "CashTest",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "TEST_01",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 30,
+   "name": "Alterac Valley",
+   "type": "battleground",
+   "maxPlayers": 0,
+   "directory": "PVPZone01",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 51,
+   "level": [
+    0,
+    0
+   ],
+   "bosses": []
+  },
+  {
+   "mapID": 33,
+   "name": "Shadowfang Keep",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "Shadowfang",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 7,
+   "level": [
+    18,
+    18
+   ],
+   "bosses": [
+    {
+     "encounterID": 2748,
+     "name": "Rethilgore",
+     "order": 0,
+     "faction": -1,
+     "npcID": 3914,
+     "displayIDs": [
+      524
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2749,
+     "name": "Razorclaw the Butcher",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 3886,
+     "displayIDs": [
+      524
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2750,
+     "name": "Baron Silverlaine",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 3887,
+     "displayIDs": [
+      3222
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2751,
+     "name": "Commander Springvale",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 4278,
+     "displayIDs": [
+      3223
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2752,
+     "name": "Odo the Blindwatcher",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 4279,
+     "displayIDs": [
+      522
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2753,
+     "name": "Fenrus the Devourer",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 4274,
+     "displayIDs": [
+      2352
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2754,
+     "name": "Wolf Master Nandos",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 3927,
+     "displayIDs": [
+      11179
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2755,
+     "name": "Archmage Arugal",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 4275,
+     "displayIDs": [
+      2353
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 34,
+   "name": "Stormwind Stockade",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "StormwindJail",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 2756,
+     "name": "Targorr the Dread",
+     "order": 0,
+     "faction": -1,
+     "npcID": 1696,
+     "displayIDs": [
+      517
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2757,
+     "name": "Kam Deepfury",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 1666,
+     "displayIDs": [
+      825
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2758,
+     "name": "Hamhock",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 1717,
+     "displayIDs": [
+      3250
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2759,
+     "name": "Dextren Ward",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 1663,
+     "displayIDs": [
+      2149
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2760,
+     "name": "Bazil Thredd",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 1716,
+     "displayIDs": [
+      1621
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 36,
+   "name": "Deadmines",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "DeadminesInstance",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 5,
+   "level": [
+    16,
+    16
+   ],
+   "bosses": [
+    {
+     "encounterID": 2741,
+     "name": "Rhahk'Zor",
+     "order": 0,
+     "faction": -1,
+     "npcID": 644,
+     "displayIDs": [
+      14403
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2742,
+     "name": "Sneed",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 643,
+     "displayIDs": [
+      7125
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2743,
+     "name": "Gilnid",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 1763,
+     "displayIDs": [
+      7124
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2744,
+     "name": "Captain Greenskin",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 647,
+     "displayIDs": [
+      7113
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2745,
+     "name": "Mr. Smite",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 646,
+     "displayIDs": [
+      2026
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2746,
+     "name": "Cookie",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 645,
+     "displayIDs": [
+      1305
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2747,
+     "name": "Edwin VanCleef",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 639,
+     "displayIDs": [
+      2029
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 43,
+   "name": "Wailing Caverns",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "WailingCaverns",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 1,
+   "level": [
+    17,
+    17
+   ],
+   "bosses": [
+    {
+     "encounterID": 585,
+     "name": "Lady Anacondra",
+     "order": 0,
+     "faction": -1,
+     "npcID": 3671,
+     "displayIDs": [
+      4313
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 586,
+     "name": "Lord Cobrahn",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 3669,
+     "displayIDs": [
+      4213
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 587,
+     "name": "Kresh",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 3653,
+     "displayIDs": [
+      5126
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 588,
+     "name": "Lord Pythas",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 3670,
+     "displayIDs": [
+      4214
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 589,
+     "name": "Skum",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 3674,
+     "displayIDs": [
+      4203
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 590,
+     "name": "Lord Serpentis",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 3673,
+     "displayIDs": [
+      4215
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 591,
+     "name": "Verdan the Everliving",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 5775,
+     "displayIDs": [
+      4256
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 592,
+     "name": "Mutanus the Devourer",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 3654,
+     "displayIDs": [
+      4088
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 44,
+   "name": "<unused> Monastery",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "Monastery",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 47,
+   "name": "Razorfen Kraul",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "RazorfenKraulInstance",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 15,
+   "level": [
+    24,
+    24
+   ],
+   "bosses": [
+    {
+     "encounterID": 2773,
+     "name": "Roogug",
+     "order": 0,
+     "faction": -1,
+     "npcID": 6168,
+     "displayIDs": [
+      6110
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2774,
+     "name": "Aggem Thorncurse",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 4424,
+     "displayIDs": [
+      6097
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2775,
+     "name": "Death Speaker Jargba",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 4428,
+     "displayIDs": [
+      4644
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2776,
+     "name": "Overlord Ramtusk",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 4420,
+     "displayIDs": [
+      4652
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2777,
+     "name": "Agathelos the Raging",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 4422,
+     "displayIDs": [
+      2450
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2778,
+     "name": "Charlga Razorflank",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 4421,
+     "displayIDs": [
+      4642
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 48,
+   "name": "Blackfathom Deeps",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "Blackfathom",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 9,
+   "level": [
+    22,
+    22
+   ],
+   "bosses": [
+    {
+     "encounterID": 2916,
+     "name": "Ghamoo-ra",
+     "order": -6000,
+     "faction": -1,
+     "npcID": 201722,
+     "displayIDs": [
+      111481
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2915,
+     "name": "Lady Sarevess",
+     "order": -5000,
+     "faction": -1,
+     "npcID": 204068,
+     "displayIDs": [
+      112103
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2914,
+     "name": "Geilhast",
+     "order": -4000,
+     "faction": -1,
+     "npcID": 204921,
+     "displayIDs": [
+      5243
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2913,
+     "name": "Lorgus Jett",
+     "order": -3000,
+     "faction": -1,
+     "npcID": 207356,
+     "displayIDs": [
+      12822
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2912,
+     "name": "Old Serra'kis",
+     "order": -2000,
+     "faction": -1,
+     "npcID": 4830,
+     "displayIDs": [
+      1816
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2911,
+     "name": "Twilight Lord Kelris",
+     "order": -1000,
+     "faction": -1,
+     "npcID": 209678,
+     "displayIDs": [
+      4939
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2694,
+     "name": "Baron Aquanis",
+     "order": 0,
+     "faction": -1,
+     "npcID": 202699,
+     "displayIDs": [
+      110
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2761,
+     "name": "Ghamoo-ra",
+     "order": 0,
+     "faction": -1,
+     "npcID": 201722,
+     "displayIDs": [
+      111481
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2910,
+     "name": "Aku'mai",
+     "order": 0,
+     "faction": -1,
+     "npcID": 213334,
+     "displayIDs": [
+      116784
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2697,
+     "name": "Ghamoo-ra",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 201722,
+     "displayIDs": [
+      111481
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2762,
+     "name": "Lady Sarevess",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 204068,
+     "displayIDs": [
+      112103
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2699,
+     "name": "Lady Sarevess",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 204068,
+     "displayIDs": [
+      112103
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2763,
+     "name": "Geilhast",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 204921,
+     "displayIDs": [
+      5243
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2704,
+     "name": "Gelihast",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 204921,
+     "displayIDs": [
+      5243
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2764,
+     "name": "Lorgus Jett",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 207356,
+     "displayIDs": [
+      12822
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2710,
+     "name": "Lorgus Jett",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 207356,
+     "displayIDs": [
+      12822
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2765,
+     "name": "Old Serra'kis",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 4830,
+     "displayIDs": [
+      1816
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2766,
+     "name": "Twilight Lord Kelris",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 209678,
+     "displayIDs": [
+      4939
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2767,
+     "name": "Aku'mai",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 213334,
+     "displayIDs": [
+      116784
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2825,
+     "name": "Twilight Lord Kelris",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 209678,
+     "displayIDs": [
+      4939
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2891,
+     "name": "Aku'mai",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 213334,
+     "displayIDs": [
+      116784
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 70,
+   "name": "Uldaman",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "Uldaman",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 21,
+   "level": [
+    35,
+    35
+   ],
+   "bosses": [
+    {
+     "encounterID": 547,
+     "name": "Revelosh",
+     "order": 0,
+     "faction": -1,
+     "npcID": 6910,
+     "displayIDs": [
+      5945
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 548,
+     "name": "The Lost Dwarves",
+     "order": 1000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 549,
+     "name": "Ironaya",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 7228,
+     "displayIDs": [
+      6089
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1887,
+     "name": "Obsidian Sentinel",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 7023,
+     "displayIDs": [
+      5285
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 551,
+     "name": "Ancient Stone Keeper",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 7206,
+     "displayIDs": [
+      10798
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 552,
+     "name": "Galgann Firehammer",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 7291,
+     "displayIDs": [
+      6059
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 553,
+     "name": "Grimlok",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 4854,
+     "displayIDs": [
+      11165
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 554,
+     "name": "Archaedas",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 2748,
+     "displayIDs": [
+      5988
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 90,
+   "name": "Gnomeregan",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "GnomeragonInstance",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 13,
+   "level": [
+    25,
+    25
+   ],
+   "bosses": [
+    {
+     "encounterID": 2768,
+     "name": "Grubbis",
+     "order": 0,
+     "faction": -1,
+     "npcID": 7361,
+     "displayIDs": [
+      6533
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2769,
+     "name": "Viscous Fallout",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 7079,
+     "displayIDs": [
+      5497
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2770,
+     "name": "Electrocutioner 6000",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 6235,
+     "displayIDs": [
+      6915
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2771,
+     "name": "Crowd Pummeler 9-60",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 6229,
+     "displayIDs": [
+      6774
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2772,
+     "name": "Mekgineer Thermaplugg",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 7800,
+     "displayIDs": [
+      6980
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2925,
+     "name": "Grubbis",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 7361,
+     "displayIDs": [
+      6533
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2928,
+     "name": "Viscous Fallout",
+     "order": 4500,
+     "faction": -1,
+     "npcID": 7079,
+     "displayIDs": [
+      5497
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2899,
+     "name": "Crowd Pummeler 9-60",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 6229,
+     "displayIDs": [
+      6774
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2927,
+     "name": "Electrocutioner 6000",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 6235,
+     "displayIDs": [
+      6915
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2935,
+     "name": "Mechanical Menagerie",
+     "order": 7000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 2940,
+     "name": "Mekgineer Thermaplugg",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 7800,
+     "displayIDs": [
+      6980
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 109,
+   "name": "Sunken Temple",
+   "type": "dungeon",
+   "maxPlayers": 20,
+   "directory": "SunkenTemple",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 27,
+   "level": [
+    45,
+    45
+   ],
+   "bosses": [
+    {
+     "encounterID": 492,
+     "name": "Avatar of Hakkar",
+     "order": -500,
+     "faction": -1,
+     "npcID": 8443,
+     "displayIDs": [
+      8053
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2952,
+     "name": "Atal'alarion",
+     "order": 0,
+     "faction": -1,
+     "npcID": 8580,
+     "displayIDs": [
+      7873
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3582,
+     "name": "Atal'alarion",
+     "order": 0,
+     "faction": -1,
+     "npcID": 8580,
+     "displayIDs": [
+      7873
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 488,
+     "name": "Jammal'an the Prophet",
+     "order": 500,
+     "faction": -1,
+     "npcID": 5710,
+     "displayIDs": [
+      6708
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 486,
+     "name": "Dreamscythe",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 5721,
+     "displayIDs": [
+      7553
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2953,
+     "name": "Festering Rotslime",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 218819,
+     "displayIDs": [
+      119351
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3583,
+     "name": "Avatar of Hakkar",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 8443,
+     "displayIDs": [
+      8053
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 487,
+     "name": "Weaver",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 5720,
+     "displayIDs": [
+      6375
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2954,
+     "name": "Atal'ai Defenders",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 221732,
+     "displayIDs": [],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3584,
+     "name": "Shade of Eranikus",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 5709,
+     "displayIDs": [
+      7806
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2955,
+     "name": "Dreamscythe and Weaver",
+     "order": 3000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3585,
+     "name": "Hazzas",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 5722,
+     "displayIDs": [
+      9584
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2956,
+     "name": "Avatar of Hakkar",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 8443,
+     "displayIDs": [
+      8053
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3586,
+     "name": "Morphaz",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 5719,
+     "displayIDs": [
+      7975
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 490,
+     "name": "Morphaz",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 5719,
+     "displayIDs": [
+      7975
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2957,
+     "name": "Jammal'an and Ogom",
+     "order": 5000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3587,
+     "name": "Weaver",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 5720,
+     "displayIDs": [
+      6375
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 491,
+     "name": "Hazzas",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 5722,
+     "displayIDs": [
+      9584
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2958,
+     "name": "Morphaz and Hazzas",
+     "order": 6000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3588,
+     "name": "Dreamscythe",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 5721,
+     "displayIDs": [
+      7553
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2959,
+     "name": "Shade of Eranikus",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 5709,
+     "displayIDs": [
+      7806
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3589,
+     "name": "Jammal'an the Prophet",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 5710,
+     "displayIDs": [
+      6708
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 493,
+     "name": "Shade of Eranikus",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 5709,
+     "displayIDs": [
+      7806
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2814,
+     "name": "Atal'alarion",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 8580,
+     "displayIDs": [
+      7873
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 129,
+   "name": "Razorfen Downs",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "RazorfenDowns",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 19,
+   "level": [
+    34,
+    34
+   ],
+   "bosses": [
+    {
+     "encounterID": 2780,
+     "name": "Tuten'kash",
+     "order": 0,
+     "faction": -1,
+     "npcID": 7355,
+     "displayIDs": [
+      7845
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2781,
+     "name": "Plaguemaw the Rotting",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 7356,
+     "displayIDs": [
+      6124
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2782,
+     "name": "Mordresh Fire Eye",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 7357,
+     "displayIDs": [
+      8055
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2783,
+     "name": "Ragglesnout",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 7354,
+     "displayIDs": [
+      11382
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2784,
+     "name": "Glutton",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 8567,
+     "displayIDs": [
+      7864
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2785,
+     "name": "Amnennar the Coldbringer",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 7358,
+     "displayIDs": [
+      7971
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 169,
+   "name": "Emerald Dream",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "EmeraldDream",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 189,
+   "name": "Scarlet Monastery",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "MonasteryInstances",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 17,
+   "level": [
+    30,
+    30
+   ],
+   "bosses": [
+    {
+     "encounterID": 444,
+     "name": "Interrogator Vishas",
+     "order": 0,
+     "faction": -1,
+     "npcID": 3983,
+     "displayIDs": [
+      2044
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2779,
+     "name": "Bloodmage Thalnos",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 4543,
+     "displayIDs": [
+      11396
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 446,
+     "name": "Houndmaster Loksey",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 3974,
+     "displayIDs": [
+      2040
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 447,
+     "name": "Arcanist Doan",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 6487,
+     "displayIDs": [
+      5266
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 448,
+     "name": "Herod",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 3975,
+     "displayIDs": [
+      2041
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 449,
+     "name": "High Inquisitor Fairbanks",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 4542,
+     "displayIDs": [
+      2605
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 450,
+     "name": "High Inquisitor Whitemane",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 3977,
+     "displayIDs": [
+      2043
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 209,
+   "name": "Zul'Farrak",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "TanarisInstance",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 593,
+     "name": "Hydromancer Velratha",
+     "order": 0,
+     "faction": -1,
+     "npcID": 7795,
+     "displayIDs": [
+      6685
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 594,
+     "name": "Gahz'rilla",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 7273,
+     "displayIDs": [
+      7271
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 595,
+     "name": "Antu'sul",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 8127,
+     "displayIDs": [
+      7353
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 596,
+     "name": "Theka the Martyr",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 7272,
+     "displayIDs": [
+      6696
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 597,
+     "name": "Witch Doctor Zum'rah",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 7271,
+     "displayIDs": [
+      6434
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 598,
+     "name": "Nekrum Gutchewer",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 7796,
+     "displayIDs": [
+      6690
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 599,
+     "name": "Shadowpriest Sezz'ziz",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 7275,
+     "displayIDs": [
+      6441
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 600,
+     "name": "Chief Ukorz Sandscalp",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 7267,
+     "displayIDs": [
+      6439
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 229,
+   "name": "Blackrock Spire",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "BlackRockSpire",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 267,
+     "name": "Highlord Omokk",
+     "order": 0,
+     "faction": -1,
+     "npcID": 9196,
+     "displayIDs": [
+      11565
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 268,
+     "name": "Shadow Hunter Vosh'gajin",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 9236,
+     "displayIDs": [
+      9732
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 269,
+     "name": "War Master Voone",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 9237,
+     "displayIDs": [
+      9733
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 270,
+     "name": "Mother Smolderweb",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 10596,
+     "displayIDs": [
+      9929
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 271,
+     "name": "Urok Doomhowl",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 10584,
+     "displayIDs": [
+      11583
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 272,
+     "name": "Quartermaster Zigris",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 9736,
+     "displayIDs": [
+      9738
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 274,
+     "name": "Halycon",
+     "order": 5500,
+     "faction": -1,
+     "npcID": 10220,
+     "displayIDs": [
+      9567
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 273,
+     "name": "Gizrul the Slavener",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 10268,
+     "displayIDs": [
+      9564
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 275,
+     "name": "Overlord Wyrmthalak",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 9568,
+     "displayIDs": [
+      8711
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3062,
+     "name": "Pyroguard Emberseer",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 9816,
+     "displayIDs": [
+      2172
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3063,
+     "name": "Warchief Rend Blackhand",
+     "order": 10000,
+     "faction": -1,
+     "npcID": 10429,
+     "displayIDs": [
+      9778
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3068,
+     "name": "The Beast",
+     "order": 11000,
+     "faction": -1,
+     "npcID": 10430,
+     "displayIDs": [
+      10193
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3069,
+     "name": "General Drakkisath",
+     "order": 12000,
+     "faction": -1,
+     "npcID": 10363,
+     "displayIDs": [
+      10115
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3070,
+     "name": "Lord Valthalak",
+     "order": 13000,
+     "faction": -1,
+     "npcID": 16042,
+     "displayIDs": [
+      14308
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 230,
+   "name": "Blackrock Depths",
+   "type": "dungeon",
+   "maxPlayers": 5,
+   "directory": "BlackrockDepths",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 29,
+   "level": [
+    48,
+    48
+   ],
+   "bosses": [
+    {
+     "encounterID": 227,
+     "name": "High Interrogator Gerstahn",
+     "order": 0,
+     "faction": -1,
+     "npcID": 9018,
+     "displayIDs": [
+      8761
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 228,
+     "name": "Lord Roccor",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 9025,
+     "displayIDs": [
+      5781
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 229,
+     "name": "Houndmaster Grebmar",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 9319,
+     "displayIDs": [
+      9212
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 230,
+     "name": "Ring of Law",
+     "order": 3000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 231,
+     "name": "Pyromancer Loregrain",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 9024,
+     "displayIDs": [
+      8762
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 232,
+     "name": "Lord Incendius",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 9017,
+     "displayIDs": [
+      1204
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 233,
+     "name": "Warder Stilgiss",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 9041,
+     "displayIDs": [
+      9089
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 234,
+     "name": "Fineous Darkvire",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 9056,
+     "displayIDs": [
+      8704
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 235,
+     "name": "Bael'Gar",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 9016,
+     "displayIDs": [
+      12162
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 236,
+     "name": "General Angerforge",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 9033,
+     "displayIDs": [
+      8756
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 237,
+     "name": "Golem Lord Argelmach",
+     "order": 10000,
+     "faction": -1,
+     "npcID": 8983,
+     "displayIDs": [
+      8759
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 238,
+     "name": "Hurley Blackbreath",
+     "order": 11000,
+     "faction": -1,
+     "npcID": 9537,
+     "displayIDs": [
+      8658
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 239,
+     "name": "Phalanx",
+     "order": 12000,
+     "faction": -1,
+     "npcID": 9502,
+     "displayIDs": [
+      8177
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 240,
+     "name": "Ribbly Screwspigot",
+     "order": 13000,
+     "faction": -1,
+     "npcID": 9543,
+     "displayIDs": [
+      8667
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 241,
+     "name": "Plugger Spazzring",
+     "order": 14000,
+     "faction": -1,
+     "npcID": 9499,
+     "displayIDs": [
+      8652
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2791,
+     "name": "The Vault",
+     "order": 14500,
+     "faction": -1,
+     "npcID": 10120,
+     "displayIDs": [
+      5989
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 242,
+     "name": "Ambassador Flamelash",
+     "order": 15000,
+     "faction": -1,
+     "npcID": 9156,
+     "displayIDs": [
+      8329
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 243,
+     "name": "The Seven",
+     "order": 16000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 244,
+     "name": "Magmus",
+     "order": 17000,
+     "faction": -1,
+     "npcID": 9938,
+     "displayIDs": [
+      12162
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2789,
+     "name": "Princess Moira Bronzebeard",
+     "order": 18000,
+     "faction": -1,
+     "npcID": 8929,
+     "displayIDs": [
+      8705
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2790,
+     "name": "Emperor Dagran Thaurissan",
+     "order": 19000,
+     "faction": -1,
+     "npcID": 9019,
+     "displayIDs": [
+      8807
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 249,
+   "name": "Onyxia's Lair",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "OnyxiaLairInstance",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 1084,
+     "name": "Onyxia",
+     "order": 0,
+     "faction": -1,
+     "npcID": 10184,
+     "displayIDs": [
+      8570
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 269,
+   "name": "Caverns of Time",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "CavernsOfTime",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 289,
+   "name": "Scholomance",
+   "type": "dungeon",
+   "maxPlayers": 5,
+   "directory": "SchoolofNecromancy",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 2,
+   "level": [
+    57,
+    57
+   ],
+   "bosses": [
+    {
+     "encounterID": 2805,
+     "name": "Kirtonos",
+     "order": -1000,
+     "faction": -1,
+     "npcID": 10506,
+     "displayIDs": [
+      7534
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 2804,
+     "name": "Jandice Barov",
+     "order": -500,
+     "faction": -1,
+     "npcID": 10503,
+     "displayIDs": [
+      11073
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2811,
+     "name": "Rattlegore",
+     "order": -250,
+     "faction": -1,
+     "npcID": 11622,
+     "displayIDs": [
+      12073
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2809,
+     "name": "Marduk Blackpool",
+     "order": -125,
+     "faction": -1,
+     "npcID": 10433,
+     "displayIDs": [
+      10248
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2813,
+     "name": "Vectus",
+     "order": -62,
+     "faction": -1,
+     "npcID": 10432,
+     "displayIDs": [
+      2606
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3055,
+     "name": "Kormok",
+     "order": -46,
+     "faction": -1,
+     "npcID": 16118,
+     "displayIDs": [
+      16020
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2810,
+     "name": "Ras Frostwhisperer",
+     "order": -31,
+     "faction": -1,
+     "npcID": 10508,
+     "displayIDs": [
+      7919
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2803,
+     "name": "Instructor Malicia",
+     "order": -15,
+     "faction": -1,
+     "npcID": 10505,
+     "displayIDs": [
+      11069
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2802,
+     "name": "Doctor Theolen Krastinov",
+     "order": -7,
+     "faction": -1,
+     "npcID": 11261,
+     "displayIDs": [
+      10901
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2808,
+     "name": "Lorekeeper Polkelt",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 10901,
+     "displayIDs": [
+      11492
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2812,
+     "name": "The Ravenian",
+     "order": 11000,
+     "faction": -1,
+     "npcID": 10507,
+     "displayIDs": [
+      10433
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2807,
+     "name": "Lord Alexei Barov",
+     "order": 11250,
+     "faction": -1,
+     "npcID": 10504,
+     "displayIDs": [
+      11072
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2806,
+     "name": "Lady Illucia Barov",
+     "order": 11500,
+     "faction": -1,
+     "npcID": 10502,
+     "displayIDs": [
+      11835
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2801,
+     "name": "Darkmaster Gandling",
+     "order": 12000,
+     "faction": -1,
+     "npcID": 1853,
+     "displayIDs": [
+      11070
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 309,
+   "name": "Zul'Gurub",
+   "type": "raid",
+   "maxPlayers": 20,
+   "directory": "Zul'gurub",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 41,
+   "level": [
+    60,
+    60
+   ],
+   "bosses": [
+    {
+     "encounterID": 785,
+     "name": "High Priestess Jeklik",
+     "order": -1000,
+     "faction": -1,
+     "npcID": 14517,
+     "displayIDs": [
+      15219
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 784,
+     "name": "High Priest Venoxis",
+     "order": 0,
+     "faction": -1,
+     "npcID": 14507,
+     "displayIDs": [
+      15217
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 786,
+     "name": "High Priestess Mar'li",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 14510,
+     "displayIDs": [
+      15220
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 787,
+     "name": "Bloodlord Mandokir",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 11382,
+     "displayIDs": [
+      11288
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 788,
+     "name": "Edge of Madness",
+     "order": 4000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 789,
+     "name": "High Priest Thekal",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 14509,
+     "displayIDs": [
+      15216
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 790,
+     "name": "Gahz'ranka",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 15114,
+     "displayIDs": [
+      15288
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 791,
+     "name": "High Priestess Arlokk",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 14515,
+     "displayIDs": [
+      15218
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 792,
+     "name": "Jin'do the Hexxer",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 11380,
+     "displayIDs": [
+      11311
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 793,
+     "name": "Hakkar",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 14834,
+     "displayIDs": [
+      15295
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 329,
+   "name": "Stratholme",
+   "type": "dungeon",
+   "maxPlayers": 5,
+   "directory": "Stratholme",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 39,
+   "level": [
+    55,
+    55
+   ],
+   "bosses": [
+    {
+     "encounterID": 473,
+     "name": "Hearthsinger Forresten",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 10558,
+     "displayIDs": [
+      10482
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 474,
+     "name": "Timmy the Cruel",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 10808,
+     "displayIDs": [
+      571
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 476,
+     "name": "Malor the Zealous",
+     "order": 2500,
+     "faction": -1,
+     "npcID": 11032,
+     "displayIDs": [
+      10458
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 475,
+     "name": "Cannon Master Willey",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 10997,
+     "displayIDs": [
+      10674
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 477,
+     "name": "Archivist Galford",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 10811,
+     "displayIDs": [
+      10544
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 478,
+     "name": "Balnazzar",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 10813,
+     "displayIDs": [
+      10691
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 472,
+     "name": "The Unforgiven",
+     "order": 6500,
+     "faction": -1,
+     "npcID": 10516,
+     "displayIDs": [
+      10771
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 479,
+     "name": "Baroness Anastari",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 10436,
+     "displayIDs": [
+      10698
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 480,
+     "name": "Nerub'enkan",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 10437,
+     "displayIDs": [
+      9793
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 481,
+     "name": "Maleki the Pallid",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 10438,
+     "displayIDs": [
+      10546
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 482,
+     "name": "Magistrate Barthilas",
+     "order": 10000,
+     "faction": -1,
+     "npcID": 10435,
+     "displayIDs": [
+      10433
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 483,
+     "name": "Ramstein the Gorger",
+     "order": 11000,
+     "faction": -1,
+     "npcID": 10439,
+     "displayIDs": [
+      12818
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 484,
+     "name": "Baron Rivendare",
+     "order": 12000,
+     "faction": -1,
+     "npcID": 10440,
+     "displayIDs": [
+      10729
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2795,
+     "name": "Black Guard Swordsmith",
+     "order": 13000,
+     "faction": -1,
+     "npcID": 11121,
+     "displayIDs": [
+      775
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2796,
+     "name": "Crimson Hammersmith",
+     "order": 14000,
+     "faction": -1,
+     "npcID": 11120,
+     "displayIDs": [
+      10637
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2797,
+     "name": "Ezra Grimm",
+     "order": 15000,
+     "faction": -1,
+     "npcID": 11058,
+     "displayIDs": [
+      10475
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2798,
+     "name": "Postmaster Malown",
+     "order": 16000,
+     "faction": -1,
+     "npcID": 11143,
+     "displayIDs": [
+      10669
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2799,
+     "name": "Skul",
+     "order": 17000,
+     "faction": -1,
+     "npcID": 10393,
+     "displayIDs": [
+      2606
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2800,
+     "name": "Stonespine",
+     "order": 18000,
+     "faction": -1,
+     "npcID": 10809,
+     "displayIDs": [
+      7856
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 349,
+   "name": "Maraudon",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "Mauradon",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 25,
+   "level": [
+    42,
+    42
+   ],
+   "bosses": [
+    {
+     "encounterID": 422,
+     "name": "Noxxion",
+     "order": 0,
+     "faction": -1,
+     "npcID": 13282,
+     "displayIDs": [
+      11172
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 423,
+     "name": "Razorlash",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 12258,
+     "displayIDs": [
+      12389
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 427,
+     "name": "Tinkerer Gizlock",
+     "order": 1500,
+     "faction": -1,
+     "npcID": 13601,
+     "displayIDs": [
+      7125
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 424,
+     "name": "Lord Vyletongue",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 12236,
+     "displayIDs": [
+      12334
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 425,
+     "name": "Celebras the Cursed",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 12225,
+     "displayIDs": [
+      12350
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 426,
+     "name": "Landslide",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 12203,
+     "displayIDs": [
+      12293
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 428,
+     "name": "Rotgrip",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 13596,
+     "displayIDs": [
+      13589
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 429,
+     "name": "Princess Theradras",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 12201,
+     "displayIDs": [
+      12292
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 389,
+   "name": "Ragefire Chasm",
+   "type": "dungeon",
+   "maxPlayers": 10,
+   "directory": "OrgrimmarInstance",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 3,
+   "level": [
+    13,
+    13
+   ],
+   "bosses": [
+    {
+     "encounterID": 2732,
+     "name": "Oggleflint",
+     "order": 0,
+     "faction": -1,
+     "npcID": 11517,
+     "displayIDs": [
+      11611
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2733,
+     "name": "Taragaman the Hungerer",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 11520,
+     "displayIDs": [
+      7970
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2734,
+     "name": "Jergosh the Invoker",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 11518,
+     "displayIDs": [
+      11429
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2735,
+     "name": "Bazzalan",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 11519,
+     "displayIDs": [
+      2007
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 409,
+   "name": "Molten Core",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "MoltenCore",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 47,
+   "level": [
+    60,
+    60
+   ],
+   "bosses": [
+    {
+     "encounterID": 663,
+     "name": "Lucifron",
+     "order": 0,
+     "faction": -1,
+     "npcID": 12118,
+     "displayIDs": [
+      13031
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 664,
+     "name": "Magmadar",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 11982,
+     "displayIDs": [
+      10193
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 665,
+     "name": "Gehennas",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 12259,
+     "displayIDs": [
+      13030
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 666,
+     "name": "Garr",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 12057,
+     "displayIDs": [
+      12110
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 667,
+     "name": "Shazzrah",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 12264,
+     "displayIDs": [
+      13032
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 668,
+     "name": "Baron Geddon",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 12056,
+     "displayIDs": [
+      12129
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 669,
+     "name": "Sulfuron Harbinger",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 12098,
+     "displayIDs": [
+      13030
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 670,
+     "name": "Golemagg the Incinerator",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 11988,
+     "displayIDs": [
+      11986
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 671,
+     "name": "Majordomo Executus",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 12018,
+     "displayIDs": [
+      12029
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 672,
+     "name": "Ragnaros",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 11502,
+     "displayIDs": [
+      11121
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3018,
+     "name": "The Molten Core",
+     "order": 10000,
+     "faction": -1,
+     "npcID": 227939,
+     "displayIDs": [
+      121349
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 429,
+   "name": "Dire Maul",
+   "type": "dungeon",
+   "maxPlayers": 5,
+   "directory": "DireMaul",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 343,
+     "name": "Zevrim Thornhoof",
+     "order": 0,
+     "faction": -1,
+     "npcID": 11490,
+     "displayIDs": [
+      11335
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 344,
+     "name": "Hydrospawn",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 13280,
+     "displayIDs": [
+      5489
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 345,
+     "name": "Lethtendris",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 14327,
+     "displayIDs": [
+      14378
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2792,
+     "name": "Pusillin",
+     "order": 2500,
+     "faction": -1,
+     "npcID": 14354,
+     "displayIDs": [
+      7552
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 346,
+     "name": "Alzzin the Wildshaper",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 11492,
+     "displayIDs": [
+      14416
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 350,
+     "name": "Tendris Warpwood",
+     "order": 3500,
+     "faction": -1,
+     "npcID": 11489,
+     "displayIDs": [
+      14383
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 347,
+     "name": "Illyanna Ravenoak",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 11488,
+     "displayIDs": [
+      11270
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 348,
+     "name": "Magister Kalendris",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 11487,
+     "displayIDs": [
+      14384
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 349,
+     "name": "Immol'thar",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 11496,
+     "displayIDs": [
+      14173
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 361,
+     "name": "Prince Tortheldrin",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 11486,
+     "displayIDs": [
+      11256
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 362,
+     "name": "Guard Mol'dar",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 14326,
+     "displayIDs": [
+      11561
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 363,
+     "name": "Stomper Kreeg",
+     "order": 9000,
+     "faction": -1,
+     "npcID": 14322,
+     "displayIDs": [
+      11545
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 364,
+     "name": "Guard Fengus",
+     "order": 10000,
+     "faction": -1,
+     "npcID": 14321,
+     "displayIDs": [
+      11561
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 365,
+     "name": "Guard Slip'kik",
+     "order": 11000,
+     "faction": -1,
+     "npcID": 14323,
+     "displayIDs": [
+      11561
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 366,
+     "name": "Captain Kromcrush",
+     "order": 12000,
+     "faction": -1,
+     "npcID": 14325,
+     "displayIDs": [
+      11564
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 367,
+     "name": "Cho'Rush the Observer",
+     "order": 13000,
+     "faction": -1,
+     "npcID": 14324,
+     "displayIDs": [
+      11537
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 368,
+     "name": "King Gordok",
+     "order": 14000,
+     "faction": -1,
+     "npcID": 11501,
+     "displayIDs": [
+      11583
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2793,
+     "name": "Lord Hel'nurath",
+     "order": 15000,
+     "faction": -1,
+     "npcID": 14506,
+     "displayIDs": [
+      14556
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 2794,
+     "name": "Tsu'zee",
+     "order": 16000,
+     "faction": -1,
+     "npcID": 11467,
+     "displayIDs": [
+      11250
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 469,
+   "name": "Blackwing Lair",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "BlackwingLair",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 49,
+   "level": [
+    60,
+    60
+   ],
+   "bosses": [
+    {
+     "encounterID": 610,
+     "name": "Razorgore the Untamed",
+     "order": 0,
+     "faction": -1,
+     "npcID": 12435,
+     "displayIDs": [
+      10115
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 611,
+     "name": "Vaelastrasz the Corrupt",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 13020,
+     "displayIDs": [
+      13992
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 612,
+     "name": "Broodlord Lashlayer",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 12017,
+     "displayIDs": [
+      14308
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 613,
+     "name": "Firemaw",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 11983,
+     "displayIDs": [
+      6377
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 614,
+     "name": "Ebonroc",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 14601,
+     "displayIDs": [
+      6377
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 615,
+     "name": "Flamegor",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 11981,
+     "displayIDs": [
+      6377
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 616,
+     "name": "Chromaggus",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 14020,
+     "displayIDs": [
+      14367
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 617,
+     "name": "Nefarian",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 11583,
+     "displayIDs": [
+      11380
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 489,
+   "name": "Warsong Gulch",
+   "type": "battleground",
+   "maxPlayers": 0,
+   "directory": "PVPZone03",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 53,
+   "level": [
+    0,
+    0
+   ],
+   "bosses": []
+  },
+  {
+   "mapID": 509,
+   "name": "Ruins of Ahn'Qiraj",
+   "type": "raid",
+   "maxPlayers": 20,
+   "directory": "AhnQiraj",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 718,
+     "name": "Kurinnaxx",
+     "order": 0,
+     "faction": -1,
+     "npcID": 15348,
+     "displayIDs": [
+      15742
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 719,
+     "name": "General Rajaxx",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 15341,
+     "displayIDs": [
+      15376
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 720,
+     "name": "Moam",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 15340,
+     "displayIDs": [
+      15392
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 721,
+     "name": "Buru the Gorger",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 15370,
+     "displayIDs": [
+      15654
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 722,
+     "name": "Ayamiss the Hunter",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 15369,
+     "displayIDs": [
+      15431
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 723,
+     "name": "Ossirian the Unscarred",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 15339,
+     "displayIDs": [
+      15432
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 529,
+   "name": "Arathi Basin",
+   "type": "battleground",
+   "maxPlayers": 0,
+   "directory": "PVPZone04",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 55,
+   "level": [
+    0,
+    0
+   ],
+   "bosses": []
+  },
+  {
+   "mapID": 531,
+   "name": "Ahn'Qiraj Temple",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "AhnQirajTemple",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 709,
+     "name": "The Prophet Skeram",
+     "order": 0,
+     "faction": -1,
+     "npcID": 15263,
+     "displayIDs": [
+      15345
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 710,
+     "name": "Silithid Royalty",
+     "order": 1000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 711,
+     "name": "Battleguard Sartura",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 15516,
+     "displayIDs": [
+      15583
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 712,
+     "name": "Fankriss the Unyielding",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 15510,
+     "displayIDs": [
+      125331
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 713,
+     "name": "Viscidus",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 15299,
+     "displayIDs": [
+      15686
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 714,
+     "name": "Princess Huhuran",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 15509,
+     "displayIDs": [
+      15739
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 715,
+     "name": "Twin Emperors",
+     "order": 6000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 716,
+     "name": "Ouro",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 15517,
+     "displayIDs": [
+      15509
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 717,
+     "name": "C'thun",
+     "order": 8000,
+     "faction": -1,
+     "npcID": 15727,
+     "displayIDs": [
+      15787
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 533,
+   "name": "Naxxramas",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "Stratholme Raid",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 1107,
+     "name": "Anub'Rekhan",
+     "order": 0,
+     "faction": -1,
+     "npcID": 15956,
+     "displayIDs": [
+      15931
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1110,
+     "name": "Grand Widow Faerlina",
+     "order": 250,
+     "faction": -1,
+     "npcID": 15953,
+     "displayIDs": [
+      15940
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1116,
+     "name": "Maexxna",
+     "order": 312,
+     "faction": -1,
+     "npcID": 15952,
+     "displayIDs": [
+      15928
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1117,
+     "name": "Noth the Plaguebringer",
+     "order": 343,
+     "faction": -1,
+     "npcID": 15954,
+     "displayIDs": [
+      16590
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1112,
+     "name": "Heigan the Unclean",
+     "order": 375,
+     "faction": -1,
+     "npcID": 15936,
+     "displayIDs": [
+      16309
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1115,
+     "name": "Loatheb",
+     "order": 406,
+     "faction": -1,
+     "npcID": 16011,
+     "displayIDs": [
+      16110
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1113,
+     "name": "Instructor Razuvious",
+     "order": 437,
+     "faction": -1,
+     "npcID": 16061,
+     "displayIDs": [
+      16582
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1109,
+     "name": "Gothik the Harvester",
+     "order": 500,
+     "faction": -1,
+     "npcID": 16060,
+     "displayIDs": [
+      16279
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1121,
+     "name": "The Four Horsemen",
+     "order": 562,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 1118,
+     "name": "Patchwerk",
+     "order": 625,
+     "faction": -1,
+     "npcID": 16028,
+     "displayIDs": [
+      16174
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1111,
+     "name": "Grobbulus",
+     "order": 750,
+     "faction": -1,
+     "npcID": 15931,
+     "displayIDs": [
+      16035
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1108,
+     "name": "Gluth",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 15932,
+     "displayIDs": [
+      16064
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1120,
+     "name": "Thaddius",
+     "order": 1250,
+     "faction": -1,
+     "npcID": 15928,
+     "displayIDs": [
+      16137
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1119,
+     "name": "Sapphiron",
+     "order": 1500,
+     "faction": -1,
+     "npcID": 15989,
+     "displayIDs": [
+      16033
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 1114,
+     "name": "Kel'Thuzad",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 15990,
+     "displayIDs": [
+      15945
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 2720,
+   "name": "The Searing Basin",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2720",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3025,
+     "name": "Testwerk",
+     "order": 0,
+     "faction": -1,
+     "npcID": 227866,
+     "displayIDs": [
+      16188
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 2784,
+   "name": "Demon Fall Canyon",
+   "type": "dungeon",
+   "maxPlayers": 5,
+   "directory": "2784",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3023,
+     "name": "Grimroot",
+     "order": 0,
+     "faction": -1,
+     "npcID": 226923,
+     "displayIDs": [
+      121733
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3028,
+     "name": "Destructor's Wraith",
+     "order": 500,
+     "faction": -1,
+     "npcID": 228022,
+     "displayIDs": [
+      121410
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3029,
+     "name": "Zilbagob",
+     "order": 750,
+     "faction": -1,
+     "npcID": 229733,
+     "displayIDs": [
+      121883
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3030,
+     "name": "Pyranis",
+     "order": 875,
+     "faction": -1,
+     "npcID": 227140,
+     "displayIDs": [
+      121845
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3024,
+     "name": "Diathorus the Seeker",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 6072,
+     "displayIDs": [
+      348
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3031,
+     "name": "Hellscream's Phantom",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 227028,
+     "displayIDs": [
+      121966
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3080,
+     "name": "Azgaloth",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 232632,
+     "displayIDs": [
+      124018
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2789,
+   "name": "The Tainted Scar",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "2789",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3026,
+     "name": "Lord Kazzak",
+     "order": 0,
+     "faction": -1,
+     "npcID": 12397,
+     "displayIDs": [
+      12449
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2791,
+   "name": "Storm Cliffs",
+   "type": "raid",
+   "maxPlayers": 40,
+   "directory": "2791",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3027,
+     "name": "Azuregos",
+     "order": 0,
+     "faction": -1,
+     "npcID": 6109,
+     "displayIDs": [
+      11460
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 2804,
+   "name": "The Crystal Vale",
+   "type": "raid",
+   "maxPlayers": 0,
+   "directory": "2804",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3079,
+     "name": "Prince Thunderaan",
+     "order": 0,
+     "faction": -1,
+     "npcID": 14435,
+     "displayIDs": [
+      14992
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2806,
+   "name": "Shadow Hold",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2806",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2807,
+   "name": "Burning of Andorhal",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2807",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2817,
+   "name": "Starfall Barrow Den",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2817",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2832,
+   "name": "Nightmare Grove",
+   "type": "raid",
+   "maxPlayers": 0,
+   "directory": "2832",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3111,
+     "name": "Emeriss",
+     "order": 0,
+     "faction": -1,
+     "npcID": 14889,
+     "displayIDs": [
+      15366
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3112,
+     "name": "Lethon",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 14888,
+     "displayIDs": [
+      15365
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3113,
+     "name": "Taerar",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 14890,
+     "displayIDs": [
+      15363
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3114,
+     "name": "Ysondre",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 14887,
+     "displayIDs": [
+      15364
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2853,
+   "name": "Deadwind Pass",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2853",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2856,
+   "name": "Scarlet Enclave",
+   "type": "raid",
+   "maxPlayers": 0,
+   "directory": "2856",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3185,
+     "name": "Balnazzar",
+     "order": 0,
+     "faction": -1,
+     "npcID": 10813,
+     "displayIDs": [
+      10691
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3187,
+     "name": "Beatrix",
+     "order": 500,
+     "faction": -1,
+     "npcID": 242563,
+     "displayIDs": [
+      127686
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3196,
+     "name": "Beastmaster",
+     "order": 875,
+     "faction": -1,
+     "npcID": 699,
+     "displayIDs": [
+      4576
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3186,
+     "name": "Solistrasza",
+     "order": 906,
+     "faction": -1,
+     "npcID": 238954,
+     "displayIDs": [
+      126697
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3197,
+     "name": "Mason",
+     "order": 937,
+     "faction": -1,
+     "npcID": 241021,
+     "displayIDs": [
+      127818
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3188,
+     "name": "Reborn Council",
+     "order": 2000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3190,
+     "name": "Lillian Voss",
+     "order": 2500,
+     "faction": -1,
+     "npcID": 243021,
+     "displayIDs": [
+      128659
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3189,
+     "name": "Caldoran",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 241006,
+     "displayIDs": [
+      126218
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2875,
+   "name": "Karazhan Crypts",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2875",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3141,
+     "name": "Harbinger of Sin",
+     "order": 0,
+     "faction": -1,
+     "npcID": 237964,
+     "displayIDs": [
+      126313
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3146,
+     "name": "Creeping Malison",
+     "order": 250,
+     "faction": -1,
+     "npcID": 238024,
+     "displayIDs": [
+      126401
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3144,
+     "name": "Three Little Wolves",
+     "order": 500,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3145,
+     "name": "Dark Rider",
+     "order": 750,
+     "faction": -1,
+     "npcID": 238055,
+     "displayIDs": [
+      126912
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3143,
+     "name": "Kharon",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 237439,
+     "displayIDs": [
+      126124
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3152,
+     "name": "Unk'omon",
+     "order": 2000,
+     "faction": -1,
+     "npcID": 238678,
+     "displayIDs": [
+      126627
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3168,
+     "name": "Hans and Greta",
+     "order": 3000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3169,
+     "name": "The Ugly Goblin",
+     "order": 4000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3170,
+     "name": "Kaigy Maryla",
+     "order": 5000,
+     "faction": -1,
+     "npcID": 238233,
+     "displayIDs": [
+      11152
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3171,
+     "name": "Sairuh Maryla",
+     "order": 6000,
+     "faction": -1,
+     "npcID": 238213,
+     "displayIDs": [
+      126430
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3172,
+     "name": "Barian Maryla",
+     "order": 7000,
+     "faction": -1,
+     "npcID": 238234,
+     "displayIDs": [
+      126561
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 2902,
+   "name": "The Scarab Dais",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2902",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2921,
+   "name": "Naxxramas",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2921",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3296,
+     "name": "Spirit of Mograine",
+     "order": 0,
+     "faction": -1,
+     "npcID": 241940,
+     "displayIDs": [
+      16326
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    }
+   ]
+  },
+  {
+   "mapID": 2959,
+   "name": "City of Dalaran",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2959",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 3271,
+   "level": [
+    28,
+    28
+   ],
+   "bosses": [
+    {
+     "encounterID": 3298,
+     "name": "Arcane Anomaly",
+     "order": 0,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3299,
+     "name": "Fel Ancient",
+     "order": 1000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3300,
+     "name": "Mana Devourer",
+     "order": 2000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3301,
+     "name": "Mana Elemental",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 240352,
+     "displayIDs": [
+      14253
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3302,
+     "name": "Unstable Sentinel",
+     "order": 4000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3303,
+     "name": "Shade of the Archmage",
+     "order": 5000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3310,
+     "name": "Lyn the Ignored",
+     "order": 6000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3311,
+     "name": "Atrexis the Grave Knight",
+     "order": 7000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3312,
+     "name": "Mana Wraith",
+     "order": 8000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    }
+   ]
+  },
+  {
+   "mapID": 2995,
+   "name": "Hyjal Crater",
+   "type": "arena",
+   "maxPlayers": 0,
+   "directory": "2995",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2997,
+   "name": "Darkspear Islands",
+   "type": "battleground",
+   "maxPlayers": 0,
+   "directory": "2997",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 2998,
+   "name": "Excavation Site: Wetlands",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2998",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 3274,
+   "level": [
+    26,
+    26
+   ],
+   "bosses": [
+    {
+     "encounterID": 3480,
+     "name": "Saltspine",
+     "order": 0,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3481,
+     "name": "Shadetooth",
+     "order": 1000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3644,
+     "name": "Highland Horror",
+     "order": 1500,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3482,
+     "name": "Relic Guardian",
+     "order": 2000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    }
+   ]
+  },
+  {
+   "mapID": 2999,
+   "name": "Ruins of Lordaeron",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "2999",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 3272,
+   "level": [
+    15,
+    15
+   ],
+   "bosses": [
+    {
+     "encounterID": 3353,
+     "name": "Witherfang",
+     "order": 0,
+     "faction": -1,
+     "npcID": 250483,
+     "displayIDs": [
+      144189
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3357,
+     "name": "The Abandoned",
+     "order": 250,
+     "faction": -1,
+     "npcID": 250631,
+     "displayIDs": [
+      138667
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3355,
+     "name": "The Butcher",
+     "order": 500,
+     "faction": -1,
+     "npcID": 3886,
+     "displayIDs": [
+      524
+     ],
+     "idSource": "wowhead-classic",
+     "idStatus": "ambiguous"
+    },
+    {
+     "encounterID": 3354,
+     "name": "Rath'mael",
+     "order": 1000,
+     "faction": -1,
+     "npcID": 250657,
+     "displayIDs": [
+      144175
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3408,
+     "name": "Lordaeron Captain",
+     "order": 2000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3411,
+     "name": "Viktor the Vile",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 256035,
+     "displayIDs": [
+      139455
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3412,
+     "name": "Bjork",
+     "order": 4000,
+     "faction": -1,
+     "npcID": 256097,
+     "displayIDs": [
+      144170
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 3002,
+   "name": "Half-Pint Tavern",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "3002",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": [
+    {
+     "encounterID": 3369,
+     "name": "Deathulus",
+     "order": 0,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3371,
+     "name": "Crushfist Bloodbreaker",
+     "order": 1000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    }
+   ]
+  },
+  {
+   "mapID": 3005,
+   "name": "Battle for Gilneas",
+   "type": "battleground",
+   "maxPlayers": 0,
+   "directory": "3005",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  },
+  {
+   "mapID": 3065,
+   "name": "The Hall of Thanes",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "3065",
+   "expansion": 0,
+   "lfgMatched": true,
+   "lfgID": 3273,
+   "level": [
+    13,
+    13
+   ],
+   "bosses": [
+    {
+     "encounterID": 3493,
+     "name": "Faldrim Anvilmar",
+     "order": 0,
+     "faction": -1,
+     "npcID": 261306,
+     "displayIDs": [
+      142826
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3495,
+     "name": "Infurnus",
+     "order": 2000,
+     "faction": -1,
+     "npcID": null,
+     "displayIDs": null,
+     "idSource": null,
+     "idStatus": "notfound"
+    },
+    {
+     "encounterID": 3494,
+     "name": "Plunder",
+     "order": 2500,
+     "faction": -1,
+     "npcID": 261311,
+     "displayIDs": [
+      142840
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    },
+    {
+     "encounterID": 3496,
+     "name": "Durgen Dirgehammer",
+     "order": 3000,
+     "faction": -1,
+     "npcID": 261319,
+     "displayIDs": [
+      142837
+     ],
+     "idSource": "creaturecache",
+     "idStatus": "ok"
+    }
+   ]
+  },
+  {
+   "mapID": 3109,
+   "name": "Manor Mistmantle",
+   "type": "dungeon",
+   "maxPlayers": 0,
+   "directory": "3109",
+   "expansion": 0,
+   "lfgMatched": false,
+   "lfgID": null,
+   "level": null,
+   "bosses": []
+  }
+ ],
+ "encountersOnNoMap": [
+  "No Longer in Use"
+ ],
+ "lfgRowsWithNoMap": [
+  "Stormwind Stockades",
+  "Zul'Farak",
+  "Lower Blackrock Spire",
+  "Dire Maul - East",
+  "Dire Maul - West",
+  "Dire Maul - North",
+  "Upper Blackrock Spire",
+  "Onyxia",
+  "Elwynn Forest",
+  "Westfall",
+  "Duskwood",
+  "Dun Morogh",
+  "Loch Modan",
+  "Wetlands",
+  "Stranglethorn Vale",
+  "Blasted Lands",
+  "Swamp of Sorrows",
+  "Redridge Mountains",
+  "Burning Steppes",
+  "Searing Gorge",
+  "Badlands",
+  "Arathi Highlands",
+  "Hillsbrad Foothills",
+  "Hinterlands",
+  "Western Plaguelands",
+  "Eastern Plaguelands",
+  "Tirisfal Glades",
+  "Silverpine Forest",
+  "Alterac Mountains",
+  "Durotar",
+  "Mulgore",
+  "The Barrens",
+  "Stonetalon Mountains",
+  "Thousand Needles",
+  "Desolace",
+  "Feralas",
+  "Dustwallow Marsh",
+  "Tanaris",
+  "Un'goro Crater",
+  "Silithus",
+  "Teldrassil",
+  "Darkshore",
+  "Ashenvale Forest",
+  "Felwood",
+  "Azshara",
+  "Winterspring"
+ ]
+}

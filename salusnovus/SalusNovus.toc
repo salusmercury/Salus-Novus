@@ -1,0 +1,58 @@
+## Interface: 16001
+## Title: Salus Novus
+## Notes: Boss visualizer, bars and reminders for WoW Forever, built from our own combat logs. /sn
+## Version: 0.3.0
+## Author: Alex
+## SavedVariables: SalusNovusDB
+
+Core.lua
+Fonts.lua
+Theme.lua
+Data\HallOfThanes.lua
+Data\RagefireChasm.lua
+Data\RuinsOfLordaeron.lua
+Data\Deadmines.lua
+Data\WailingCaverns.lua
+Data\ShadowfangKeep.lua
+Data\ExcavationSiteWetlands.lua
+Data\BlackfathomDeeps.lua
+Data\StormwindStockade.lua
+Data\CityOfDalaran.lua
+Data\RazorfenKraul.lua
+Data\Gnomeregan.lua
+Data\ScarletMonastery.lua
+Data\DrownedCity.lua
+Data\RazorfenDowns.lua
+Data\KroldokStronghold.lua
+Data\Uldaman.lua
+Data\ZulFarrak.lua
+Data\AlcazPrison.lua
+Data\Maraudon.lua
+Data\SunkenTemple.lua
+Data\BlackrockDepths.lua
+Data\BlackmawHold.lua
+Data\DireMaulEast.lua
+Data\BlackrockSpire.lua
+Data\DireMaulWest.lua
+Data\Scholomance.lua
+Data\ShapersTerrace.lua
+Data\DireMaulNorth.lua
+Data\Stratholme.lua
+Data\BlackwingLair.lua
+Data\MoltenCore.lua
+Data\ZulGurub.lua
+Data\AhnQirajTemple.lua
+Data\Naxxramas.lua
+Data\OnyxiasLair.lua
+Data\RuinsOfAhnQiraj.lua
+Data\Reminders.lua
+Schedule.lua
+Timers.lua
+Abilities.lua
+Bars.lua
+Queue.lua
+Preview.lua
+Messages.lua
+Reminders.lua
+Visualizer.lua
+Options.lua

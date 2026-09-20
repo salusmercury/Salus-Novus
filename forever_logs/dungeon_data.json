@@ -1,0 +1,2285 @@
+{
+ "3065": {
+  "name": "The Hall of Thanes",
+  "instance_id": 3065,
+  "keystone_runs": 0,
+  "mobs": {
+   "263389": {
+    "name": "Enraged Apparition",
+    "level": 13,
+    "max_hp": 1035,
+    "deaths": 9,
+    "events": 122,
+    "map": 0,
+    "positions": [
+     [
+      3.37,
+      72.54,
+      0
+     ],
+     [
+      52.42,
+      75.25,
+      0
+     ],
+     [
+      79.03,
+      69.81,
+      0
+     ],
+     [
+      88.55,
+      30.12,
+      0
+     ],
+     [
+      65.92,
+      26.65,
+      0
+     ],
+     [
+      43.22,
+      30.87,
+      0
+     ],
+     [
+      23.89,
+      -14.96,
+      0
+     ],
+     [
+      46.03,
+      -24.81,
+      0
+     ],
+     [
+      46.1,
+      -25.86,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 106,
+      "damage_total": 3160,
+      "damage_max": 41
+     },
+     "11971": {
+      "name": "Sunder Armor",
+      "school": "0x1",
+      "cast_success": 10,
+      "aura_applied": 5,
+      "aura_type": "DEBUFF"
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "263390": {
+    "name": "Tormented Soul",
+    "level": 14,
+    "max_hp": 1035,
+    "deaths": 8,
+    "events": 158,
+    "map": 0,
+    "positions": [
+     [
+      30.69,
+      70.24,
+      0
+     ],
+     [
+      51.6,
+      77.27,
+      0
+     ],
+     [
+      79.56,
+      71.83,
+      0
+     ],
+     [
+      88.56,
+      27.450000000000003,
+      0
+     ],
+     [
+      71.89,
+      30.78,
+      0
+     ],
+     [
+      42.8,
+      32.55,
+      0
+     ],
+     [
+      43.15,
+      31.93,
+      0
+     ],
+     [
+      24.985,
+      -11.83,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 100,
+      "damage_total": 1990,
+      "damage_max": 34
+     },
+     "11639": {
+      "name": "Shadow Word: Pain",
+      "school": "0x20",
+      "cast_success": 9,
+      "hits": 42,
+      "damage_total": 720,
+      "damage_max": 18,
+      "aura_applied": 7,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "263396": {
+    "name": "Dark Iron Looter",
+    "level": 14,
+    "max_hp": 1155,
+    "deaths": 36,
+    "events": 957,
+    "map": 0,
+    "positions": [
+     [
+      373.36,
+      -23.12,
+      0
+     ],
+     [
+      21.12,
+      -70.74,
+      0
+     ],
+     [
+      47.54,
+      -71.51,
+      0
+     ],
+     [
+      29.55,
+      -70.39,
+      0
+     ],
+     [
+      77.57,
+      -71.55,
+      0
+     ],
+     [
+      55.01,
+      -101.86,
+      0
+     ],
+     [
+      55.66,
+      -107.27,
+      0
+     ],
+     [
+      67.04,
+      -115.32,
+      0
+     ],
+     [
+      36.16,
+      -141.24,
+      0
+     ],
+     [
+      42.62,
+      -128.98,
+      0
+     ],
+     [
+      69.3,
+      -139.2,
+      0
+     ],
+     [
+      66.68,
+      -139.65,
+      0
+     ],
+     [
+      59.44,
+      -150.26999999999998,
+      0
+     ],
+     [
+      117.86,
+      -160.82,
+      0
+     ],
+     [
+      146.25,
+      -164.27,
+      0
+     ],
+     [
+      153.275,
+      -135.71499999999997,
+      0
+     ],
+     [
+      160.42,
+      -110.21,
+      0
+     ],
+     [
+      159.4,
+      -113.93,
+      0
+     ],
+     [
+      141.97,
+      -80.91,
+      0
+     ],
+     [
+      148.39,
+      -51.38,
+      0
+     ],
+     [
+      147.7,
+      -51.77,
+      0
+     ],
+     [
+      150.14,
+      -72.66,
+      0
+     ],
+     [
+      149.6,
+      -62.2,
+      0
+     ],
+     [
+      300.74,
+      -1.1,
+      0
+     ],
+     [
+      157.4,
+      -129.61,
+      0
+     ],
+     [
+      153.35,
+      -135.53,
+      0
+     ],
+     [
+      147.0,
+      -152.64,
+      0
+     ],
+     [
+      148.78,
+      -88.16,
+      0
+     ],
+     [
+      151.44,
+      -63.67,
+      0
+     ],
+     [
+      148.07,
+      -66.82,
+      0
+     ],
+     [
+      150.27,
+      -65.45,
+      0
+     ],
+     [
+      143.53,
+      -40.12,
+      0
+     ],
+     [
+      169.39,
+      -18.14,
+      0
+     ],
+     [
+      278.43,
+      0.63,
+      0
+     ],
+     [
+      342.55,
+      31.29,
+      0
+     ],
+     [
+      380.01,
+      10.68,
+      0
+     ],
+     [
+      376.765,
+      -3.05,
+      0
+     ]
+    ],
+    "spells": {
+     "1308473": {
+      "name": "Poisoned Blades",
+      "school": "0x1",
+      "cast_success": 1,
+      "aura_applied": 47,
+      "aura_type": "BUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 664,
+      "damage_total": 21050,
+      "damage_max": 60
+     },
+     "14873": {
+      "name": "Sinister Strike",
+      "school": "0x1",
+      "cast_success": 101,
+      "hits": 78,
+      "damage_total": 3321,
+      "damage_max": 61
+     },
+     "1308474": {
+      "name": "Poisoned Blades",
+      "school": "0x8",
+      "hits": 64,
+      "damage_total": 2072,
+      "damage_max": 35
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "261306": {
+    "name": "Faldrim Anvilmar",
+    "level": 16,
+    "max_hp": 1793,
+    "deaths": 1,
+    "events": 29,
+    "map": 0,
+    "positions": [
+     [
+      45.18,
+      -20.37,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 22,
+      "damage_total": 1300,
+      "damage_max": 104
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     },
+     "13860": {
+      "name": "Mind Blast",
+      "school": "0x20",
+      "cast_start": 2,
+      "cast_success": 1,
+      "hits": 1,
+      "damage_total": 72,
+      "damage_max": 72,
+      "interrupted": 1
+     },
+     "1292602": {
+      "name": "Anvilmar's Curse",
+      "school": "0x20",
+      "cast_success": 1,
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "263470": {
+    "name": "Bloodhound Runt",
+    "level": 15,
+    "max_hp": 346,
+    "deaths": 16,
+    "events": 279,
+    "map": 0,
+    "positions": [
+     [
+      26.85,
+      -68.22,
+      0
+     ],
+     [
+      22.11,
+      -68.28,
+      0
+     ],
+     [
+      24.42,
+      -69.83,
+      0
+     ],
+     [
+      52.37,
+      -71.01,
+      0
+     ],
+     [
+      33.21,
+      -75.36,
+      0
+     ],
+     [
+      77.18,
+      -71.25,
+      0
+     ],
+     [
+      76.74,
+      -71.89,
+      0
+     ],
+     [
+      53.85,
+      -120.58500000000001,
+      0
+     ],
+     [
+      55.47,
+      -118.32,
+      0
+     ],
+     [
+      41.36,
+      -129.42,
+      0
+     ],
+     [
+      147.23,
+      -163.31,
+      0
+     ],
+     [
+      146.15,
+      -164.89,
+      0
+     ],
+     [
+      150.12,
+      -59.03,
+      0
+     ],
+     [
+      145.63,
+      -40.56,
+      0
+     ],
+     [
+      149.0,
+      -29.19,
+      0
+     ],
+     [
+      148.27,
+      -33.07,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 262,
+      "damage_total": 5744,
+      "damage_max": 34
+     },
+     "3427": {
+      "name": "Infected Wound",
+      "school": "0x8",
+      "cast_success": 8,
+      "aura_applied": 8,
+      "aura_type": "DEBUFF"
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "263438": {
+    "name": "Dark Iron Summoner",
+    "level": 14,
+    "max_hp": 1155,
+    "deaths": 9,
+    "events": 92,
+    "map": 0,
+    "positions": [
+     [
+      42.96,
+      -141.08,
+      0
+     ],
+     [
+      120.45,
+      -162.91,
+      0
+     ],
+     [
+      97.36,
+      -157.3,
+      0
+     ],
+     [
+      154.825,
+      -191.785,
+      0
+     ],
+     [
+      158.265,
+      -134.06,
+      0
+     ],
+     [
+      167.87,
+      -139.44,
+      0
+     ],
+     [
+      299.8,
+      -3.18,
+      0
+     ],
+     [
+      152.31,
+      -134.655,
+      0
+     ],
+     [
+      283.82,
+      -1.63,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 36,
+      "damage_total": 1006,
+      "damage_max": 60
+     },
+     "20793": {
+      "name": "Fireball",
+      "school": "0x4",
+      "cast_start": 27,
+      "cast_success": 11,
+      "hits": 9,
+      "damage_total": 611,
+      "damage_max": 78,
+      "interrupted": 11
+     },
+     "1291218": {
+      "name": "Summon Fiery Assistant",
+      "school": "0x4",
+      "cast_start": 5,
+      "cast_success": 2,
+      "interrupted": 2
+     }
+    }
+   },
+   "263397": {
+    "name": "Dark Iron Engineer",
+    "level": 14,
+    "max_hp": 1155,
+    "deaths": 9,
+    "events": 245,
+    "map": 0,
+    "positions": [
+     [
+      61.13,
+      -162.43,
+      0
+     ],
+     [
+      148.2,
+      -165.67,
+      0
+     ],
+     [
+      135.13,
+      -190.85,
+      0
+     ],
+     [
+      158.58,
+      -109.65,
+      0
+     ],
+     [
+      146.4,
+      -81.02,
+      0
+     ],
+     [
+      148.09,
+      -52.05,
+      0
+     ],
+     [
+      153.51,
+      -119.0,
+      0
+     ],
+     [
+      148.76,
+      -83.86,
+      0
+     ],
+     [
+      149.33,
+      -61.89,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 26,
+      "damage_total": 820,
+      "damage_max": 40
+     },
+     "1294260": {
+      "name": "Throw Dynamite",
+      "school": "0x4",
+      "cast_start": 57,
+      "cast_success": 51,
+      "hits": 111,
+      "damage_total": 3491,
+      "damage_max": 42
+     }
+    }
+   },
+   "263467": {
+    "name": "Fiery Assistant",
+    "level": 14,
+    "max_hp": 276,
+    "deaths": 2,
+    "events": 19,
+    "map": 0,
+    "positions": [
+     [
+      100.91,
+      -160.92,
+      0
+     ],
+     [
+      161.89,
+      -137.14,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 18,
+      "damage_total": 572,
+      "damage_max": 32
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "261316": {
+    "name": "Magmatus",
+    "level": 16,
+    "max_hp": 1793,
+    "deaths": 1,
+    "events": 45,
+    "map": 0,
+    "positions": [
+     [
+      152.54,
+      -192.65,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 20,
+      "damage_total": 740,
+      "damage_max": 41
+     },
+     "11970": {
+      "name": "Fire Nova",
+      "school": "0x4",
+      "cast_success": 3,
+      "hits": 12,
+      "damage_total": 1030,
+      "damage_max": 102
+     },
+     "1293228": {
+      "name": "Combust",
+      "school": "0x4",
+      "cast_start": 1,
+      "cast_success": 1,
+      "hits": 7,
+      "damage_total": 189,
+      "damage_max": 87,
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "261311": {
+    "name": "Plunder",
+    "level": 16,
+    "max_hp": 2562,
+    "deaths": 2,
+    "events": 74,
+    "map": 0,
+    "positions": [
+     [
+      144.71,
+      -39.43,
+      0
+     ],
+     [
+      146.71,
+      -40.48,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 44,
+      "damage_total": 2756,
+      "damage_max": 78
+     },
+     "11130": {
+      "name": "Knock Away",
+      "school": "0x1",
+      "cast_success": 4,
+      "hits": 17,
+      "damage_total": 1328,
+      "damage_max": 103
+     },
+     "21055": {
+      "name": "Crush Armor",
+      "school": "0x1",
+      "cast_success": 2,
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     },
+     "22911": {
+      "name": "Charge",
+      "school": "0x1",
+      "cast_success": 2,
+      "hits": 2,
+      "damage_total": 148,
+      "damage_max": 76,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "263466": {
+    "name": "Lesser Stone Golem",
+    "level": 14,
+    "max_hp": 1540,
+    "deaths": 10,
+    "events": 353,
+    "map": 0,
+    "positions": [
+     [
+      197.32,
+      -0.13,
+      0
+     ],
+     [
+      226.96,
+      1.98,
+      0
+     ],
+     [
+      232.47,
+      0.18,
+      0
+     ],
+     [
+      301.18,
+      -1.82,
+      0
+     ],
+     [
+      279.6,
+      0.44,
+      0
+     ],
+     [
+      278.85,
+      -0.49,
+      0
+     ],
+     [
+      180.09,
+      -0.53,
+      0
+     ],
+     [
+      229.325,
+      1.21,
+      0
+     ],
+     [
+      220.87,
+      0.49,
+      0
+     ],
+     [
+      279.79,
+      0.33,
+      0
+     ],
+     [
+      368.03,
+      4.33,
+      0
+     ],
+     [
+      368.8,
+      4.95,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 244,
+      "damage_total": 7812,
+      "damage_max": 49
+     },
+     "5568": {
+      "name": "Trample",
+      "school": "0x1",
+      "cast_success": 26,
+      "hits": 81,
+      "damage_total": 3778,
+      "damage_max": 69
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "261319": {
+    "name": "Durgen Dirgehammer",
+    "level": 16,
+    "max_hp": 1922,
+    "deaths": 2,
+    "events": 69,
+    "map": 0,
+    "positions": [
+     [
+      303.63,
+      -1.04,
+      0
+     ],
+     [
+      367.18,
+      7.045,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 30,
+      "damage_total": 1378,
+      "damage_max": 59
+     },
+     "11977": {
+      "name": "Rend",
+      "school": "0x1",
+      "cast_success": 4,
+      "hits": 15,
+      "damage_total": 105,
+      "damage_max": 7,
+      "aura_applied": 3,
+      "aura_type": "DEBUFF"
+     },
+     "25710": {
+      "name": "Heroic Strike",
+      "school": "0x1",
+      "cast_success": 5,
+      "hits": 3,
+      "damage_total": 216,
+      "damage_max": 88
+     },
+     "19134": {
+      "name": "Intimidating Shout",
+      "school": "0x1",
+      "cast_success": 2,
+      "aura_applied": 5,
+      "aura_type": "DEBUFF"
+     },
+     "29544": {
+      "name": "Intimidating Shout",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   }
+  },
+  "spawns": [
+   {
+    "guid": "0005AE5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 35,
+    "x": 3.37,
+    "y": 72.54,
+    "pack": 31
+   },
+   {
+    "guid": "0004AE5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 39,
+    "x": 30.69,
+    "y": 70.24,
+    "pack": 30
+   },
+   {
+    "guid": "0005AE5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 35,
+    "x": 51.6,
+    "y": 77.27,
+    "pack": 29
+   },
+   {
+    "guid": "0006AE5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 52,
+    "x": 52.42,
+    "y": 75.25,
+    "pack": 29
+   },
+   {
+    "guid": "0004AE5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 40,
+    "x": 79.03,
+    "y": 69.81,
+    "pack": 28
+   },
+   {
+    "guid": "0006AE5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 38,
+    "x": 79.56,
+    "y": 71.83,
+    "pack": 28
+   },
+   {
+    "guid": "000C2E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 1,
+    "x": 373.36,
+    "y": -23.12,
+    "pack": 27
+   },
+   {
+    "guid": "00062E5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 42,
+    "x": 88.55,
+    "y": 30.12,
+    "pack": 26
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 44,
+    "x": 88.56,
+    "y": 27.450000000000003,
+    "pack": 26
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 42,
+    "x": 65.92,
+    "y": 26.65,
+    "pack": 25
+   },
+   {
+    "guid": "0000AE5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 43,
+    "x": 71.89,
+    "y": 30.78,
+    "pack": 25
+   },
+   {
+    "guid": "00042E5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 41,
+    "x": 42.8,
+    "y": 32.55,
+    "pack": 24
+   },
+   {
+    "guid": "00032E5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 49,
+    "x": 43.22,
+    "y": 30.87,
+    "pack": 24
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 40,
+    "x": 43.15,
+    "y": 31.93,
+    "pack": 24
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263390,
+    "name": "Tormented Soul",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 36,
+    "x": 24.985,
+    "y": -11.83,
+    "pack": 23
+   },
+   {
+    "guid": "00042E5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 13,
+    "hp": 921,
+    "seen": 43,
+    "x": 23.89,
+    "y": -14.96,
+    "pack": 23
+   },
+   {
+    "guid": "00052E5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 54,
+    "x": 46.03,
+    "y": -24.81,
+    "pack": 22
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263389,
+    "name": "Enraged Apparition",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 47,
+    "x": 46.1,
+    "y": -25.86,
+    "pack": 22
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 261306,
+    "name": "Faldrim Anvilmar",
+    "map": 0,
+    "level": 16,
+    "hp": 1793,
+    "seen": 85,
+    "x": 45.18,
+    "y": -20.37,
+    "pack": 22
+   },
+   {
+    "guid": "0000AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 22,
+    "x": 26.85,
+    "y": -68.22,
+    "pack": 20
+   },
+   {
+    "guid": "0005AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 17,
+    "x": 22.11,
+    "y": -68.28,
+    "pack": 20
+   },
+   {
+    "guid": "0004AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 23,
+    "x": 24.42,
+    "y": -69.83,
+    "pack": 20
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 46,
+    "x": 21.12,
+    "y": -70.74,
+    "pack": 20
+   },
+   {
+    "guid": "00032E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 59,
+    "x": 47.54,
+    "y": -71.51,
+    "pack": 21
+   },
+   {
+    "guid": "0008AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 19,
+    "x": 52.37,
+    "y": -71.01,
+    "pack": 21
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 29,
+    "x": 33.21,
+    "y": -75.36,
+    "pack": 20
+   },
+   {
+    "guid": "0008AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 53,
+    "x": 29.55,
+    "y": -70.39,
+    "pack": 20
+   },
+   {
+    "guid": "0003AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 21,
+    "x": 77.18,
+    "y": -71.25,
+    "pack": 19
+   },
+   {
+    "guid": "00042E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 47,
+    "x": 77.57,
+    "y": -71.55,
+    "pack": 19
+   },
+   {
+    "guid": "00092E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 21,
+    "x": 76.74,
+    "y": -71.89,
+    "pack": 19
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 57,
+    "x": 55.01,
+    "y": -101.86,
+    "pack": 18
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 56,
+    "x": 55.66,
+    "y": -107.27,
+    "pack": 18
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 24,
+    "x": 53.85,
+    "y": -120.58500000000001,
+    "pack": 18
+   },
+   {
+    "guid": "0000AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 54,
+    "x": 67.04,
+    "y": -115.32,
+    "pack": 18
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 23,
+    "x": 55.47,
+    "y": -118.32,
+    "pack": 18
+   },
+   {
+    "guid": "0007AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 42,
+    "x": 36.16,
+    "y": -141.24,
+    "pack": 17
+   },
+   {
+    "guid": "00082E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 27,
+    "x": 41.36,
+    "y": -129.42,
+    "pack": 17
+   },
+   {
+    "guid": "0004AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 67,
+    "x": 42.62,
+    "y": -128.98,
+    "pack": 17
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 43,
+    "x": 42.96,
+    "y": -141.08,
+    "pack": 17
+   },
+   {
+    "guid": "00052E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 44,
+    "x": 69.3,
+    "y": -139.2,
+    "pack": 16
+   },
+   {
+    "guid": "0002AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 59,
+    "x": 66.68,
+    "y": -139.65,
+    "pack": 16
+   },
+   {
+    "guid": "0006AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 66,
+    "x": 59.44,
+    "y": -150.26999999999998,
+    "pack": 16
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 48,
+    "x": 61.13,
+    "y": -162.43,
+    "pack": 16
+   },
+   {
+    "guid": "0000AE5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 43,
+    "x": 120.45,
+    "y": -162.91,
+    "pack": 15
+   },
+   {
+    "guid": "00082E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 49,
+    "x": 117.86,
+    "y": -160.82,
+    "pack": 15
+   },
+   {
+    "guid": "0002AE5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 45,
+    "x": 97.36,
+    "y": -157.3,
+    "pack": 14
+   },
+   {
+    "guid": "00002E5A7D",
+    "npc": 263467,
+    "name": "Fiery Assistant",
+    "map": 0,
+    "level": 14,
+    "hp": 276,
+    "seen": 13,
+    "x": 100.91,
+    "y": -160.92,
+    "pack": 14
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 29,
+    "x": 147.23,
+    "y": -163.31,
+    "pack": 9
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 51,
+    "x": 146.25,
+    "y": -164.27,
+    "pack": 9
+   },
+   {
+    "guid": "00032E5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 58,
+    "x": 148.2,
+    "y": -165.67,
+    "pack": 9
+   },
+   {
+    "guid": "00052E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 18,
+    "x": 146.15,
+    "y": -164.89,
+    "pack": 9
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 44,
+    "x": 135.13,
+    "y": -190.85,
+    "pack": 13
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 40,
+    "x": 154.825,
+    "y": -191.785,
+    "pack": 12
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 261316,
+    "name": "Magmatus",
+    "map": 0,
+    "level": 16,
+    "hp": 1793,
+    "seen": 70,
+    "x": 152.54,
+    "y": -192.65,
+    "pack": 12
+   },
+   {
+    "guid": "00072E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 46,
+    "x": 153.275,
+    "y": -135.71499999999997,
+    "pack": 8
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 50,
+    "x": 158.265,
+    "y": -134.06,
+    "pack": 8
+   },
+   {
+    "guid": "00032E5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 39,
+    "x": 167.87,
+    "y": -139.44,
+    "pack": 8
+   },
+   {
+    "guid": "00002E5B7A",
+    "npc": 263467,
+    "name": "Fiery Assistant",
+    "map": 0,
+    "level": 14,
+    "hp": 276,
+    "seen": 15,
+    "x": 161.89,
+    "y": -137.14,
+    "pack": 8
+   },
+   {
+    "guid": "0005AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 45,
+    "x": 160.42,
+    "y": -110.21,
+    "pack": 8
+   },
+   {
+    "guid": "00062E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 57,
+    "x": 159.4,
+    "y": -113.93,
+    "pack": 8
+   },
+   {
+    "guid": "0002AE5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 59,
+    "x": 158.58,
+    "y": -109.65,
+    "pack": 8
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 51,
+    "x": 146.4,
+    "y": -81.02,
+    "pack": 7
+   },
+   {
+    "guid": "0003AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 54,
+    "x": 141.97,
+    "y": -80.91,
+    "pack": 7
+   },
+   {
+    "guid": "00092E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 49,
+    "x": 148.39,
+    "y": -51.38,
+    "pack": 7
+   },
+   {
+    "guid": "000A2E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 67,
+    "x": 147.7,
+    "y": -51.77,
+    "pack": 7
+   },
+   {
+    "guid": "0009AE5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 56,
+    "x": 150.14,
+    "y": -72.66,
+    "pack": 7
+   },
+   {
+    "guid": "0003AE5521",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 50,
+    "x": 148.09,
+    "y": -52.05,
+    "pack": 7
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 261311,
+    "name": "Plunder",
+    "map": 0,
+    "level": 16,
+    "hp": 2562,
+    "seen": 119,
+    "x": 144.71,
+    "y": -39.43,
+    "pack": 7
+   },
+   {
+    "guid": "00042E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 37,
+    "x": 150.12,
+    "y": -59.03,
+    "pack": 7
+   },
+   {
+    "guid": "00062E5521",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 29,
+    "x": 145.63,
+    "y": -40.56,
+    "pack": 7
+   },
+   {
+    "guid": "000D2E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 56,
+    "x": 149.6,
+    "y": -62.2,
+    "pack": 7
+   },
+   {
+    "guid": "00022E5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 55,
+    "x": 197.32,
+    "y": -0.13,
+    "pack": 11
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 59,
+    "x": 226.96,
+    "y": 1.98,
+    "pack": 4
+   },
+   {
+    "guid": "0001AE5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 65,
+    "x": 232.47,
+    "y": 0.18,
+    "pack": 4
+   },
+   {
+    "guid": "0000AE5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 74,
+    "x": 301.18,
+    "y": -1.82,
+    "pack": 10
+   },
+   {
+    "guid": "0003AE5521",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 33,
+    "x": 299.8,
+    "y": -3.18,
+    "pack": 10
+   },
+   {
+    "guid": "000B2E5521",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 51,
+    "x": 300.74,
+    "y": -1.1,
+    "pack": 10
+   },
+   {
+    "guid": "00002E5521",
+    "npc": 261319,
+    "name": "Durgen Dirgehammer",
+    "map": 0,
+    "level": 16,
+    "hp": 1922,
+    "seen": 96,
+    "x": 303.63,
+    "y": -1.04,
+    "pack": 10
+   },
+   {
+    "guid": "00012E5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 41,
+    "x": 279.6,
+    "y": 0.44,
+    "pack": 3
+   },
+   {
+    "guid": "0002AE5521",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 48,
+    "x": 278.85,
+    "y": -0.49,
+    "pack": 3
+   },
+   {
+    "guid": "00092ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 79,
+    "x": 157.4,
+    "y": -129.61,
+    "pack": 8
+   },
+   {
+    "guid": "00032ED288",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 32,
+    "x": 152.31,
+    "y": -134.655,
+    "pack": 8
+   },
+   {
+    "guid": "00042ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 40,
+    "x": 153.35,
+    "y": -135.53,
+    "pack": 8
+   },
+   {
+    "guid": "0003AED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 54,
+    "x": 147.0,
+    "y": -152.64,
+    "pack": 9
+   },
+   {
+    "guid": "00022ED288",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 44,
+    "x": 153.51,
+    "y": -119.0,
+    "pack": 8
+   },
+   {
+    "guid": "0009AED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 36,
+    "x": 148.78,
+    "y": -88.16,
+    "pack": 7
+   },
+   {
+    "guid": "00002ED288",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 36,
+    "x": 148.76,
+    "y": -83.86,
+    "pack": 7
+   },
+   {
+    "guid": "00032ED288",
+    "npc": 263397,
+    "name": "Dark Iron Engineer",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 31,
+    "x": 149.33,
+    "y": -61.89,
+    "pack": 7
+   },
+   {
+    "guid": "0006AED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 46,
+    "x": 151.44,
+    "y": -63.67,
+    "pack": 7
+   },
+   {
+    "guid": "0005AED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 43,
+    "x": 148.07,
+    "y": -66.82,
+    "pack": 7
+   },
+   {
+    "guid": "00062ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 46,
+    "x": 150.27,
+    "y": -65.45,
+    "pack": 7
+   },
+   {
+    "guid": "0008AED288",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 14,
+    "hp": 310,
+    "seen": 14,
+    "x": 149.0,
+    "y": -29.19,
+    "pack": 7
+   },
+   {
+    "guid": "000DAED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 38,
+    "x": 143.53,
+    "y": -40.12,
+    "pack": 7
+   },
+   {
+    "guid": "00022ED288",
+    "npc": 263470,
+    "name": "Bloodhound Runt",
+    "map": 0,
+    "level": 15,
+    "hp": 346,
+    "seen": 14,
+    "x": 148.27,
+    "y": -33.07,
+    "pack": 7
+   },
+   {
+    "guid": "00002ED288",
+    "npc": 261311,
+    "name": "Plunder",
+    "map": 0,
+    "level": 16,
+    "hp": 2562,
+    "seen": 87,
+    "x": 146.71,
+    "y": -40.48,
+    "pack": 7
+   },
+   {
+    "guid": "000F2ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 15,
+    "hp": 1155,
+    "seen": 43,
+    "x": 169.39,
+    "y": -18.14,
+    "pack": 6
+   },
+   {
+    "guid": "0002AED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 45,
+    "x": 180.09,
+    "y": -0.53,
+    "pack": 5
+   },
+   {
+    "guid": "00002ED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 46,
+    "x": 229.325,
+    "y": 1.21,
+    "pack": 4
+   },
+   {
+    "guid": "0000AED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 60,
+    "x": 220.87,
+    "y": 0.49,
+    "pack": 4
+   },
+   {
+    "guid": "00012ED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 61,
+    "x": 279.79,
+    "y": 0.33,
+    "pack": 3
+   },
+   {
+    "guid": "000C2ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 39,
+    "x": 278.43,
+    "y": 0.63,
+    "pack": 3
+   },
+   {
+    "guid": "0003AED288",
+    "npc": 263438,
+    "name": "Dark Iron Summoner",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 27,
+    "x": 283.82,
+    "y": -1.63,
+    "pack": 3
+   },
+   {
+    "guid": "000B2ED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 33,
+    "x": 342.55,
+    "y": 31.29,
+    "pack": 2
+   },
+   {
+    "guid": "000AAED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 32,
+    "x": 380.01,
+    "y": 10.68,
+    "pack": 1
+   },
+   {
+    "guid": "000BAED288",
+    "npc": 263396,
+    "name": "Dark Iron Looter",
+    "map": 0,
+    "level": 14,
+    "hp": 1035,
+    "seen": 32,
+    "x": 376.765,
+    "y": -3.05,
+    "pack": 1
+   },
+   {
+    "guid": "00022ED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 15,
+    "hp": 1540,
+    "seen": 62,
+    "x": 368.03,
+    "y": 4.33,
+    "pack": 1
+   },
+   {
+    "guid": "0001AED288",
+    "npc": 263466,
+    "name": "Lesser Stone Golem",
+    "map": 0,
+    "level": 14,
+    "hp": 1380,
+    "seen": 61,
+    "x": 368.8,
+    "y": 4.95,
+    "pack": 1
+   },
+   {
+    "guid": "00002ED288",
+    "npc": 261319,
+    "name": "Durgen Dirgehammer",
+    "map": 0,
+    "level": 16,
+    "hp": 1922,
+    "seen": 66,
+    "x": 367.18,
+    "y": 7.045,
+    "pack": 1
+   }
+  ],
+  "packs": 31
+ },
+ "_meta": {
+  "built": "2026-09-19",
+  "build_filter": "1.60",
+  "logs": [
+   "WoWCombatLog-091926_024706.txt",
+   "WoWCombatLog-091926_043613.txt",
+   "WoWCombatLog-091926_133746.txt"
+  ],
+  "builds": [
+   "1.60.1"
+  ],
+  "encounters": 6
+ }
+}

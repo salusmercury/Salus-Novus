@@ -1,0 +1,392 @@
+{
+ "Faldrim Anvilmar": [
+  {
+   "name": "Faldrim Anvilmar",
+   "encounter_id": 3493,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_043613.txt",
+   "casts": [
+    [
+     0.4,
+     11971,
+     "Sunder Armor",
+     "Enraged Apparition",
+     "success"
+    ],
+    [
+     6.5,
+     13860,
+     "Mind Blast",
+     "Faldrim Anvilmar",
+     "start"
+    ],
+    [
+     11.3,
+     1292602,
+     "Anvilmar's Curse",
+     "Faldrim Anvilmar",
+     "success"
+    ],
+    [
+     23.5,
+     13860,
+     "Mind Blast",
+     "Faldrim Anvilmar",
+     "start"
+    ],
+    [
+     25.0,
+     13860,
+     "Mind Blast",
+     "Faldrim Anvilmar",
+     "success"
+    ]
+   ],
+   "length": 26.4,
+   "success": true
+  }
+ ],
+ "Infurnus": [
+  {
+   "name": "Infurnus",
+   "encounter_id": 3495,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_043613.txt",
+   "casts": [
+    [
+     4.2,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     5.7,
+     11970,
+     "Fire Nova",
+     "Magmatus",
+     "success"
+    ],
+    [
+     10.6,
+     1291218,
+     "Summon Fiery Assistant",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     11.8,
+     1293228,
+     "Combust",
+     "Magmatus",
+     "start"
+    ],
+    [
+     14.8,
+     1293228,
+     "Combust",
+     "Magmatus",
+     "success"
+    ],
+    [
+     17.9,
+     11970,
+     "Fire Nova",
+     "Magmatus",
+     "success"
+    ],
+    [
+     28.9,
+     11970,
+     "Fire Nova",
+     "Magmatus",
+     "success"
+    ]
+   ],
+   "length": 30.3,
+   "success": true
+  }
+ ],
+ "Plunder": [
+  {
+   "name": "Plunder",
+   "encounter_id": 3494,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_043613.txt",
+   "casts": [
+    [
+     7.5,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ],
+    [
+     8.3,
+     14873,
+     "Sinister Strike",
+     "Dark Iron Looter",
+     "success"
+    ],
+    [
+     11.1,
+     21055,
+     "Crush Armor",
+     "Plunder",
+     "success"
+    ],
+    [
+     14.7,
+     22911,
+     "Charge",
+     "Plunder",
+     "success"
+    ],
+    [
+     15.5,
+     14873,
+     "Sinister Strike",
+     "Dark Iron Looter",
+     "success"
+    ],
+    [
+     15.9,
+     3427,
+     "Infected Wound",
+     "Bloodhound Runt",
+     "success"
+    ],
+    [
+     22.1,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ],
+    [
+     22.9,
+     14873,
+     "Sinister Strike",
+     "Dark Iron Looter",
+     "success"
+    ],
+    [
+     29.0,
+     14873,
+     "Sinister Strike",
+     "Dark Iron Looter",
+     "success"
+    ],
+    [
+     29.7,
+     3427,
+     "Infected Wound",
+     "Bloodhound Runt",
+     "success"
+    ]
+   ],
+   "length": 31.9,
+   "success": true
+  },
+  {
+   "name": "Plunder",
+   "encounter_id": 3494,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_133746.txt",
+   "casts": [
+    [
+     7.2,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ],
+    [
+     12.0,
+     22911,
+     "Charge",
+     "Plunder",
+     "success"
+    ],
+    [
+     13.3,
+     21055,
+     "Crush Armor",
+     "Plunder",
+     "success"
+    ],
+    [
+     21.8,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ]
+   ],
+   "length": 29.7,
+   "success": true
+  }
+ ],
+ "Durgen Dirgehammer": [
+  {
+   "name": "Durgen Dirgehammer",
+   "encounter_id": 3496,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_043613.txt",
+   "casts": [
+    [
+     7.0,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     8.6,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     8.6,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     9.8,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     15.9,
+     19134,
+     "Intimidating Shout",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     20.7,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     20.9,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     22.0,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     28.1,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     29.3,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     33.0,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ]
+   ],
+   "length": 33.5,
+   "success": true
+  },
+  {
+   "name": "Durgen Dirgehammer",
+   "encounter_id": 3496,
+   "difficulty": "1",
+   "file": "WoWCombatLog-091926_133746.txt",
+   "casts": [
+    [
+     4.3,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     7.3,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     8.7,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     9.7,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     10.9,
+     19134,
+     "Intimidating Shout",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     20.6,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     22.0,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     23.0,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     25.5,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ]
+   ],
+   "length": 25.8,
+   "success": true
+  }
+ ]
+}

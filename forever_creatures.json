@@ -1,0 +1,12712 @@
+{
+ "source": "C:\\Program Files (x86)\\World of Warcraft\\_classic_beta_\\Cache\\WDB\\enUS\\creaturecache.wdb",
+ "clientBuild": 69913,
+ "records": 1104,
+ "noModelBlock": [],
+ "creatures": [
+  {
+   "npcID": 1378,
+   "name": "Pilot Bellowfiz",
+   "models": [
+    {
+     "displayID": 5105,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 265002,
+   "name": "Ghostly Attendant",
+   "models": [
+    {
+     "displayID": 144348,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1676,
+   "name": "Finbus Geargrind",
+   "models": [
+    {
+     "displayID": 4285,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274081,
+   "name": "Princess",
+   "models": [
+    {
+     "displayID": 5556,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 261311,
+   "name": "Plunder",
+   "models": [
+    {
+     "displayID": 142840,
+     "scale": 1.5,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1116,
+   "name": "Rockjaw Ambusher",
+   "models": [
+    {
+     "displayID": 726,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10277,
+   "name": "Groum Stonebeard",
+   "models": [
+    {
+     "displayID": 9740,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 14721,
+   "name": "Field Marshal Stonebridge",
+   "models": [
+    {
+     "displayID": 12923,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 4259,
+   "name": "Thurgrum Deepforge",
+   "models": [
+    {
+     "displayID": 3098,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1354,
+   "name": "Apprentice Soren",
+   "models": [
+    {
+     "displayID": 1396,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5169,
+   "name": "Tynnus Venomsprout",
+   "models": [
+    {
+     "displayID": 3114,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263398,
+   "name": "Camp Tent",
+   "models": [
+    {
+     "displayID": 128233,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 248299,
+   "name": "Elmpaw",
+   "models": [
+    {
+     "displayID": 706,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276247,
+   "name": "Lightning",
+   "models": [
+    {
+     "displayID": 15880,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 502,
+   "name": "Benny Blaanco",
+   "models": [
+    {
+     "displayID": 4422,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 837,
+   "name": "Branstock Khalder",
+   "models": [
+    {
+     "displayID": 3401,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 275075,
+   "name": "Lakeshire Protector",
+   "models": [
+    {
+     "displayID": 148071,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 148072,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 713,
+   "name": "Balir Frosthammer",
+   "models": [
+    {
+     "displayID": 1355,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 3136,
+   "name": "Clarise Gnarltree",
+   "models": [
+    {
+     "displayID": 4330,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11037,
+   "name": "Jenna Lemkenilli",
+   "models": [
+    {
+     "displayID": 10575,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263466,
+   "name": "Lesser Stone Golem",
+   "models": [
+    {
+     "displayID": 2693,
+     "scale": 0.9,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276082,
+   "name": "Mountaineer Sunhammer",
+   "models": [
+    {
+     "displayID": 148470,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1255,
+   "name": "Prospector Gehn",
+   "models": [
+    {
+     "displayID": 1623,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 46,
+   "name": "Murloc Forager",
+   "models": [
+    {
+     "displayID": 441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1243,
+   "name": "Hegnar Rumbleshot",
+   "models": [
+    {
+     "displayID": 3412,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11867,
+   "name": "Woo Ping",
+   "models": [
+    {
+     "displayID": 11804,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6749,
+   "name": "Erma",
+   "models": [
+    {
+     "displayID": 9257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10090,
+   "name": "Belia Thundergranite",
+   "models": [
+    {
+     "displayID": 9338,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5492,
+   "name": "Katherine the Pure",
+   "models": [
+    {
+     "displayID": 3289,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5405,
+   "name": "Pinto",
+   "models": [
+    {
+     "displayID": 2409,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1680,
+   "name": "Matthew Hooper",
+   "models": [
+    {
+     "displayID": 3362,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 895,
+   "name": "Thorgas Grimson",
+   "models": [
+    {
+     "displayID": 3395,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1938,
+   "name": "Dalar Dawnweaver",
+   "models": [
+    {
+     "displayID": 1278,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1888,
+   "name": "Dalaran Watcher",
+   "models": [
+    {
+     "displayID": 3566,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3567,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3568,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3569,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6299,
+   "name": "Delfrum Flintbeard",
+   "models": [
+    {
+     "displayID": 5021,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 481,
+   "name": "Defias Footpad",
+   "models": [
+    {
+     "displayID": 2333,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2335,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10942,
+   "name": "Nessy",
+   "models": [
+    {
+     "displayID": 10244,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3177,
+   "name": "Turuk Amberstill",
+   "models": [
+    {
+     "displayID": 3411,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 165189,
+   "name": "Generic Hunter Pet",
+   "models": [
+    {
+     "displayID": 9567,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 275491,
+   "name": "Randal Emerson",
+   "models": [
+    {
+     "displayID": 148281,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 464,
+   "name": "Guard Parker",
+   "models": [
+    {
+     "displayID": 2150,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5514,
+   "name": "Brooke Stonebraid",
+   "models": [
+    {
+     "displayID": 3313,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1395,
+   "name": "Ol' Beasley",
+   "models": [
+    {
+     "displayID": 1508,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1548,
+   "name": "Cursed Darkhound",
+   "models": [
+    {
+     "displayID": 9020,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267684,
+   "name": "Green Mechanostrider",
+   "models": [
+    {
+     "displayID": 10661,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5163,
+   "name": "Burbik Gearspanner",
+   "models": [
+    {
+     "displayID": 3112,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 228,
+   "name": "Avette Fellwood",
+   "models": [
+    {
+     "displayID": 4334,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12336,
+   "name": "Brother Crowley",
+   "models": [
+    {
+     "displayID": 13049,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4190,
+   "name": "Kyndri",
+   "models": [
+    {
+     "displayID": 4399,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2357,
+   "name": "Merideth Carlson",
+   "models": [
+    {
+     "displayID": 3689,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2362,
+   "name": "Hemmit Armstrong",
+   "models": [
+    {
+     "displayID": 3648,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 483,
+   "name": "Elaine Trias",
+   "models": [
+    {
+     "displayID": 5546,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 268314,
+   "name": "Brown Horse",
+   "models": [
+    {
+     "displayID": 2404,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8666,
+   "name": "Lil Timmy",
+   "models": [
+    {
+     "displayID": 7935,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256736,
+   "name": "Huey Sunnydale",
+   "models": [
+    {
+     "displayID": 139785,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2620,
+   "name": "Prairie Dog",
+   "models": [
+    {
+     "displayID": 1072,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10159,
+   "name": "Young Moonkin",
+   "models": [
+    {
+     "displayID": 9390,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5413,
+   "name": "Furen Longbeard",
+   "models": [
+    {
+     "displayID": 4997,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250627,
+   "name": "Ghoul",
+   "models": [
+    {
+     "displayID": 1065,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1756,
+   "name": "Stormwind Royal Guard",
+   "models": [
+    {
+     "displayID": 3167,
+     "scale": 1.1,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2361,
+   "name": "Tamara Armstrong",
+   "models": [
+    {
+     "displayID": 3647,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 620,
+   "name": "Chicken",
+   "models": [
+    {
+     "displayID": 304,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14121,
+   "name": "Deeprun Diver",
+   "models": [
+    {
+     "displayID": 14172,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 255964,
+   "name": "Fallen Necromancer",
+   "models": [
+    {
+     "displayID": 9785,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 11328,
+   "name": "Eastvale Peasant",
+   "models": [
+    {
+     "displayID": 310,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 423,
+   "name": "Redridge Mongrel",
+   "models": [
+    {
+     "displayID": 487,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1292,
+   "name": "Maris Granger",
+   "models": [
+    {
+     "displayID": 1449,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2176,
+   "name": "Cursed Highborne",
+   "models": [
+    {
+     "displayID": 985,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1747,
+   "name": "Anduin Wrynn",
+   "models": [
+    {
+     "displayID": 11655,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1678,
+   "name": "Vernon Hale",
+   "models": [
+    {
+     "displayID": 3361,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5166,
+   "name": "Ormyr Flinteye",
+   "models": [
+    {
+     "displayID": 3100,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 896,
+   "name": "Veldan Lightfoot",
+   "models": [
+    {
+     "displayID": 3339,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2046,
+   "name": "Andrew Krighton",
+   "models": [
+    {
+     "displayID": 3340,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7937,
+   "name": "High Tinker Mekkatorque",
+   "models": [
+    {
+     "displayID": 143349,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1949,
+   "name": "Servant of Azora",
+   "models": [
+    {
+     "displayID": 5015,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 5016,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 5017,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 5018,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3089,
+   "name": "Sherman Femmel",
+   "models": [
+    {
+     "displayID": 3373,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14724,
+   "name": "Bubulo Acerbus",
+   "models": [
+    {
+     "displayID": 14752,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5516,
+   "name": "Ulfir Ironbeard",
+   "models": [
+    {
+     "displayID": 3309,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 6089,
+   "name": "Harry Burlguard",
+   "models": [
+    {
+     "displayID": 4996,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 273,
+   "name": "Tavernkeep Smitts",
+   "models": [
+    {
+     "displayID": 1731,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5510,
+   "name": "Thulman Flintcrag",
+   "models": [
+    {
+     "displayID": 3306,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1287,
+   "name": "Marda Weller",
+   "models": [
+    {
+     "displayID": 1448,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2790,
+   "name": "Grand Mason Marblesten",
+   "models": [
+    {
+     "displayID": 5410,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263399,
+   "name": "Sam Sarsaparilla",
+   "models": [
+    {
+     "displayID": 143698,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5519,
+   "name": "Billibub Cogspinner",
+   "models": [
+    {
+     "displayID": 3315,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6728,
+   "name": "Narnie",
+   "models": [
+    {
+     "displayID": 5448,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 5448,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 5448,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 272309,
+   "name": "Tux",
+   "models": [
+    {
+     "displayID": 11709,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 777,
+   "name": "Amy Davenport",
+   "models": [
+    {
+     "displayID": 3366,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 883,
+   "name": "Deer",
+   "models": [
+    {
+     "displayID": 347,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4185,
+   "name": "Shaldyn",
+   "models": [
+    {
+     "displayID": 4402,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5494,
+   "name": "Catherine Leland",
+   "models": [
+    {
+     "displayID": 3290,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 205278,
+   "name": "Brother Romulus",
+   "models": [
+    {
+     "displayID": 11350,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2180,
+   "name": "Stormscale Siren",
+   "models": [
+    {
+     "displayID": 4980,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 255159,
+   "name": "Stalker",
+   "models": [
+    {
+     "displayID": 11686,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7766,
+   "name": "Tyrion",
+   "models": [
+    {
+     "displayID": 6632,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 440,
+   "name": "Blackrock Grunt",
+   "models": [
+    {
+     "displayID": 6033,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1268,
+   "name": "Ozzie Togglevolt",
+   "models": [
+    {
+     "displayID": 3441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2455,
+   "name": "Olivia Burnside",
+   "models": [
+    {
+     "displayID": 1450,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6171,
+   "name": "Duthorian Rall",
+   "models": [
+    {
+     "displayID": 4885,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2356,
+   "name": "Elder Gray Bear",
+   "models": [
+    {
+     "displayID": 3201,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11072,
+   "name": "Kitta Firewind",
+   "models": [
+    {
+     "displayID": 10610,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1258,
+   "name": "Black Ravager Mastiff",
+   "models": [
+    {
+     "displayID": 9562,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 234,
+   "name": "Gryan Stoutmantle",
+   "models": [
+    {
+     "displayID": 1690,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2202,
+   "name": "Greymist Coastrunner",
+   "models": [
+    {
+     "displayID": 3619,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271587,
+   "name": "Frosthowl",
+   "models": [
+    {
+     "displayID": 6767,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5164,
+   "name": "Grumnus Steelshaper",
+   "models": [
+    {
+     "displayID": 3099,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 271613,
+   "name": "Unfinished Abomination",
+   "models": [
+    {
+     "displayID": 146706,
+     "scale": 2.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267474,
+   "name": "White Ram",
+   "models": [
+    {
+     "displayID": 2786,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12785,
+   "name": "Sergeant Major Clate",
+   "models": [
+    {
+     "displayID": 12925,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 251507,
+   "name": "Josephine Carson",
+   "models": [
+    {
+     "displayID": 137105,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 7560,
+   "name": "Snowshoe Rabbit",
+   "models": [
+    {
+     "displayID": 6302,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250653,
+   "name": "Spectral Citizen",
+   "models": [
+    {
+     "displayID": 10483,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 10484,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 10485,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 10486,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5112,
+   "name": "Gwenna Firebrew",
+   "models": [
+    {
+     "displayID": 3051,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 68,
+   "name": "Stormwind City Guard",
+   "models": [
+    {
+     "displayID": 3167,
+     "scale": 1.0,
+     "probability": 50.0
+    },
+    {
+     "displayID": 5446,
+     "scale": 1.0,
+     "probability": 50.0
+    }
+   ]
+  },
+  {
+   "npcID": 3518,
+   "name": "Thomas Miller",
+   "models": [
+    {
+     "displayID": 1541,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 151,
+   "name": "Brog Hamfist",
+   "models": [
+    {
+     "displayID": 1292,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2879,
+   "name": "Karrina Mekenda",
+   "models": [
+    {
+     "displayID": 5043,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 916,
+   "name": "Solm Hargrin",
+   "models": [
+    {
+     "displayID": 3407,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1240,
+   "name": "Boran Ironclink",
+   "models": [
+    {
+     "displayID": 3425,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263980,
+   "name": "Seaforium Blasting Powder",
+   "models": [
+    {
+     "displayID": 142182,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1371,
+   "name": "Roman",
+   "models": [
+    {
+     "displayID": 262,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 185333,
+   "name": "Avelina Lilly",
+   "models": [
+    {
+     "displayID": 105308,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5489,
+   "name": "Brother Joshua",
+   "models": [
+    {
+     "displayID": 3283,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2669,
+   "name": "Sheri Zipstitch",
+   "models": [
+    {
+     "displayID": 4274,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 374,
+   "name": "Cog Glitzspinner",
+   "models": [
+    {
+     "displayID": 4287,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 454,
+   "name": "Young Goretusk",
+   "models": [
+    {
+     "displayID": 8871,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1232,
+   "name": "Azar Stronghammer",
+   "models": [
+    {
+     "displayID": 1622,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1196,
+   "name": "Ice Claw Bear",
+   "models": [
+    {
+     "displayID": 8840,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 341,
+   "name": "Foreman Oslow",
+   "models": [
+    {
+     "displayID": 1748,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5121,
+   "name": "Kelomir Ironhand",
+   "models": [
+    {
+     "displayID": 3076,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 264632,
+   "name": "Sister",
+   "models": [
+    {
+     "displayID": 5556,
+     "scale": 0.75,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5103,
+   "name": "Grenil Steelfury",
+   "models": [
+    {
+     "displayID": 3043,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5150,
+   "name": "Nissa Firestone",
+   "models": [
+    {
+     "displayID": 3068,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5620,
+   "name": "Bartender Wental",
+   "models": [
+    {
+     "displayID": 3638,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6181,
+   "name": "Jordan Stilwell",
+   "models": [
+    {
+     "displayID": 4893,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6737,
+   "name": "Innkeeper Shaussiy",
+   "models": [
+    {
+     "displayID": 5441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2382,
+   "name": "Darren Malvew",
+   "models": [
+    {
+     "displayID": 3695,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1752,
+   "name": "Caledra Dawnbreeze",
+   "models": [
+    {
+     "displayID": 4731,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1273,
+   "name": "Grawn Thromwyn",
+   "models": [
+    {
+     "displayID": 3417,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1370,
+   "name": "Brandon",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1645,
+   "name": "Quartermaster Hicks",
+   "models": [
+    {
+     "displayID": 3336,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 332,
+   "name": "Master Mathias Shaw",
+   "models": [
+    {
+     "displayID": 1736,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2334,
+   "name": "Event Generator 001",
+   "models": [
+    {
+     "displayID": 11686,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1768,
+   "name": "Vile Fin Tidehunter",
+   "models": [
+    {
+     "displayID": 346,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6778,
+   "name": "Melika Isenstrider",
+   "models": [
+    {
+     "displayID": 5527,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 963,
+   "name": "Deputy Rainer",
+   "models": [
+    {
+     "displayID": 3279,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1275,
+   "name": "Kyra Boucher",
+   "models": [
+    {
+     "displayID": 1444,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1229,
+   "name": "Granis Swiftaxe",
+   "models": [
+    {
+     "displayID": 3431,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5106,
+   "name": "Bromiir Ormsen",
+   "models": [
+    {
+     "displayID": 3044,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3135,
+   "name": "Malissa",
+   "models": [
+    {
+     "displayID": 4337,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6297,
+   "name": "Kurdram Stonehammer",
+   "models": [
+    {
+     "displayID": 5019,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1245,
+   "name": "Kogan Forgestone",
+   "models": [
+    {
+     "displayID": 3513,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6790,
+   "name": "Innkeeper Trelayne",
+   "models": [
+    {
+     "displayID": 8191,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5568,
+   "name": "Captured Leper Gnome",
+   "models": [
+    {
+     "displayID": 6926,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6927,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6928,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6929,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2380,
+   "name": "Nandar Branson",
+   "models": [
+    {
+     "displayID": 3649,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3661,
+   "name": "Balthule Shadowstrike",
+   "models": [
+    {
+     "displayID": 2530,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5637,
+   "name": "Roetten Stonehammer",
+   "models": [
+    {
+     "displayID": 3756,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6124,
+   "name": "Captain Beld",
+   "models": [
+    {
+     "displayID": 4957,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4081,
+   "name": "Lomac Gearstrip",
+   "models": [
+    {
+     "displayID": 2184,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 786,
+   "name": "Grelin Whitebeard",
+   "models": [
+    {
+     "displayID": 1354,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6090,
+   "name": "Bartleby",
+   "models": [
+    {
+     "displayID": 5000,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15351,
+   "name": "Alliance Brigadier General",
+   "models": [
+    {
+     "displayID": 15389,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250842,
+   "name": "Edward Heartweaver",
+   "models": [
+    {
+     "displayID": 136508,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15008,
+   "name": "Lady Hoteshem",
+   "models": [
+    {
+     "displayID": 15116,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 173754,
+   "name": "Major Mattingly",
+   "models": [
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1430,
+   "name": "Tomas",
+   "models": [
+    {
+     "displayID": 1293,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2169,
+   "name": "Blackwood Totemic",
+   "models": [
+    {
+     "displayID": 6821,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2266,
+   "name": "Hillsbrad Farmer",
+   "models": [
+    {
+     "displayID": 3612,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2350,
+   "name": "Forest Moss Creeper",
+   "models": [
+    {
+     "displayID": 1989,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4960,
+   "name": "Bishop DeLavey",
+   "models": [
+    {
+     "displayID": 2961,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6727,
+   "name": "Innkeeper Brianna",
+   "models": [
+    {
+     "displayID": 5407,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276080,
+   "name": "Mountaineer Coalbeard",
+   "models": [
+    {
+     "displayID": 148468,
+     "scale": 1.0,
+     "probability": 9.0
+    }
+   ]
+  },
+  {
+   "npcID": 274935,
+   "name": "Ironforge Protector",
+   "models": [
+    {
+     "displayID": 147846,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147847,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147848,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147850,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 261306,
+   "name": "Faldrim Anvilmar",
+   "models": [
+    {
+     "displayID": 142826,
+     "scale": 1.75,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1295,
+   "name": "Lara Moore",
+   "models": [
+    {
+     "displayID": 1445,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1286,
+   "name": "Edna Mullby",
+   "models": [
+    {
+     "displayID": 1440,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1453,
+   "name": "Dewin Shimmerdawn",
+   "models": [
+    {
+     "displayID": 1895,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 265190,
+   "name": "Stalker",
+   "models": [
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 395,
+   "name": "Markus",
+   "models": [
+    {
+     "displayID": 262,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250654,
+   "name": "Ghostly Citizen",
+   "models": [
+    {
+     "displayID": 10478,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 10480,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 10479,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 10481,
+     "scale": 1.0,
+     "probability": 25.0
+    }
+   ]
+  },
+  {
+   "npcID": 14496,
+   "name": "Stormwind Orphan",
+   "models": [
+    {
+     "displayID": 144326,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144327,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144328,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144329,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 74,
+   "name": "Kurran Steele",
+   "models": [
+    {
+     "displayID": 1289,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1226,
+   "name": "Maxan Anvol",
+   "models": [
+    {
+     "displayID": 3429,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8720,
+   "name": "Auctioneer Redmuse",
+   "models": [
+    {
+     "displayID": 7989,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 663,
+   "name": "Calor",
+   "models": [
+    {
+     "displayID": 2027,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2914,
+   "name": "Snake",
+   "models": [
+    {
+     "displayID": 1206,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6303,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2957,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2958,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2231,
+   "name": "Pygmy Tide Crawler",
+   "models": [
+    {
+     "displayID": 1000,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 226,
+   "name": "Morg Gnarltree",
+   "models": [
+    {
+     "displayID": 4332,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250483,
+   "name": "Witherfang",
+   "models": [
+    {
+     "displayID": 144189,
+     "scale": 1.5,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6740,
+   "name": "Innkeeper Allison",
+   "models": [
+    {
+     "displayID": 5444,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6491,
+   "name": "Spirit Healer",
+   "models": [
+    {
+     "displayID": 5233,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 17804,
+   "name": "Squire Rowe",
+   "models": [
+    {
+     "displayID": 17250,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 279,
+   "name": "Morgan Pestle",
+   "models": [
+    {
+     "displayID": 5082,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5129,
+   "name": "Lissyphus Finespindle",
+   "models": [
+    {
+     "displayID": 3106,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 250488,
+   "name": "Tarantula",
+   "models": [
+    {
+     "displayID": 1091,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263,
+   "name": "Lord Ello Ebonlocke",
+   "models": [
+    {
+     "displayID": 4321,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263397,
+   "name": "Dark Iron Engineer",
+   "models": [
+    {
+     "displayID": 3954,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256740,
+   "name": "Crate of Enchanting Supplies",
+   "models": [
+    {
+     "displayID": 139715,
+     "scale": 0.6,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2069,
+   "name": "Moonstalker",
+   "models": [
+    {
+     "displayID": 321,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10804,
+   "name": "Rifleman Middlecamp",
+   "models": [
+    {
+     "displayID": 10110,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1553,
+   "name": "Greater Duskbat",
+   "models": [
+    {
+     "displayID": 4734,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 468,
+   "name": "Town Crier",
+   "models": [
+    {
+     "displayID": 4310,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1373,
+   "name": "Jarven Thunderbrew",
+   "models": [
+    {
+     "displayID": 3438,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256741,
+   "name": "Basket of Textile Supplies",
+   "models": [
+    {
+     "displayID": 139815,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1367,
+   "name": "Billy",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258113,
+   "name": "Ingrid Dunwald",
+   "models": [
+    {
+     "displayID": 140654,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3629,
+   "name": "David Langston",
+   "models": [
+    {
+     "displayID": 1696,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267687,
+   "name": "Blue Mechanostrider",
+   "models": [
+    {
+     "displayID": 6569,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7936,
+   "name": "Lyon Mountainheart",
+   "models": [
+    {
+     "displayID": 7003,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7232,
+   "name": "Borgus Steelhand",
+   "models": [
+    {
+     "displayID": 6007,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 261316,
+   "name": "Magmatus",
+   "models": [
+    {
+     "displayID": 1070,
+     "scale": 1.5,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5111,
+   "name": "Innkeeper Firebrew",
+   "models": [
+    {
+     "displayID": 3047,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2182,
+   "name": "Stormscale Sorceress",
+   "models": [
+    {
+     "displayID": 4973,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11836,
+   "name": "Captured Rabid Thistle Bear",
+   "models": [
+    {
+     "displayID": 8840,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256097,
+   "name": "Bjork",
+   "models": [
+    {
+     "displayID": 144170,
+     "scale": 1.4,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 8963,
+   "name": "Effsee",
+   "models": [
+    {
+     "displayID": 5556,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1974,
+   "name": "Ravenclaw Drudger",
+   "models": [
+    {
+     "displayID": 828,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10158,
+   "name": "Moonkin",
+   "models": [
+    {
+     "displayID": 5927,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10157,
+   "name": "Moonkin Oracle",
+   "models": [
+    {
+     "displayID": 12236,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 935,
+   "name": "Guard Pearce",
+   "models": [
+    {
+     "displayID": 3447,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3666,
+   "name": "Wizbang Cranktoggle",
+   "models": [
+    {
+     "displayID": 4474,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 270844,
+   "name": "Sylessa Duskwhisper",
+   "models": [
+    {
+     "displayID": 146460,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 255303,
+   "name": "Stalker",
+   "models": [
+    {
+     "displayID": 138548,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1412,
+   "name": "Squirrel",
+   "models": [
+    {
+     "displayID": 134,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1236,
+   "name": "Kobold Digger",
+   "models": [
+    {
+     "displayID": 373,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2142,
+   "name": "Watcher Callahan",
+   "models": [
+    {
+     "displayID": 2377,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 524,
+   "name": "Rockhide Boar",
+   "models": [
+    {
+     "displayID": 389,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 494,
+   "name": "Watcher Bukouris",
+   "models": [
+    {
+     "displayID": 2379,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9984,
+   "name": "Ulbrek Firehand",
+   "models": [
+    {
+     "displayID": 9258,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1254,
+   "name": "Foreman Stonebrow",
+   "models": [
+    {
+     "displayID": 1569,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 442,
+   "name": "Tarantula",
+   "models": [
+    {
+     "displayID": 366,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2203,
+   "name": "Greymist Seer",
+   "models": [
+    {
+     "displayID": 3940,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 247264,
+   "name": "Emissary Jacques",
+   "models": [
+    {
+     "displayID": 130458,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1352,
+   "name": "Fluffy",
+   "models": [
+    {
+     "displayID": 6302,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2984,
+   "name": "Seer Wiserunner",
+   "models": [
+    {
+     "displayID": 3815,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1231,
+   "name": "Grif Wildheart",
+   "models": [
+    {
+     "displayID": 3558,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 900,
+   "name": "Bailiff Conacher",
+   "models": [
+    {
+     "displayID": 5009,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1869,
+   "name": "Ravenclaw Champion",
+   "models": [
+    {
+     "displayID": 732,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 828,
+   "name": "Watcher Petras",
+   "models": [
+    {
+     "displayID": 2397,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2178,
+   "name": "Wailing Highborne",
+   "models": [
+    {
+     "displayID": 10690,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 840,
+   "name": "Watcher Backus",
+   "models": [
+    {
+     "displayID": 2380,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1375,
+   "name": "Marleth Barleybrew",
+   "models": [
+    {
+     "displayID": 3405,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 199,
+   "name": "Young Fleshripper",
+   "models": [
+    {
+     "displayID": 410,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274781,
+   "name": "Iron Kingsguard",
+   "models": [
+    {
+     "displayID": 147965,
+     "scale": 1.1,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147966,
+     "scale": 1.1,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147968,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 147971,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 917,
+   "name": "Keryn Sylvius",
+   "models": [
+    {
+     "displayID": 1297,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3902,
+   "name": "Searing Totem II",
+   "models": [
+    {
+     "displayID": 4589,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 266449,
+   "name": "Jeremy Heartweaver",
+   "models": [
+    {
+     "displayID": 251,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2175,
+   "name": "Shadowclaw",
+   "models": [
+    {
+     "displayID": 3030,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2349,
+   "name": "Giant Moss Creeper",
+   "models": [
+    {
+     "displayID": 6808,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1431,
+   "name": "Suzetta Gallina",
+   "models": [
+    {
+     "displayID": 5545,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274873,
+   "name": "Battlesmith Vaelgrim",
+   "models": [
+    {
+     "displayID": 147926,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2430,
+   "name": "Chef Jessen",
+   "models": [
+    {
+     "displayID": 1664,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276,
+   "name": "Viktori Prism'Antras",
+   "models": [
+    {
+     "displayID": 4326,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 523,
+   "name": "Thor",
+   "models": [
+    {
+     "displayID": 3263,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3657,
+   "name": "Sentinel Elissa Starbreeze",
+   "models": [
+    {
+     "displayID": 2529,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2168,
+   "name": "Blackwood Warrior",
+   "models": [
+    {
+     "displayID": 1011,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 376,
+   "name": "High Priestess Laurena",
+   "models": [
+    {
+     "displayID": 1495,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6133,
+   "name": "Shade of Elura",
+   "models": [
+    {
+     "displayID": 4958,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2384,
+   "name": "Starving Mountain Lion",
+   "models": [
+    {
+     "displayID": 1059,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 213,
+   "name": "Starving Dire Wolf",
+   "models": [
+    {
+     "displayID": 801,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 488,
+   "name": "Protector Weaver",
+   "models": [
+    {
+     "displayID": 2371,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 796,
+   "name": "Joshua",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 379,
+   "name": "Darcy",
+   "models": [
+    {
+     "displayID": 3367,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3527,
+   "name": "Healing Stream Totem",
+   "models": [
+    {
+     "displayID": 4587,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5464,
+   "name": "Watchmaster Sorigal",
+   "models": [
+    {
+     "displayID": 3249,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3841,
+   "name": "Caylais Moonfeather",
+   "models": [
+    {
+     "displayID": 1932,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1360,
+   "name": "Miner Grumnal",
+   "models": [
+    {
+     "displayID": 3421,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1478,
+   "name": "Aedis Brom",
+   "models": [
+    {
+     "displayID": 1519,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1319,
+   "name": "Bryan Cross",
+   "models": [
+    {
+     "displayID": 1510,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2784,
+   "name": "King Magni Bronzebeard",
+   "models": [
+    {
+     "displayID": 3597,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2326,
+   "name": "Thamner Pol",
+   "models": [
+    {
+     "displayID": 3433,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4186,
+   "name": "Mavralyn",
+   "models": [
+    {
+     "displayID": 4406,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10803,
+   "name": "Rifleman Wheeler",
+   "models": [
+    {
+     "displayID": 10111,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2363,
+   "name": "Apprentice Honeywell",
+   "models": [
+    {
+     "displayID": 3646,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2504,
+   "name": "Donyal Tovald",
+   "models": [
+    {
+     "displayID": 1573,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11979,
+   "name": "Kim Bridenbecker",
+   "models": [
+    {
+     "displayID": 11929,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 269075,
+   "name": "Snow Leopard Prowler",
+   "models": [
+    {
+     "displayID": 749,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 656,
+   "name": "Wilder Thistlenettle",
+   "models": [
+    {
+     "displayID": 2363,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 478,
+   "name": "Riverpaw Outrunner",
+   "models": [
+    {
+     "displayID": 512,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1261,
+   "name": "Veron Amberstill",
+   "models": [
+    {
+     "displayID": 2790,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 441,
+   "name": "Black Dragon Whelp",
+   "models": [
+    {
+     "displayID": 387,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2228,
+   "name": "Lieutenant Farren Orinelle",
+   "models": [
+    {
+     "displayID": 1769,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14365,
+   "name": "Thief Catcher Farmountain",
+   "models": [
+    {
+     "displayID": 14404,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256389,
+   "name": "Tamelyn Aldridge",
+   "models": [
+    {
+     "displayID": 139602,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2110,
+   "name": "Black Rat",
+   "models": [
+    {
+     "displayID": 1141,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2163,
+   "name": "Thistle Bear",
+   "models": [
+    {
+     "displayID": 1006,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 264636,
+   "name": "Buster",
+   "models": [
+    {
+     "displayID": 5554,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 934,
+   "name": "Guard Clarke",
+   "models": [
+    {
+     "displayID": 3455,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13076,
+   "name": "Dun Morogh Mountaineer",
+   "models": [
+    {
+     "displayID": 1598,
+     "scale": 1.0,
+     "probability": 9.0
+    },
+    {
+     "displayID": 1608,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5126,
+   "name": "Olthran Craghelm",
+   "models": [
+    {
+     "displayID": 3080,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1397,
+   "name": "Frostmane Seer",
+   "models": [
+    {
+     "displayID": 5610,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2263,
+   "name": "Marshal Redpath",
+   "models": [
+    {
+     "displayID": 1861,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1237,
+   "name": "Kazan Mogosh",
+   "models": [
+    {
+     "displayID": 3418,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 489,
+   "name": "Protector Dutfield",
+   "models": [
+    {
+     "displayID": 2364,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250623,
+   "name": "Mangled Cadaver",
+   "models": [
+    {
+     "displayID": 768,
+     "scale": 2.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 14551,
+   "name": "Swift Yellow Mechanostrider",
+   "models": [
+    {
+     "displayID": 14377,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11957,
+   "name": "Great Cat Spirit",
+   "models": [
+    {
+     "displayID": 11910,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 272054,
+   "name": "Avatar of Saeyleenan",
+   "models": [
+    {
+     "displayID": 146918,
+     "scale": 1.5,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3667,
+   "name": "Anaya Dawnrunner",
+   "models": [
+    {
+     "displayID": 1937,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7954,
+   "name": "Binjy Featherwhistle",
+   "models": [
+    {
+     "displayID": 7038,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6119,
+   "name": "Tog Rustsprocket",
+   "models": [
+    {
+     "displayID": 4864,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11941,
+   "name": "Yori Crackhelm",
+   "models": [
+    {
+     "displayID": 11899,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 956,
+   "name": "Dorin Songblade",
+   "models": [
+    {
+     "displayID": 3353,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267473,
+   "name": "Brown Ram",
+   "models": [
+    {
+     "displayID": 2785,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12777,
+   "name": "Captain Dirgehammer",
+   "models": [
+    {
+     "displayID": 12917,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5515,
+   "name": "Einris Brightspear",
+   "models": [
+    {
+     "displayID": 3312,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 7798,
+   "name": "Hank the Hammer",
+   "models": [
+    {
+     "displayID": 6844,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 490,
+   "name": "Protector Gariel",
+   "models": [
+    {
+     "displayID": 2367,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 732,
+   "name": "Murloc Lurker",
+   "models": [
+    {
+     "displayID": 983,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6121,
+   "name": "Remen Marcot",
+   "models": [
+    {
+     "displayID": 4866,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5177,
+   "name": "Tally Berryfizz",
+   "models": [
+    {
+     "displayID": 3124,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2233,
+   "name": "Encrusted Tide Crawler",
+   "models": [
+    {
+     "displayID": 9566,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2164,
+   "name": "Rabid Thistle Bear",
+   "models": [
+    {
+     "displayID": 8840,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5193,
+   "name": "Rebecca Laughlin",
+   "models": [
+    {
+     "displayID": 3133,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 822,
+   "name": "Young Forest Bear",
+   "models": [
+    {
+     "displayID": 1006,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1434,
+   "name": "Menethil Sentry",
+   "models": [
+    {
+     "displayID": 2677,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2678,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2680,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2679,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5607,
+   "name": "Roger",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10037,
+   "name": "Lakeshire Guard",
+   "models": [
+    {
+     "displayID": 3447,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3091,
+   "name": "Franklin Hamar",
+   "models": [
+    {
+     "displayID": 3376,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5173,
+   "name": "Alexander Calder",
+   "models": [
+    {
+     "displayID": 3122,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2324,
+   "name": "Blackwood Windtalker",
+   "models": [
+    {
+     "displayID": 6820,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5565,
+   "name": "Jillian Tanner",
+   "models": [
+    {
+     "displayID": 3448,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3134,
+   "name": "Kzixx",
+   "models": [
+    {
+     "displayID": 7131,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2112,
+   "name": "Farrin Daris",
+   "models": [
+    {
+     "displayID": 4319,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9978,
+   "name": "Wesley",
+   "models": [
+    {
+     "displayID": 9252,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2442,
+   "name": "Cow",
+   "models": [
+    {
+     "displayID": 137874,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258879,
+   "name": "Steamwheedle Courier",
+   "models": [
+    {
+     "displayID": 7750,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 276246,
+   "name": "Mistmantle Prowler",
+   "models": [
+    {
+     "displayID": 563,
+     "scale": 1.3,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5174,
+   "name": "Springspindle Fizzlegear",
+   "models": [
+    {
+     "displayID": 3117,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 836,
+   "name": "Durnan Furcutter",
+   "models": [
+    {
+     "displayID": 3406,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 250660,
+   "name": "The Baron",
+   "models": [
+    {
+     "displayID": 144188,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 271486,
+   "name": "Wendigo Shaman",
+   "models": [
+    {
+     "displayID": 146686,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5511,
+   "name": "Therum Deepforge",
+   "models": [
+    {
+     "displayID": 3307,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1922,
+   "name": "Gray Forest Wolf",
+   "models": [
+    {
+     "displayID": 380,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 424,
+   "name": "Redridge Poacher",
+   "models": [
+    {
+     "displayID": 551,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1692,
+   "name": "Golorn Frostbeard",
+   "models": [
+    {
+     "displayID": 3414,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10062,
+   "name": "Steven Black",
+   "models": [
+    {
+     "displayID": 9285,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267118,
+   "name": "Gilbert Gray",
+   "models": [
+    {
+     "displayID": 144964,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10610,
+   "name": "Angus",
+   "models": [
+    {
+     "displayID": 9946,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 793,
+   "name": "Kara Adams",
+   "models": [
+    {
+     "displayID": 3356,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1445,
+   "name": "Jesse Halloran",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5873,
+   "name": "Stoneskin Totem",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12786,
+   "name": "Guard Quine",
+   "models": [
+    {
+     "displayID": 12920,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5595,
+   "name": "Ironforge Guard",
+   "models": [
+    {
+     "displayID": 3524,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3525,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3526,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3527,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1285,
+   "name": "Thurman Mullby",
+   "models": [
+    {
+     "displayID": 1434,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6789,
+   "name": "Thistle Cub",
+   "models": [
+    {
+     "displayID": 5510,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 235,
+   "name": "Salma Saldean",
+   "models": [
+    {
+     "displayID": 1691,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2383,
+   "name": "Lindea Rabonne",
+   "models": [
+    {
+     "displayID": 3694,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 906,
+   "name": "Maximillian Crowe",
+   "models": [
+    {
+     "displayID": 3271,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276189,
+   "name": "Matriarch Bristlefur",
+   "models": [
+    {
+     "displayID": 806,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9099,
+   "name": "Sraaz",
+   "models": [
+    {
+     "displayID": 8353,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 878,
+   "name": "Scout Galiaan",
+   "models": [
+    {
+     "displayID": 2373,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 278,
+   "name": "Sara Timberlain",
+   "models": [
+    {
+     "displayID": 3268,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6382,
+   "name": "Jubahl Corpseseeker",
+   "models": [
+    {
+     "displayID": 5085,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1405,
+   "name": "Morris Lawry",
+   "models": [
+    {
+     "displayID": 1524,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2364,
+   "name": "Neema",
+   "models": [
+    {
+     "displayID": 3658,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256739,
+   "name": "Crate of Blacksmithing Goods",
+   "models": [
+    {
+     "displayID": 139816,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8508,
+   "name": "Gretta Ganter",
+   "models": [
+    {
+     "displayID": 7808,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 491,
+   "name": "Quartermaster Lewis",
+   "models": [
+    {
+     "displayID": 3342,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5608,
+   "name": "Jamin",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1423,
+   "name": "Stormwind Guard",
+   "models": [
+    {
+     "displayID": 3258,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2189,
+   "name": "Vile Sprite",
+   "models": [
+    {
+     "displayID": 2452,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2436,
+   "name": "Farmer Kent",
+   "models": [
+    {
+     "displayID": 3667,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 487,
+   "name": "Protector Bialon",
+   "models": [
+    {
+     "displayID": 2368,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 113,
+   "name": "Stonetusk Boar",
+   "models": [
+    {
+     "displayID": 138616,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13018,
+   "name": "Nipsy",
+   "models": [
+    {
+     "displayID": 12965,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1699,
+   "name": "Gremlock Pilsnor",
+   "models": [
+    {
+     "displayID": 3435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3678,
+   "name": "Disciple of Naralex",
+   "models": [
+    {
+     "displayID": 1941,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5175,
+   "name": "Gearcutter Cogspinner",
+   "models": [
+    {
+     "displayID": 3118,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 14560,
+   "name": "Swift White Steed",
+   "models": [
+    {
+     "displayID": 14338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5158,
+   "name": "Tilli Thistlefuzz",
+   "models": [
+    {
+     "displayID": 3120,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 14548,
+   "name": "Swift Gray Ram",
+   "models": [
+    {
+     "displayID": 14576,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 264937,
+   "name": "Farsen's Totem",
+   "models": [
+    {
+     "displayID": 30753,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 576,
+   "name": "Watcher Ladimore",
+   "models": [
+    {
+     "displayID": 2375,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 259003,
+   "name": "Terry Lawrence",
+   "models": [
+    {
+     "displayID": 141241,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6086,
+   "name": "Auberdine Sentinel",
+   "models": [
+    {
+     "displayID": 4845,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4846,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4847,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4848,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1195,
+   "name": "Forest Lurker",
+   "models": [
+    {
+     "displayID": 827,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4982,
+   "name": "Thomas",
+   "models": [
+    {
+     "displayID": 262,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1234,
+   "name": "Hogral Bakkan",
+   "models": [
+    {
+     "displayID": 3436,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3542,
+   "name": "Jaysin Lanyda",
+   "models": [
+    {
+     "displayID": 3699,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1860,
+   "name": "Voidwalker",
+   "models": [
+    {
+     "displayID": 1132,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258306,
+   "name": "Granny Finespindle",
+   "models": [
+    {
+     "displayID": 140695,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 237,
+   "name": "Farmer Furlbrow",
+   "models": [
+    {
+     "displayID": 1944,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 832,
+   "name": "Dust Devil",
+   "models": [
+    {
+     "displayID": 5327,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2913,
+   "name": "Archaeologist Hollee",
+   "models": [
+    {
+     "displayID": 1286,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1126,
+   "name": "Large Crag Boar",
+   "models": [
+    {
+     "displayID": 381,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 628,
+   "name": "Black Ravager",
+   "models": [
+    {
+     "displayID": 741,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5120,
+   "name": "Brenwyn Wintersteel",
+   "models": [
+    {
+     "displayID": 3057,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1670,
+   "name": "Mike Miller",
+   "models": [
+    {
+     "displayID": 3262,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 264936,
+   "name": "Earthseer Farsen",
+   "models": [
+    {
+     "displayID": 144321,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 4959,
+   "name": "Jorgen",
+   "models": [
+    {
+     "displayID": 4469,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 250650,
+   "name": "Wailing Banshee",
+   "models": [
+    {
+     "displayID": 8782,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1103,
+   "name": "Eldrin",
+   "models": [
+    {
+     "displayID": 1290,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2070,
+   "name": "Moonstalker Runt",
+   "models": [
+    {
+     "displayID": 11449,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6298,
+   "name": "Thelgrum Stonehammer",
+   "models": [
+    {
+     "displayID": 5020,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 797,
+   "name": "Bo",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11146,
+   "name": "Ironus Coldsteel",
+   "models": [
+    {
+     "displayID": 10694,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258930,
+   "name": "Isaac Chan",
+   "models": [
+    {
+     "displayID": 141199,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 903,
+   "name": "Guard Howe",
+   "models": [
+    {
+     "displayID": 3446,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1718,
+   "name": "Rockjaw Raider",
+   "models": [
+    {
+     "displayID": 730,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276083,
+   "name": "Mountaineer Stoneanvil",
+   "models": [
+    {
+     "displayID": 148471,
+     "scale": 1.0,
+     "probability": 9.0
+    }
+   ]
+  },
+  {
+   "npcID": 268318,
+   "name": "Pinto",
+   "models": [
+    {
+     "displayID": 2409,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 268,
+   "name": "Sirra Von'Indi",
+   "models": [
+    {
+     "displayID": 4324,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263389,
+   "name": "Enraged Apparition",
+   "models": [
+    {
+     "displayID": 143689,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143694,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143695,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143696,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2457,
+   "name": "John Burnside",
+   "models": [
+    {
+     "displayID": 1437,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2451,
+   "name": "Farmer Kalaba",
+   "models": [
+    {
+     "displayID": 3630,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8671,
+   "name": "Auctioneer Buckler",
+   "models": [
+    {
+     "displayID": 7990,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1933,
+   "name": "Sheep",
+   "models": [
+    {
+     "displayID": 856,
+     "scale": 1.0,
+     "probability": 2.0
+    },
+    {
+     "displayID": 857,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 272368,
+   "name": "Invisible Stalker",
+   "models": [
+    {
+     "displayID": 1126,
+     "scale": 1.0,
+     "probability": 0.0
+    },
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5491,
+   "name": "Arthur the Faithful",
+   "models": [
+    {
+     "displayID": 3284,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1446,
+   "name": "Regina Halloran",
+   "models": [
+    {
+     "displayID": 252,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 54,
+   "name": "Corina Steele",
+   "models": [
+    {
+     "displayID": 1287,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1294,
+   "name": "Aldric Moore",
+   "models": [
+    {
+     "displayID": 1423,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1109,
+   "name": "Fleshripper",
+   "models": [
+    {
+     "displayID": 2305,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 41938,
+   "name": "Tremor Totem",
+   "models": [
+    {
+     "displayID": 30753,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1302,
+   "name": "Bernard Gump",
+   "models": [
+    {
+     "displayID": 1425,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1128,
+   "name": "Young Black Bear",
+   "models": [
+    {
+     "displayID": 8843,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1253,
+   "name": "Father Gavin",
+   "models": [
+    {
+     "displayID": 1616,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1138,
+   "name": "Snow Tracker Wolf",
+   "models": [
+    {
+     "displayID": 138625,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 820,
+   "name": "Scout Riell",
+   "models": [
+    {
+     "displayID": 2374,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1134,
+   "name": "Young Wendigo",
+   "models": [
+    {
+     "displayID": 929,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15187,
+   "name": "Cenarion Emissary Jademoon",
+   "models": [
+    {
+     "displayID": 15321,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2264,
+   "name": "Hillsbrad Tailor",
+   "models": [
+    {
+     "displayID": 3610,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3611,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5108,
+   "name": "Raena Flinthammer",
+   "models": [
+    {
+     "displayID": 3049,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 7009,
+   "name": "Arantir",
+   "models": [
+    {
+     "displayID": 5768,
+     "scale": 1.0,
+     "probability": 0.0
+    },
+    {
+     "displayID": 5768,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5917,
+   "name": "Clara Charles",
+   "models": [
+    {
+     "displayID": 4558,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 377,
+   "name": "Priestess Josetta",
+   "models": [
+    {
+     "displayID": 1295,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7917,
+   "name": "Brother Sarno",
+   "models": [
+    {
+     "displayID": 7008,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1440,
+   "name": "Milton Sheaf",
+   "models": [
+    {
+     "displayID": 5553,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2461,
+   "name": "Bailey Stonemantle",
+   "models": [
+    {
+     "displayID": 3038,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1274,
+   "name": "Senator Barin Redstone",
+   "models": [
+    {
+     "displayID": 1655,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 933,
+   "name": "Guard Hiett",
+   "models": [
+    {
+     "displayID": 3450,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1269,
+   "name": "Razzle Sprysprocket",
+   "models": [
+    {
+     "displayID": 3440,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 255109,
+   "name": "Flesh Golem",
+   "models": [
+    {
+     "displayID": 1693,
+     "scale": 0.9,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13084,
+   "name": "Bixi Wobblebonk",
+   "models": [
+    {
+     "displayID": 12992,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 3694,
+   "name": "Sentinel Selarin",
+   "models": [
+    {
+     "displayID": 1982,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8256,
+   "name": "Curator Thorius",
+   "models": [
+    {
+     "displayID": 7769,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 272310,
+   "name": "Mocha",
+   "models": [
+    {
+     "displayID": 5555,
+     "scale": 0.85,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 95,
+   "name": "Defias Smuggler",
+   "models": [
+    {
+     "displayID": 4418,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4419,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 918,
+   "name": "Osborne the Night Man",
+   "models": [
+    {
+     "displayID": 1507,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6123,
+   "name": "Dark Iron Spy",
+   "models": [
+    {
+     "displayID": 4956,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263438,
+   "name": "Dark Iron Summoner",
+   "models": [
+    {
+     "displayID": 143713,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12782,
+   "name": "Captain O'Neal",
+   "models": [
+    {
+     "displayID": 12918,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2321,
+   "name": "Foreststrider Fledgling",
+   "models": [
+    {
+     "displayID": 1042,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10456,
+   "name": "Prynne",
+   "models": [
+    {
+     "displayID": 9821,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5165,
+   "name": "Hulfdan Blackbeard",
+   "models": [
+    {
+     "displayID": 3101,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5138,
+   "name": "Gwina Stonebranch",
+   "models": [
+    {
+     "displayID": 3064,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1247,
+   "name": "Innkeeper Belm",
+   "models": [
+    {
+     "displayID": 3434,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 30,
+   "name": "Forest Spider",
+   "models": [
+    {
+     "displayID": 382,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6169,
+   "name": "Klockmort Spannerspan",
+   "models": [
+    {
+     "displayID": 4999,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 6966,
+   "name": "Lucius",
+   "models": [
+    {
+     "displayID": 5752,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5049,
+   "name": "Lyesa Steelbrow",
+   "models": [
+    {
+     "displayID": 2999,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4981,
+   "name": "Ben Trias",
+   "models": [
+    {
+     "displayID": 5547,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 264634,
+   "name": "Leo",
+   "models": [
+    {
+     "displayID": 5554,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2276,
+   "name": "Magistrate Henry Maleb",
+   "models": [
+    {
+     "displayID": 3665,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12805,
+   "name": "Officer Areyn",
+   "models": [
+    {
+     "displayID": 12923,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 228443,
+   "name": "[DNT] Challenge",
+   "models": [
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2322,
+   "name": "Foreststrider",
+   "models": [
+    {
+     "displayID": 178,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5167,
+   "name": "Fenthwick",
+   "models": [
+    {
+     "displayID": 3113,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 8965,
+   "name": "Shawn",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274,
+   "name": "Barkeep Hann",
+   "models": [
+    {
+     "displayID": 5039,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 957,
+   "name": "Dane Lindgren",
+   "models": [
+    {
+     "displayID": 3354,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4193,
+   "name": "Grondal Moonbreeze",
+   "models": [
+    {
+     "displayID": 4400,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250656,
+   "name": "Fallen Berserker",
+   "models": [
+    {
+     "displayID": 9784,
+     "scale": 1.15,
+     "probability": 1.0
+    },
+    {
+     "displayID": 9787,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 9786,
+     "scale": 1.15,
+     "probability": 1.0
+    },
+    {
+     "displayID": 9788,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1460,
+   "name": "Unger Statforth",
+   "models": [
+    {
+     "displayID": 3465,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 932,
+   "name": "Guard Ashlock",
+   "models": [
+    {
+     "displayID": 3384,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 869,
+   "name": "Protector Dorana",
+   "models": [
+    {
+     "displayID": 2366,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 157,
+   "name": "Goretusk",
+   "models": [
+    {
+     "displayID": 3027,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256390,
+   "name": "Marcy Baker",
+   "models": [
+    {
+     "displayID": 139603,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1770,
+   "name": "Moonrage Darkrunner",
+   "models": [
+    {
+     "displayID": 729,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3842,
+   "name": "Brombar Higgleby",
+   "models": [
+    {
+     "displayID": 1935,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3911,
+   "name": "Stoneclaw Totem II",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 821,
+   "name": "Captain Danuvin",
+   "models": [
+    {
+     "displayID": 2372,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2187,
+   "name": "Elder Darkshore Thresher",
+   "models": [
+    {
+     "displayID": 994,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2381,
+   "name": "Micha Yance",
+   "models": [
+    {
+     "displayID": 3692,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 525,
+   "name": "Mangy Wolf",
+   "models": [
+    {
+     "displayID": 903,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2285,
+   "name": "Count Remington Ridgewell",
+   "models": [
+    {
+     "displayID": 5075,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1417,
+   "name": "Young Wetlands Crocolisk",
+   "models": [
+    {
+     "displayID": 1035,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5569,
+   "name": "Fizzlebang Booms",
+   "models": [
+    {
+     "displayID": 3457,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3695,
+   "name": "Grimclaw",
+   "models": [
+    {
+     "displayID": 913,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 7944,
+   "name": "Tinkmaster Overspark",
+   "models": [
+    {
+     "displayID": 7028,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5124,
+   "name": "Sognar Cliffbeard",
+   "models": [
+    {
+     "displayID": 3078,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1402,
+   "name": "Topper McNabb",
+   "models": [
+    {
+     "displayID": 1438,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1458,
+   "name": "Telurinon Moonshadow",
+   "models": [
+    {
+     "displayID": 1898,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1228,
+   "name": "Magis Sparkmantle",
+   "models": [
+    {
+     "displayID": 10215,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2378,
+   "name": "Kundric Zanden",
+   "models": [
+    {
+     "displayID": 3660,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250618,
+   "name": "Skeleton",
+   "models": [
+    {
+     "displayID": 9786,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 7550,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267,
+   "name": "Clerk Daltry",
+   "models": [
+    {
+     "displayID": 1720,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1321,
+   "name": "Alyssa Griffith",
+   "models": [
+    {
+     "displayID": 1520,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 253,
+   "name": "William Pestle",
+   "models": [
+    {
+     "displayID": 5038,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 504,
+   "name": "Defias Trapper",
+   "models": [
+    {
+     "displayID": 2331,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2332,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10782,
+   "name": "Royal Factor Bathrilor",
+   "models": [
+    {
+     "displayID": 10131,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1297,
+   "name": "Lina Stover",
+   "models": [
+    {
+     "displayID": 1446,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1241,
+   "name": "Tognus Flintfire",
+   "models": [
+    {
+     "displayID": 3422,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274940,
+   "name": "Annabella Junelight",
+   "models": [
+    {
+     "displayID": 147963,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1707,
+   "name": "Defias Captive",
+   "models": [
+    {
+     "displayID": 2144,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 791,
+   "name": "Lindsay Ashlock",
+   "models": [
+    {
+     "displayID": 3368,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5874,
+   "name": "Strength of Earth Totem",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6291,
+   "name": "Balthus Stoneflayer",
+   "models": [
+    {
+     "displayID": 4986,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10085,
+   "name": "Jaelysia",
+   "models": [
+    {
+     "displayID": 9294,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7380,
+   "name": "Siamese",
+   "models": [
+    {
+     "displayID": 5585,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 325,
+   "name": "Hogan Ference",
+   "models": [
+    {
+     "displayID": 4320,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 266025,
+   "name": "Rat Familiar",
+   "models": [
+    {
+     "displayID": 1141,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10805,
+   "name": "Spotter Klemmy",
+   "models": [
+    {
+     "displayID": 10109,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 260157,
+   "name": "Elder Snow Leopard",
+   "models": [
+    {
+     "displayID": 749,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 857,
+   "name": "Donal Osgood",
+   "models": [
+    {
+     "displayID": 15114,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1355,
+   "name": "Cook Ghilm",
+   "models": [
+    {
+     "displayID": 3416,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12298,
+   "name": "Sickly Deer",
+   "models": [
+    {
+     "displayID": 10091,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15991,
+   "name": "Lady Dena Kennedy",
+   "models": [
+    {
+     "displayID": 15947,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1339,
+   "name": "Mayda Thane",
+   "models": [
+    {
+     "displayID": 1522,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1965,
+   "name": "Mountaineer Thalos",
+   "models": [
+    {
+     "displayID": 1567,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 256730,
+   "name": "Stondry Darkhammer",
+   "models": [
+    {
+     "displayID": 139788,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5122,
+   "name": "Skolmin Goldfury",
+   "models": [
+    {
+     "displayID": 3077,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 827,
+   "name": "Watcher Mocarski",
+   "models": [
+    {
+     "displayID": 2395,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7955,
+   "name": "Milli Featherwhistle",
+   "models": [
+    {
+     "displayID": 7039,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5125,
+   "name": "Dolkin Craghelm",
+   "models": [
+    {
+     "displayID": 3079,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 258098,
+   "name": "Eldrun Stormbreaker",
+   "models": [
+    {
+     "displayID": 143525,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271546,
+   "name": "Mountaineer Gretchen",
+   "models": [
+    {
+     "displayID": 146689,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2456,
+   "name": "Newton Burnside",
+   "models": [
+    {
+     "displayID": 1436,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2695,
+   "name": "Sara Balloo",
+   "models": [
+    {
+     "displayID": 1670,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1127,
+   "name": "Elder Crag Boar",
+   "models": [
+    {
+     "displayID": 744,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1779,
+   "name": "Moonrage Glutton",
+   "models": [
+    {
+     "displayID": 1947,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250689,
+   "name": "Living Monstrosity",
+   "models": [
+    {
+     "displayID": 10433,
+     "scale": 1.3,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2354,
+   "name": "Vicious Gray Bear",
+   "models": [
+    {
+     "displayID": 1007,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1778,
+   "name": "Ferocious Grizzled Bear",
+   "models": [
+    {
+     "displayID": 902,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 352,
+   "name": "Dungar Longdrink",
+   "models": [
+    {
+     "displayID": 5128,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 4182,
+   "name": "Dalmond",
+   "models": [
+    {
+     "displayID": 4404,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1324,
+   "name": "Heinrich Stone",
+   "models": [
+    {
+     "displayID": 1512,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1348,
+   "name": "Gregory Ardus",
+   "models": [
+    {
+     "displayID": 1503,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 415,
+   "name": "Verner Osgood",
+   "models": [
+    {
+     "displayID": 3358,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12781,
+   "name": "Master Sergeant Biggins",
+   "models": [
+    {
+     "displayID": 12669,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 14363,
+   "name": "Thief Catcher Shadowdelve",
+   "models": [
+    {
+     "displayID": 14396,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2371,
+   "name": "Daggerspine Siren",
+   "models": [
+    {
+     "displayID": 4982,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 265003,
+   "name": "Thom Filch",
+   "models": [
+    {
+     "displayID": 144349,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 256399,
+   "name": "Off-Duty Pack Mule",
+   "models": [
+    {
+     "displayID": 239,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12997,
+   "name": "Monty",
+   "models": [
+    {
+     "displayID": 5485,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 267007,
+   "name": "Stormwind Harbor Guard",
+   "models": [
+    {
+     "displayID": 3167,
+     "scale": 1.0,
+     "probability": 50.0
+    },
+    {
+     "displayID": 5446,
+     "scale": 1.0,
+     "probability": 50.0
+    }
+   ]
+  },
+  {
+   "npcID": 1374,
+   "name": "Rejold Barleybrew",
+   "models": [
+    {
+     "displayID": 3398,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5513,
+   "name": "Gelman Stonehand",
+   "models": [
+    {
+     "displayID": 3308,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5624,
+   "name": "Undercity Guardian",
+   "models": [
+    {
+     "displayID": 10699,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 381,
+   "name": "Dockmaster Baren",
+   "models": [
+    {
+     "displayID": 3360,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7381,
+   "name": "Silver Tabby",
+   "models": [
+    {
+     "displayID": 5555,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1271,
+   "name": "Old Icebeard",
+   "models": [
+    {
+     "displayID": 1050,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 257446,
+   "name": "Teo Hammerstorm",
+   "models": [
+    {
+     "displayID": 126743,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3583,
+   "name": "Barithras Moonshade",
+   "models": [
+    {
+     "displayID": 4414,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5154,
+   "name": "Poranna Snowbraid",
+   "models": [
+    {
+     "displayID": 3069,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1651,
+   "name": "Lee Brown",
+   "models": [
+    {
+     "displayID": 3272,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 344,
+   "name": "Magistrate Solomon",
+   "models": [
+    {
+     "displayID": 1753,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256040,
+   "name": "Deep Widow",
+   "models": [
+    {
+     "displayID": 539,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 428,
+   "name": "Dire Condor",
+   "models": [
+    {
+     "displayID": 490,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2668,
+   "name": "Danielle Zipstitch",
+   "models": [
+    {
+     "displayID": 4273,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1748,
+   "name": "Highlord Bolvar Fordragon",
+   "models": [
+    {
+     "displayID": 5566,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3650,
+   "name": "Asterion",
+   "models": [
+    {
+     "displayID": 1771,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1912,
+   "name": "Dalaran Protector",
+   "models": [
+    {
+     "displayID": 3602,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3603,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250484,
+   "name": "Spider",
+   "models": [
+    {
+     "displayID": 2538,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2541,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5186,
+   "name": "Basking Shark",
+   "models": [
+    {
+     "displayID": 768,
+     "scale": 2.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1749,
+   "name": "Lady Katrana Prestor",
+   "models": [
+    {
+     "displayID": 8769,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4183,
+   "name": "Naram Longclaw",
+   "models": [
+    {
+     "displayID": 4408,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5114,
+   "name": "Bilban Tosslespanner",
+   "models": [
+    {
+     "displayID": 3055,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5384,
+   "name": "Brohann Caskbelly",
+   "models": [
+    {
+     "displayID": 5079,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 261,
+   "name": "Guard Thomas",
+   "models": [
+    {
+     "displayID": 1984,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 268316,
+   "name": "Chestnut Mare",
+   "models": [
+    {
+     "displayID": 2405,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7559,
+   "name": "Arctic Hare",
+   "models": [
+    {
+     "displayID": 328,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274917,
+   "name": "Boborus Overvolt",
+   "models": [
+    {
+     "displayID": 147954,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14439,
+   "name": "Officer Brady",
+   "models": [
+    {
+     "displayID": 14493,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 945,
+   "name": "Rybrad Coldbank",
+   "models": [
+    {
+     "displayID": 3391,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 267337,
+   "name": "Sally Swiftwrench",
+   "models": [
+    {
+     "displayID": 145047,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3133,
+   "name": "Herble Baubbletump",
+   "models": [
+    {
+     "displayID": 4286,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1701,
+   "name": "Dank Drizzlecut",
+   "models": [
+    {
+     "displayID": 3424,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5119,
+   "name": "Hegnar Swiftaxe",
+   "models": [
+    {
+     "displayID": 3075,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1351,
+   "name": "Brother Cassius",
+   "models": [
+    {
+     "displayID": 1501,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1249,
+   "name": "Quartermaster Hudson",
+   "models": [
+    {
+     "displayID": 3337,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 383,
+   "name": "Jason Mathers",
+   "models": [
+    {
+     "displayID": 3273,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5110,
+   "name": "Barim Jurgenstaad",
+   "models": [
+    {
+     "displayID": 3046,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 10877,
+   "name": "Courier Hammerfall",
+   "models": [
+    {
+     "displayID": 10184,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1341,
+   "name": "Wilhelm Strang",
+   "models": [
+    {
+     "displayID": 1518,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 833,
+   "name": "Coyote Packleader",
+   "models": [
+    {
+     "displayID": 161,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1349,
+   "name": "Agustus Moulaine",
+   "models": [
+    {
+     "displayID": 1500,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 705,
+   "name": "Ragged Young Wolf",
+   "models": [
+    {
+     "displayID": 138618,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8879,
+   "name": "Royal Historian Archesonus",
+   "models": [
+    {
+     "displayID": 8171,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2470,
+   "name": "Watcher Fraizer",
+   "models": [
+    {
+     "displayID": 9232,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 944,
+   "name": "Marryk Nurribit",
+   "models": [
+    {
+     "displayID": 10216,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1427,
+   "name": "Harlan Bagley",
+   "models": [
+    {
+     "displayID": 5551,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6806,
+   "name": "Tannok Frosthammer",
+   "models": [
+    {
+     "displayID": 5525,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5392,
+   "name": "Yarr Hammerstone",
+   "models": [
+    {
+     "displayID": 3396,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6670,
+   "name": "Westfall Woodworker",
+   "models": [
+    {
+     "displayID": 3264,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2386,
+   "name": "Southshore Guard",
+   "models": [
+    {
+     "displayID": 3705,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3708,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2277,
+   "name": "Loremaster Dibbs",
+   "models": [
+    {
+     "displayID": 3702,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13843,
+   "name": "Lieutenant Rotimer",
+   "models": [
+    {
+     "displayID": 13850,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 514,
+   "name": "Smith Argus",
+   "models": [
+    {
+     "displayID": 1288,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1694,
+   "name": "Loslor Rudge",
+   "models": [
+    {
+     "displayID": 3392,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 382,
+   "name": "Marshal Marris",
+   "models": [
+    {
+     "displayID": 3454,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2265,
+   "name": "Hillsbrad Apprentice Blacksmith",
+   "models": [
+    {
+     "displayID": 3613,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 270,
+   "name": "Councilman Millstipe",
+   "models": [
+    {
+     "displayID": 1724,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2711,
+   "name": "Phin Odelic",
+   "models": [
+    {
+     "displayID": 3666,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5107,
+   "name": "Mangorn Flinthammer",
+   "models": [
+    {
+     "displayID": 3045,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 217,
+   "name": "Venom Web Spider",
+   "models": [
+    {
+     "displayID": 955,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250625,
+   "name": "Broodling",
+   "models": [
+    {
+     "displayID": 9756,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1298,
+   "name": "Frederick Stover",
+   "models": [
+    {
+     "displayID": 1427,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 578,
+   "name": "Murloc Scout",
+   "models": [
+    {
+     "displayID": 391,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5185,
+   "name": "Hammerhead Shark",
+   "models": [
+    {
+     "displayID": 768,
+     "scale": 2.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 7298,
+   "name": "Demnul Farmountain",
+   "models": [
+    {
+     "displayID": 6062,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3937,
+   "name": "Kira Songshine",
+   "models": [
+    {
+     "displayID": 3234,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 273065,
+   "name": "Ribbly Spinwhistle",
+   "models": [
+    {
+     "displayID": 147246,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 269,
+   "name": "Role Dreuger",
+   "models": [
+    {
+     "displayID": 4309,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3935,
+   "name": "Toddrick",
+   "models": [
+    {
+     "displayID": 3236,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 273127,
+   "name": "Finaida Earthbore",
+   "models": [
+    {
+     "displayID": 147261,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14394,
+   "name": "Major Mattingly",
+   "models": [
+    {
+     "displayID": 14431,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 267064,
+   "name": "Stormwind Cannoneer",
+   "models": [
+    {
+     "displayID": 144952,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144953,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 259642,
+   "name": "Invisible Stalker",
+   "models": [
+    {
+     "displayID": 1126,
+     "scale": 1.0,
+     "probability": 0.0
+    },
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1420,
+   "name": "Toad",
+   "models": [
+    {
+     "displayID": 901,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 227,
+   "name": "Mabel Solaj",
+   "models": [
+    {
+     "displayID": 4340,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 853,
+   "name": "Coldridge Mountaineer",
+   "models": [
+    {
+     "displayID": 1598,
+     "scale": 1.0,
+     "probability": 2.0
+    },
+    {
+     "displayID": 1608,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250649,
+   "name": "Mindless Undead",
+   "models": [
+    {
+     "displayID": 1200,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 721,
+   "name": "Rabbit",
+   "models": [
+    {
+     "displayID": 139885,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 139886,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2212,
+   "name": "Deth'ryll Satyr",
+   "models": [
+    {
+     "displayID": 1013,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 295,
+   "name": "Innkeeper Farley",
+   "models": [
+    {
+     "displayID": 1291,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5128,
+   "name": "Bombus Finespindle",
+   "models": [
+    {
+     "displayID": 3105,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1913,
+   "name": "Dalaran Warder",
+   "models": [
+    {
+     "displayID": 3592,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3593,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4961,
+   "name": "Dashel Stonefist",
+   "models": [
+    {
+     "displayID": 3238,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 265701,
+   "name": "Captain Truman",
+   "models": [
+    {
+     "displayID": 5711,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1797,
+   "name": "Giant Grizzled Bear",
+   "models": [
+    {
+     "displayID": 820,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5100,
+   "name": "Fillius Fizzlespinner",
+   "models": [
+    {
+     "displayID": 3040,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7950,
+   "name": "Master Mechanic Castpipe",
+   "models": [
+    {
+     "displayID": 7041,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 8997,
+   "name": "Gershala Nightwhisper",
+   "models": [
+    {
+     "displayID": 8229,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1689,
+   "name": "Scarred Crag Boar",
+   "models": [
+    {
+     "displayID": 193,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1211,
+   "name": "Leper Gnome",
+   "models": [
+    {
+     "displayID": 6921,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6922,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6923,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6924,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 66,
+   "name": "Tharynn Bouden",
+   "models": [
+    {
+     "displayID": 1298,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12427,
+   "name": "Mountaineer Dolf",
+   "models": [
+    {
+     "displayID": 12474,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2352,
+   "name": "Innkeeper Anderson",
+   "models": [
+    {
+     "displayID": 3688,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1388,
+   "name": "Vagash",
+   "models": [
+    {
+     "displayID": 1050,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12783,
+   "name": "Lieutenant Karter",
+   "models": [
+    {
+     "displayID": 12922,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1358,
+   "name": "Miner Grothor",
+   "models": [
+    {
+     "displayID": 3419,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 847,
+   "name": "Nathan",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2439,
+   "name": "Major Samuelson",
+   "models": [
+    {
+     "displayID": 5567,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250630,
+   "name": "Plague Ghoul",
+   "models": [
+    {
+     "displayID": 559,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 8670,
+   "name": "Auctioneer Chilton",
+   "models": [
+    {
+     "displayID": 7991,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 706,
+   "name": "Frostmane Troll Whelp",
+   "models": [
+    {
+     "displayID": 5606,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3579,
+   "name": "Stoneclaw Totem",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 842,
+   "name": "Lumberjack",
+   "models": [
+    {
+     "displayID": 308,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 119,
+   "name": "Longsnout",
+   "models": [
+    {
+     "displayID": 381,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1199,
+   "name": "Juvenile Snow Leopard",
+   "models": [
+    {
+     "displayID": 748,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 714,
+   "name": "Talin Keeneye",
+   "models": [
+    {
+     "displayID": 1363,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 11069,
+   "name": "Jenova Stoneshield",
+   "models": [
+    {
+     "displayID": 10477,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5403,
+   "name": "White Stallion",
+   "models": [
+    {
+     "displayID": 2410,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1863,
+   "name": "Succubus",
+   "models": [
+    {
+     "displayID": 4162,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5178,
+   "name": "Soolie Berryfizz",
+   "models": [
+    {
+     "displayID": 3125,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 8856,
+   "name": "Tyrion's Spybot",
+   "models": [
+    {
+     "displayID": 1159,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274872,
+   "name": "Rosie",
+   "models": [
+    {
+     "displayID": 147925,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1767,
+   "name": "Vile Fin Shredder",
+   "models": [
+    {
+     "displayID": 441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6175,
+   "name": "John Turner",
+   "models": [
+    {
+     "displayID": 4889,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8681,
+   "name": "Outfitter Eric",
+   "models": [
+    {
+     "displayID": 7951,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 12299,
+   "name": "Cured Deer",
+   "models": [
+    {
+     "displayID": 347,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5123,
+   "name": "Bretta Goldfury",
+   "models": [
+    {
+     "displayID": 5408,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1632,
+   "name": "Adele Fielder",
+   "models": [
+    {
+     "displayID": 3335,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 582,
+   "name": "Old Blanchy",
+   "models": [
+    {
+     "displayID": 236,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1750,
+   "name": "Grand Admiral Jes-Tereth",
+   "models": [
+    {
+     "displayID": 5565,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6301,
+   "name": "Gorbold Steelhand",
+   "models": [
+    {
+     "displayID": 5023,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1323,
+   "name": "Osric Strang",
+   "models": [
+    {
+     "displayID": 1515,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 328,
+   "name": "Zaldimar Wefhellt",
+   "models": [
+    {
+     "displayID": 1294,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2201,
+   "name": "Greymist Raider",
+   "models": [
+    {
+     "displayID": 346,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7392,
+   "name": "Prairie Chicken",
+   "models": [
+    {
+     "displayID": 304,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256733,
+   "name": "Fritz Fizzle",
+   "models": [
+    {
+     "displayID": 139800,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3644,
+   "name": "Cerellean Whiteclaw",
+   "models": [
+    {
+     "displayID": 1757,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6031,
+   "name": "Tormus Deepforge",
+   "models": [
+    {
+     "displayID": 4950,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271993,
+   "name": "Brown Rabbit",
+   "models": [
+    {
+     "displayID": 4626,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14561,
+   "name": "Swift Brown Steed",
+   "models": [
+    {
+     "displayID": 14583,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1554,
+   "name": "Vampiric Duskbat",
+   "models": [
+    {
+     "displayID": 8808,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256391,
+   "name": "Elaine Compton",
+   "models": [
+    {
+     "displayID": 139604,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 264,
+   "name": "Commander Althea Ebonlocke",
+   "models": [
+    {
+     "displayID": 4322,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2523,
+   "name": "Searing Totem",
+   "models": [
+    {
+     "displayID": 4589,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3520,
+   "name": "Ol' Emma",
+   "models": [
+    {
+     "displayID": 1544,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3626,
+   "name": "Jenn Langston",
+   "models": [
+    {
+     "displayID": 1697,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1769,
+   "name": "Moonrage Whitescalp",
+   "models": [
+    {
+     "displayID": 11180,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2404,
+   "name": "Blacksmith Verringtan",
+   "models": [
+    {
+     "displayID": 3631,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1537,
+   "name": "Scarlet Zealot",
+   "models": [
+    {
+     "displayID": 2483,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2472,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263396,
+   "name": "Dark Iron Looter",
+   "models": [
+    {
+     "displayID": 3452,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 116,
+   "name": "Defias Bandit",
+   "models": [
+    {
+     "displayID": 2357,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2358,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12778,
+   "name": "Lieutenant Rachel Vaccar",
+   "models": [
+    {
+     "displayID": 9811,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 7386,
+   "name": "White Kitten",
+   "models": [
+    {
+     "displayID": 9989,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256393,
+   "name": "Pack Mule",
+   "models": [
+    {
+     "displayID": 14551,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5891,
+   "name": "Minor Manifestation of Earth",
+   "models": [
+    {
+     "displayID": 12110,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 11096,
+   "name": "Randal Worth",
+   "models": [
+    {
+     "displayID": 10625,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13159,
+   "name": "James Clark",
+   "models": [
+    {
+     "displayID": 13091,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 154,
+   "name": "Greater Fleshripper",
+   "models": [
+    {
+     "displayID": 1105,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5159,
+   "name": "Daryl Riknussun",
+   "models": [
+    {
+     "displayID": 3094,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256735,
+   "name": "Mivin Shadowweave",
+   "models": [
+    {
+     "displayID": 139812,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 254078,
+   "name": "Tom \"Half-fish\" Wilson",
+   "models": [
+    {
+     "displayID": 137996,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12423,
+   "name": "Guard Roberts",
+   "models": [
+    {
+     "displayID": 3258,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 430,
+   "name": "Redridge Mystic",
+   "models": [
+    {
+     "displayID": 10789,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1376,
+   "name": "Beldin Steelgrill",
+   "models": [
+    {
+     "displayID": 3389,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1238,
+   "name": "Gamili Frosthide",
+   "models": [
+    {
+     "displayID": 3420,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1433,
+   "name": "Corbett Schneider",
+   "models": [
+    {
+     "displayID": 5550,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 294,
+   "name": "Marshal Haggard",
+   "models": [
+    {
+     "displayID": 1689,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 482,
+   "name": "Elling Trias",
+   "models": [
+    {
+     "displayID": 3246,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1131,
+   "name": "Winter Wolf",
+   "models": [
+    {
+     "displayID": 785,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1270,
+   "name": "Fetid Corpse",
+   "models": [
+    {
+     "displayID": 559,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2737,
+   "name": "Durtham Greldon",
+   "models": [
+    {
+     "displayID": 9817,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12656,
+   "name": "Thamarian",
+   "models": [
+    {
+     "displayID": 14954,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1366,
+   "name": "Adam",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4191,
+   "name": "Allyndia",
+   "models": [
+    {
+     "displayID": 4403,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8416,
+   "name": "Felix Whindlebolt",
+   "models": [
+    {
+     "displayID": 7852,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6946,
+   "name": "Renzik \"The Shiv\"",
+   "models": [
+    {
+     "displayID": 7613,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 274334,
+   "name": "Tallstrider Hatchling",
+   "models": [
+    {
+     "displayID": 147717,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1070,
+   "name": "Deputy Feldon",
+   "models": [
+    {
+     "displayID": 2151,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2167,
+   "name": "Blackwood Pathfinder",
+   "models": [
+    {
+     "displayID": 1010,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11807,
+   "name": "Tristane Shadowstone",
+   "models": [
+    {
+     "displayID": 11752,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1939,
+   "name": "Rot Hide Brute",
+   "models": [
+    {
+     "displayID": 10851,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2370,
+   "name": "Daggerspine Screamer",
+   "models": [
+    {
+     "displayID": 4976,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 707,
+   "name": "Rockjaw Trogg",
+   "models": [
+    {
+     "displayID": 606,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10611,
+   "name": "Shorty",
+   "models": [
+    {
+     "displayID": 9947,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1257,
+   "name": "Keldric Boucher",
+   "models": [
+    {
+     "displayID": 1431,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3702,
+   "name": "Alanndarian Nightsong",
+   "models": [
+    {
+     "displayID": 4487,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5890,
+   "name": "Redrock Earth Spirit",
+   "models": [
+    {
+     "displayID": 1128,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 1127,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 549,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1194,
+   "name": "Mountain Buzzard",
+   "models": [
+    {
+     "displayID": 410,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 36,
+   "name": "Harvest Golem",
+   "models": [
+    {
+     "displayID": 367,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256729,
+   "name": "Nina Surefire",
+   "models": [
+    {
+     "displayID": 139786,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4192,
+   "name": "Taldan",
+   "models": [
+    {
+     "displayID": 4405,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10219,
+   "name": "Gwennyth Bly'Leggonde",
+   "models": [
+    {
+     "displayID": 9551,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1973,
+   "name": "Ravenclaw Guardian",
+   "models": [
+    {
+     "displayID": 370,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 272614,
+   "name": "Cappy",
+   "models": [
+    {
+     "displayID": 5554,
+     "scale": 0.85,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2379,
+   "name": "Caretaker Smithers",
+   "models": [
+    {
+     "displayID": 3704,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2329,
+   "name": "Michelle Belle",
+   "models": [
+    {
+     "displayID": 1296,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 285,
+   "name": "Murloc",
+   "models": [
+    {
+     "displayID": 617,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1201,
+   "name": "Snow Leopard",
+   "models": [
+    {
+     "displayID": 954,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7976,
+   "name": "Thalgus Thunderfist",
+   "models": [
+    {
+     "displayID": 7120,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 870,
+   "name": "Protector Deni",
+   "models": [
+    {
+     "displayID": 2365,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 547,
+   "name": "Great Goretusk",
+   "models": [
+    {
+     "displayID": 3035,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267338,
+   "name": "Emrys Flintbeard",
+   "models": [
+    {
+     "displayID": 145048,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5570,
+   "name": "Bruuk Barleybeard",
+   "models": [
+    {
+     "displayID": 3458,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1252,
+   "name": "Senir Whitebeard",
+   "models": [
+    {
+     "displayID": 1376,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1212,
+   "name": "Bishop Farthing",
+   "models": [
+    {
+     "displayID": 5548,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5171,
+   "name": "Thistleheart",
+   "models": [
+    {
+     "displayID": 3115,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2235,
+   "name": "Reef Crawler",
+   "models": [
+    {
+     "displayID": 981,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 569,
+   "name": "Green Recluse",
+   "models": [
+    {
+     "displayID": 2541,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 830,
+   "name": "Sand Crawler",
+   "models": [
+    {
+     "displayID": 342,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10323,
+   "name": "Murkdeep",
+   "models": [
+    {
+     "displayID": 1079,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5564,
+   "name": "Simon Tanner",
+   "models": [
+    {
+     "displayID": 3449,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1256,
+   "name": "Quarrymaster Thesten",
+   "models": [
+    {
+     "displayID": 3423,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 422,
+   "name": "Murloc Flesheater",
+   "models": [
+    {
+     "displayID": 506,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1333,
+   "name": "Gerik Koen",
+   "models": [
+    {
+     "displayID": 1511,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 829,
+   "name": "Adlin Pridedrift",
+   "models": [
+    {
+     "displayID": 3388,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 515,
+   "name": "Murloc Raider",
+   "models": [
+    {
+     "displayID": 441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5109,
+   "name": "Myra Tyrngaarde",
+   "models": [
+    {
+     "displayID": 3050,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 263467,
+   "name": "Fiery Assistant",
+   "models": [
+    {
+     "displayID": 1070,
+     "scale": 0.5,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258548,
+   "name": "Ellie Stonebrow",
+   "models": [
+    {
+     "displayID": 140823,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1303,
+   "name": "Felicia Gump",
+   "models": [
+    {
+     "displayID": 1441,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1867,
+   "name": "Dalaran Apprentice",
+   "models": [
+    {
+     "displayID": 3767,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3768,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5101,
+   "name": "Bryllia Ironbrand",
+   "models": [
+    {
+     "displayID": 3041,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5160,
+   "name": "Emrul Riknussun",
+   "models": [
+    {
+     "displayID": 3095,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 250741,
+   "name": "Spider",
+   "models": [
+    {
+     "displayID": 2536,
+     "scale": 4.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 9829,
+     "scale": 4.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 1160,
+     "scale": 4.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 14952,
+     "scale": 4.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12780,
+   "name": "Sergeant Major Skyshadow",
+   "models": [
+    {
+     "displayID": 12924,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2099,
+   "name": "Maiden's Virtue Crewman",
+   "models": [
+    {
+     "displayID": 793,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 460,
+   "name": "Alamar Grimm",
+   "models": [
+    {
+     "displayID": 1930,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1782,
+   "name": "Moonrage Darksoul",
+   "models": [
+    {
+     "displayID": 574,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 928,
+   "name": "Lord Grayson Shadowbreaker",
+   "models": [
+    {
+     "displayID": 1499,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2267,
+   "name": "Hillsbrad Peasant",
+   "models": [
+    {
+     "displayID": 11035,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 11036,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 735,
+   "name": "Murloc Streamrunner",
+   "models": [
+    {
+     "displayID": 527,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3543,
+   "name": "Robert Aebischer",
+   "models": [
+    {
+     "displayID": 3698,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 416,
+   "name": "Imp",
+   "models": [
+    {
+     "displayID": 148118,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14559,
+   "name": "Swift Palomino",
+   "models": [
+    {
+     "displayID": 14582,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 936,
+   "name": "Guard Adams",
+   "models": [
+    {
+     "displayID": 3641,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8719,
+   "name": "Auctioneer Fitch",
+   "models": [
+    {
+     "displayID": 7992,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 2705,
+   "name": "Brewmeister Bilger",
+   "models": [
+    {
+     "displayID": 1663,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2432,
+   "name": "Darla Harris",
+   "models": [
+    {
+     "displayID": 4349,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1246,
+   "name": "Vosur Brakthel",
+   "models": [
+    {
+     "displayID": 10635,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10616,
+   "name": "Supervisor Raelen",
+   "models": [
+    {
+     "displayID": 10995,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 960,
+   "name": "Gunder Thornbush",
+   "models": [
+    {
+     "displayID": 4336,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14450,
+   "name": "Orphan Matron Nightingale",
+   "models": [
+    {
+     "displayID": 14500,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 7410,
+   "name": "Thelman Slatefist",
+   "models": [
+    {
+     "displayID": 6198,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 264943,
+   "name": "Afadra Dunwall",
+   "models": [
+    {
+     "displayID": 144322,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 10455,
+   "name": "Binny Springblade",
+   "models": [
+    {
+     "displayID": 9818,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3538,
+   "name": "Overwatch Mark I",
+   "models": [
+    {
+     "displayID": 5299,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3541,
+   "name": "Sarah Raycroft",
+   "models": [
+    {
+     "displayID": 3696,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1123,
+   "name": "Frostmane Headhunter",
+   "models": [
+    {
+     "displayID": 5626,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 277,
+   "name": "Roberto Pupellyverbos",
+   "models": [
+    {
+     "displayID": 1433,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1942,
+   "name": "Rot Hide Savage",
+   "models": [
+    {
+     "displayID": 858,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 230319,
+   "name": "Deliana",
+   "models": [
+    {
+     "displayID": 15965,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 248265,
+   "name": "Ormin Pelford",
+   "models": [
+    {
+     "displayID": 148277,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 633,
+   "name": "Elaine Carevin",
+   "models": [
+    {
+     "displayID": 1571,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5517,
+   "name": "Thorfin Stoneshield",
+   "models": [
+    {
+     "displayID": 3310,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 11994,
+   "name": "Rob Bridenbecker",
+   "models": [
+    {
+     "displayID": 11930,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2878,
+   "name": "Peria Lamenur",
+   "models": [
+    {
+     "displayID": 5040,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 712,
+   "name": "Redridge Thrasher",
+   "models": [
+    {
+     "displayID": 489,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1889,
+   "name": "Dalaran Wizard",
+   "models": [
+    {
+     "displayID": 3585,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3586,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3587,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4772,
+   "name": "Ultham Ironhorn",
+   "models": [
+    {
+     "displayID": 3410,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12922,
+   "name": "Imp Minion",
+   "models": [
+    {
+     "displayID": 4449,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 795,
+   "name": "Mark",
+   "models": [
+    {
+     "displayID": 338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1477,
+   "name": "Christoph Faral",
+   "models": [
+    {
+     "displayID": 1509,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 253351,
+   "name": "[DNT] Invisible Stalker",
+   "models": [
+    {
+     "displayID": 11686,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 4075,
+   "name": "Rat",
+   "models": [
+    {
+     "displayID": 1141,
+     "scale": 1.0,
+     "probability": 2.0
+    },
+    {
+     "displayID": 1418,
+     "scale": 1.0,
+     "probability": 2.0
+    },
+    {
+     "displayID": 2176,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250626,
+   "name": "Skeletal Soldier",
+   "models": [
+    {
+     "displayID": 7848,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 849,
+   "name": "Rachel",
+   "models": [
+    {
+     "displayID": 252,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1751,
+   "name": "Mithras Ironhill",
+   "models": [
+    {
+     "displayID": 5077,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5170,
+   "name": "Hjoldir Stoneblade",
+   "models": [
+    {
+     "displayID": 3103,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 248242,
+   "name": "Hamish Bergwort",
+   "models": [
+    {
+     "displayID": 148276,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2336,
+   "name": "Dark Strand Fanatic",
+   "models": [
+    {
+     "displayID": 4217,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4411,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 808,
+   "name": "Grik'nir the Cold",
+   "models": [
+    {
+     "displayID": 5609,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2368,
+   "name": "Daggerspine Shorestalker",
+   "models": [
+    {
+     "displayID": 4763,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256731,
+   "name": "Kalsey Sanden",
+   "models": [
+    {
+     "displayID": 139790,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5913,
+   "name": "Tremor Totem",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2198,
+   "name": "Crier Goodman",
+   "models": [
+    {
+     "displayID": 1525,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14546,
+   "name": "Swift Brown Ram",
+   "models": [
+    {
+     "displayID": 14347,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 500,
+   "name": "Riverpaw Scout",
+   "models": [
+    {
+     "displayID": 374,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 583,
+   "name": "Defias Ambusher",
+   "models": [
+    {
+     "displayID": 184,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1115,
+   "name": "Rockjaw Skullthumper",
+   "models": [
+    {
+     "displayID": 726,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2185,
+   "name": "Darkshore Thresher",
+   "models": [
+    {
+     "displayID": 992,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5130,
+   "name": "Jondor Steelbrow",
+   "models": [
+    {
+     "displayID": 3081,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 250622,
+   "name": "Ragged Ghoul",
+   "models": [
+    {
+     "displayID": 414,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1432,
+   "name": "Renato Gallina",
+   "models": [
+    {
+     "displayID": 5074,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5484,
+   "name": "Brother Benjamin",
+   "models": [
+    {
+     "displayID": 3282,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 250620,
+   "name": "Shrieking Banshee",
+   "models": [
+    {
+     "displayID": 10728,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1291,
+   "name": "Carla Granger",
+   "models": [
+    {
+     "displayID": 1439,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1299,
+   "name": "Lisbeth Schneider",
+   "models": [
+    {
+     "displayID": 1447,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6145,
+   "name": "School of Fish",
+   "models": [
+    {
+     "displayID": 4878,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2366,
+   "name": "Barkeep Kelly",
+   "models": [
+    {
+     "displayID": 3691,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 346,
+   "name": "Barkeep Daniels",
+   "models": [
+    {
+     "displayID": 3370,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13017,
+   "name": "Enthralled Deeprun Rat",
+   "models": [
+    {
+     "displayID": 1141,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271530,
+   "name": "Elder Wendigo",
+   "models": [
+    {
+     "displayID": 931,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1672,
+   "name": "Lohgan Eva",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250624,
+   "name": "Skeletal Mage",
+   "models": [
+    {
+     "displayID": 7550,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 348,
+   "name": "Zem Leeward",
+   "models": [
+    {
+     "displayID": 3359,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4258,
+   "name": "Bengus Deepforge",
+   "models": [
+    {
+     "displayID": 3097,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3138,
+   "name": "Scott Carevin",
+   "models": [
+    {
+     "displayID": 4339,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5132,
+   "name": "Pithwick",
+   "models": [
+    {
+     "displayID": 3107,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5612,
+   "name": "Gimrizz Shadowcog",
+   "models": [
+    {
+     "displayID": 3607,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12784,
+   "name": "Lieutenant Jackspring",
+   "models": [
+    {
+     "displayID": 12921,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5509,
+   "name": "Kathrum Axehand",
+   "models": [
+    {
+     "displayID": 3305,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2327,
+   "name": "Shaina Fuller",
+   "models": [
+    {
+     "displayID": 1496,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 848,
+   "name": "Madison",
+   "models": [
+    {
+     "displayID": 257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6120,
+   "name": "Lago Blackwrench",
+   "models": [
+    {
+     "displayID": 4865,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 263349,
+   "name": "James Battlewing",
+   "models": [
+    {
+     "displayID": 2377,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 843,
+   "name": "Gina MacGregor",
+   "models": [
+    {
+     "displayID": 3260,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2503,
+   "name": "Hillsbrad Foreman",
+   "models": [
+    {
+     "displayID": 3633,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1263,
+   "name": "Yarlyn Amberstill",
+   "models": [
+    {
+     "displayID": 1981,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4187,
+   "name": "Harlon Thornguard",
+   "models": [
+    {
+     "displayID": 4407,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250617,
+   "name": "Shrieking Banshee",
+   "models": [
+    {
+     "displayID": 10728,
+     "scale": 3.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3639,
+   "name": "Sentinel Tysha Moonblade",
+   "models": [
+    {
+     "displayID": 1750,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5162,
+   "name": "Tansy Puddlefizz",
+   "models": [
+    {
+     "displayID": 3121,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5116,
+   "name": "Olmin Burningbeard",
+   "models": [
+    {
+     "displayID": 3072,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5518,
+   "name": "Lilliam Sparkspindle",
+   "models": [
+    {
+     "displayID": 3314,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15659,
+   "name": "Auctioneer Jaxon",
+   "models": [
+    {
+     "displayID": 15594,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 264638,
+   "name": "Callie",
+   "models": [
+    {
+     "displayID": 11709,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1690,
+   "name": "Thrawn Boltar",
+   "models": [
+    {
+     "displayID": 3427,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1915,
+   "name": "Dalaran Conjuror",
+   "models": [
+    {
+     "displayID": 3581,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3582,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3583,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3584,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 299,
+   "name": "Young Wolf",
+   "models": [
+    {
+     "displayID": 447,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274838,
+   "name": "Maximus Warwick",
+   "models": [
+    {
+     "displayID": 147893,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1350,
+   "name": "Theresa Moulaine",
+   "models": [
+    {
+     "displayID": 1498,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2786,
+   "name": "Gerrig Bonegrip",
+   "models": [
+    {
+     "displayID": 3599,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1646,
+   "name": "Baros Alexston",
+   "models": [
+    {
+     "displayID": 1357,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4189,
+   "name": "Valdaron",
+   "models": [
+    {
+     "displayID": 4401,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 257597,
+   "name": "Bruegs Kindleborn",
+   "models": [
+    {
+     "displayID": 143532,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6046,
+   "name": "Gozwin Halfsprocket",
+   "models": [
+    {
+     "displayID": 4775,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 272,
+   "name": "Chef Grual",
+   "models": [
+    {
+     "displayID": 1715,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4256,
+   "name": "Golnir Bouldertoe",
+   "models": [
+    {
+     "displayID": 3093,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 12779,
+   "name": "Archmage Gaiman",
+   "models": [
+    {
+     "displayID": 12910,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 14881,
+   "name": "Spider",
+   "models": [
+    {
+     "displayID": 2536,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 9829,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 1160,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 14952,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2387,
+   "name": "Hillsbrad Councilman",
+   "models": [
+    {
+     "displayID": 3628,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5605,
+   "name": "Tisa Martine",
+   "models": [
+    {
+     "displayID": 3591,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7387,
+   "name": "Green Wing Macaw",
+   "models": [
+    {
+     "displayID": 5207,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12657,
+   "name": "Don Pompa",
+   "models": [
+    {
+     "displayID": 12610,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 270112,
+   "name": "Saera Wirraway",
+   "models": [
+    {
+     "displayID": 146202,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1673,
+   "name": "Alyssa Eva",
+   "models": [
+    {
+     "displayID": 257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1121,
+   "name": "Frostmane Snowstrider",
+   "models": [
+    {
+     "displayID": 5607,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2268,
+   "name": "Hillsbrad Footman",
+   "models": [
+    {
+     "displayID": 4125,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 8962,
+   "name": "Hilary",
+   "models": [
+    {
+     "displayID": 257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5161,
+   "name": "Grimnur Stonebrand",
+   "models": [
+    {
+     "displayID": 3096,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 259842,
+   "name": "Musical Gustjumper",
+   "models": [
+    {
+     "displayID": 6296,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 118,
+   "name": "Prowler",
+   "models": [
+    {
+     "displayID": 11415,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1765,
+   "name": "Worg",
+   "models": [
+    {
+     "displayID": 11421,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2337,
+   "name": "Dark Strand Voidcaller",
+   "models": [
+    {
+     "displayID": 4230,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4412,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1679,
+   "name": "Avarus Kharag",
+   "models": [
+    {
+     "displayID": 3413,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9859,
+   "name": "Auctioneer Lympkin",
+   "models": [
+    {
+     "displayID": 9131,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 276009,
+   "name": "Avala",
+   "models": [
+    {
+     "displayID": 146644,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267688,
+   "name": "Unpainted Mechanostrider",
+   "models": [
+    {
+     "displayID": 9476,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 117,
+   "name": "Riverpaw Gnoll",
+   "models": [
+    {
+     "displayID": 175,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5493,
+   "name": "Arnold Leland",
+   "models": [
+    {
+     "displayID": 3285,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274914,
+   "name": "Aendaril Brookshot",
+   "models": [
+    {
+     "displayID": 140644,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 789,
+   "name": "Kimberly Hiett",
+   "models": [
+    {
+     "displayID": 3369,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 923,
+   "name": "Young Black Ravager",
+   "models": [
+    {
+     "displayID": 246,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9980,
+   "name": "Shelby Stoneflint",
+   "models": [
+    {
+     "displayID": 9253,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276061,
+   "name": "Decrepit Harvester",
+   "models": [
+    {
+     "displayID": 5299,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6173,
+   "name": "Gazin Tenorm",
+   "models": [
+    {
+     "displayID": 4887,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2269,
+   "name": "Hillsbrad Miner",
+   "models": [
+    {
+     "displayID": 3629,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6271,
+   "name": "Mouse",
+   "models": [
+    {
+     "displayID": 4959,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 4960,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11065,
+   "name": "Thonys Pillarstone",
+   "models": [
+    {
+     "displayID": 10588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3693,
+   "name": "Terenthis",
+   "models": [
+    {
+     "displayID": 1956,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 264639,
+   "name": "Bebe",
+   "models": [
+    {
+     "displayID": 5556,
+     "scale": 0.9,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2365,
+   "name": "Bront Coldcleave",
+   "models": [
+    {
+     "displayID": 3690,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 248248,
+   "name": "Blixie Fitzwink",
+   "models": [
+    {
+     "displayID": 148275,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 238,
+   "name": "Verna Furlbrow",
+   "models": [
+    {
+     "displayID": 1692,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6376,
+   "name": "Wren Darkspring",
+   "models": [
+    {
+     "displayID": 5093,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 126,
+   "name": "Murloc Coastrunner",
+   "models": [
+    {
+     "displayID": 983,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1914,
+   "name": "Dalaran Mage",
+   "models": [
+    {
+     "displayID": 3559,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3560,
+     "scale": 1.0,
+     "probability": 3.0
+    },
+    {
+     "displayID": 3561,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 3562,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 946,
+   "name": "Frostmane Novice",
+   "models": [
+    {
+     "displayID": 5605,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 241,
+   "name": "Remy \"Two Times\"",
+   "models": [
+    {
+     "displayID": 3254,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4974,
+   "name": "Aldwin Laughlin",
+   "models": [
+    {
+     "displayID": 2974,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 340,
+   "name": "Kendor Kabonka",
+   "models": [
+    {
+     "displayID": 5728,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 13016,
+   "name": "Deeprun Rat",
+   "models": [
+    {
+     "displayID": 1141,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6328,
+   "name": "Dannie Fizzwizzle",
+   "models": [
+    {
+     "displayID": 5042,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 268238,
+   "name": "Nordun Steadysight",
+   "models": [
+    {
+     "displayID": 145367,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 999,
+   "name": "Watcher Royce",
+   "models": [
+    {
+     "displayID": 2398,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4200,
+   "name": "Laird",
+   "models": [
+    {
+     "displayID": 9549,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2438,
+   "name": "Bartolo Ginsetti",
+   "models": [
+    {
+     "displayID": 1662,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 658,
+   "name": "Sten Stoutarm",
+   "models": [
+    {
+     "displayID": 1362,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 250735,
+   "name": "Venom Lurker",
+   "models": [
+    {
+     "displayID": 1087,
+     "scale": 1.4,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1698,
+   "name": "Frast Dokner",
+   "models": [
+    {
+     "displayID": 3426,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256738,
+   "name": "Basket of Alchemy Goods",
+   "models": [
+    {
+     "displayID": 139815,
+     "scale": 0.6,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 123,
+   "name": "Riverpaw Mongrel",
+   "models": [
+    {
+     "displayID": 383,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250619,
+   "name": "Broodwidow",
+   "models": [
+    {
+     "displayID": 963,
+     "scale": 1.2,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 664,
+   "name": "Benjamin Carevin",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3540,
+   "name": "Hal McAllister",
+   "models": [
+    {
+     "displayID": 3697,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 539,
+   "name": "Pygmy Venom Web Spider",
+   "models": [
+    {
+     "displayID": 958,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 268313,
+   "name": "Black Stallion",
+   "models": [
+    {
+     "displayID": 2402,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2930,
+   "name": "Sentinel Glynda Nal'Shea",
+   "models": [
+    {
+     "displayID": 2865,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1466,
+   "name": "Gretta Finespindle",
+   "models": [
+    {
+     "displayID": 10620,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2190,
+   "name": "Wild Grell",
+   "models": [
+    {
+     "displayID": 1015,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 261319,
+   "name": "Durgen Dirgehammer",
+   "models": [
+    {
+     "displayID": 142837,
+     "scale": 1.5,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 225,
+   "name": "Gavin Gnarltree",
+   "models": [
+    {
+     "displayID": 4331,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 926,
+   "name": "Bromos Grummner",
+   "models": [
+    {
+     "displayID": 3393,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 5157,
+   "name": "Gimble Thistlefuzz",
+   "models": [
+    {
+     "displayID": 3111,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6177,
+   "name": "Narm Faulk",
+   "models": [
+    {
+     "displayID": 4890,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1721,
+   "name": "Nikova Raskol",
+   "models": [
+    {
+     "displayID": 1815,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 876,
+   "name": "Protector Leick",
+   "models": [
+    {
+     "displayID": 2370,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11145,
+   "name": "Myolor Sunderfury",
+   "models": [
+    {
+     "displayID": 10693,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 233,
+   "name": "Farmer Saldean",
+   "models": [
+    {
+     "displayID": 1943,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1472,
+   "name": "Morgg Stormshot",
+   "models": [
+    {
+     "displayID": 5570,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1977,
+   "name": "Senator Mehr Stonehallow",
+   "models": [
+    {
+     "displayID": 1570,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2234,
+   "name": "Young Reef Crawler",
+   "models": [
+    {
+     "displayID": 999,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11865,
+   "name": "Buliwyf Stonehand",
+   "models": [
+    {
+     "displayID": 11806,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1702,
+   "name": "Bronk Guzzlegear",
+   "models": [
+    {
+     "displayID": 3394,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3649,
+   "name": "Thundris Windweaver",
+   "models": [
+    {
+     "displayID": 1770,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1301,
+   "name": "Julia Gallina",
+   "models": [
+    {
+     "displayID": 1443,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 270298,
+   "name": "Child of Jai'vhanel",
+   "models": [
+    {
+     "displayID": 10832,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5102,
+   "name": "Dolman Steelfury",
+   "models": [
+    {
+     "displayID": 3042,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1130,
+   "name": "Bjarn",
+   "models": [
+    {
+     "displayID": 913,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 724,
+   "name": "Burly Rockjaw Trogg",
+   "models": [
+    {
+     "displayID": 611,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14553,
+   "name": "Swift Green Mechanostrider",
+   "models": [
+    {
+     "displayID": 14374,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 465,
+   "name": "Barkeep Dobbins",
+   "models": [
+    {
+     "displayID": 3266,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267475,
+   "name": "Gray Ram",
+   "models": [
+    {
+     "displayID": 2736,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256035,
+   "name": "Viktor the Vile",
+   "models": [
+    {
+     "displayID": 139455,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 912,
+   "name": "Thran Khorman",
+   "models": [
+    {
+     "displayID": 3399,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 3162,
+   "name": "Burdrak Harglhelm",
+   "models": [
+    {
+     "displayID": 3408,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267279,
+   "name": "Cadoc Winterheart",
+   "models": [
+    {
+     "displayID": 145018,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12376,
+   "name": "Brown Horse",
+   "models": [
+    {
+     "displayID": 2404,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 249215,
+   "name": "Stormwind Dock Worker",
+   "models": [
+    {
+     "displayID": 144941,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144942,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144943,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 144944,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14041,
+   "name": "Haggle",
+   "models": [
+    {
+     "displayID": 14093,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6887,
+   "name": "Yalda",
+   "models": [
+    {
+     "displayID": 5745,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1124,
+   "name": "Frostmane Shadowcaster",
+   "models": [
+    {
+     "displayID": 5613,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271918,
+   "name": "Valaquenia",
+   "models": [
+    {
+     "displayID": 146861,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1444,
+   "name": "Brother Kristoff",
+   "models": [
+    {
+     "displayID": 5549,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5127,
+   "name": "Fimble Finespindle",
+   "models": [
+    {
+     "displayID": 3104,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 114,
+   "name": "Harvest Watcher",
+   "models": [
+    {
+     "displayID": 378,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 834,
+   "name": "Coyote",
+   "models": [
+    {
+     "displayID": 643,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1267,
+   "name": "Ragnar Thunderbrew",
+   "models": [
+    {
+     "displayID": 1684,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 275,
+   "name": "Whit Wantmal",
+   "models": [
+    {
+     "displayID": 1734,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5153,
+   "name": "Jormund Stonebrow",
+   "models": [
+    {
+     "displayID": 3091,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10956,
+   "name": "Naga Siren",
+   "models": [
+    {
+     "displayID": 11263,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 6886,
+   "name": "Onin MacHammar",
+   "models": [
+    {
+     "displayID": 5648,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1428,
+   "name": "Rema Schneider",
+   "models": [
+    {
+     "displayID": 5552,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 890,
+   "name": "Fawn",
+   "models": [
+    {
+     "displayID": 654,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1327,
+   "name": "Reese Langston",
+   "models": [
+    {
+     "displayID": 1516,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5919,
+   "name": "Stoneskin Totem II",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14723,
+   "name": "Mistina Steelshield",
+   "models": [
+    {
+     "displayID": 14754,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 270313,
+   "name": "Generic Bunny",
+   "models": [
+    {
+     "displayID": 1126,
+     "scale": 1.0,
+     "probability": 0.0
+    },
+    {
+     "displayID": 15435,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 266,
+   "name": "Wiley the Black",
+   "models": [
+    {
+     "displayID": 1741,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10276,
+   "name": "Rotgath Stonebeard",
+   "models": [
+    {
+     "displayID": 9741,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 11040,
+   "name": "Watcher Brownell",
+   "models": [
+    {
+     "displayID": 10455,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1289,
+   "name": "Gunther Weller",
+   "models": [
+    {
+     "displayID": 1429,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 927,
+   "name": "Brother Wilhelm",
+   "models": [
+    {
+     "displayID": 1299,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14497,
+   "name": "Shellene",
+   "models": [
+    {
+     "displayID": 8632,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5676,
+   "name": "Summoned Voidwalker",
+   "models": [
+    {
+     "displayID": 1132,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 886,
+   "name": "Watcher Hartin",
+   "models": [
+    {
+     "displayID": 2387,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256732,
+   "name": "Alynsia",
+   "models": [
+    {
+     "displayID": 139799,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3137,
+   "name": "Matt Johnson",
+   "models": [
+    {
+     "displayID": 4333,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3701,
+   "name": "Tharnariun Treetender",
+   "models": [
+    {
+     "displayID": 4485,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4254,
+   "name": "Geofram Bouldertoe",
+   "models": [
+    {
+     "displayID": 3092,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 12787,
+   "name": "Guard Hammon",
+   "models": [
+    {
+     "displayID": 12919,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 250657,
+   "name": "Rath'mael",
+   "models": [
+    {
+     "displayID": 144175,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1416,
+   "name": "Grimand Elmore",
+   "models": [
+    {
+     "displayID": 4998,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 10160,
+   "name": "Raging Moonkin",
+   "models": [
+    {
+     "displayID": 12237,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 276003,
+   "name": "Minor Ice Elemental",
+   "models": [
+    {
+     "displayID": 12310,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5172,
+   "name": "Briarthorn",
+   "models": [
+    {
+     "displayID": 3116,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2351,
+   "name": "Gray Bear",
+   "models": [
+    {
+     "displayID": 806,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2177,
+   "name": "Writhing Highborne",
+   "models": [
+    {
+     "displayID": 5430,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5512,
+   "name": "Kaita Deepforge",
+   "models": [
+    {
+     "displayID": 3311,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1668,
+   "name": "William MacGregor",
+   "models": [
+    {
+     "displayID": 3259,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 185317,
+   "name": "Incubus",
+   "models": [
+    {
+     "displayID": 138182,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2630,
+   "name": "Earthbind Totem",
+   "models": [
+    {
+     "displayID": 4588,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 251493,
+   "name": "Captain McManus",
+   "models": [
+    {
+     "displayID": 146377,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1320,
+   "name": "Seoman Griffith",
+   "models": [
+    {
+     "displayID": 1517,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6374,
+   "name": "Cylina Darkheart",
+   "models": [
+    {
+     "displayID": 5092,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2214,
+   "name": "Deathstalker Lesh",
+   "models": [
+    {
+     "displayID": 2863,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2179,
+   "name": "Stormscale Wave Rider",
+   "models": [
+    {
+     "displayID": 4036,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 661,
+   "name": "Jonathan Carevin",
+   "models": [
+    {
+     "displayID": 4338,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 94,
+   "name": "Defias Cutpurse",
+   "models": [
+    {
+     "displayID": 2361,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2362,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3843,
+   "name": "Anaya",
+   "models": [
+    {
+     "displayID": 1937,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 931,
+   "name": "Ariena Stormfeather",
+   "models": [
+    {
+     "displayID": 3364,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 826,
+   "name": "Watcher Jan",
+   "models": [
+    {
+     "displayID": 2389,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3617,
+   "name": "Lordaeron Citizen",
+   "models": [
+    {
+     "displayID": 146,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2367,
+   "name": "Donald Rabonne",
+   "models": [
+    {
+     "displayID": 3693,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6782,
+   "name": "Hands Springsprocket",
+   "models": [
+    {
+     "displayID": 9211,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 3560,
+   "name": "Healing Ward",
+   "models": [
+    {
+     "displayID": 2030,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250629,
+   "name": "Stone Watcher",
+   "models": [
+    {
+     "displayID": 7534,
+     "scale": 1.5,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 790,
+   "name": "Karen Taylor",
+   "models": [
+    {
+     "displayID": 3363,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14438,
+   "name": "Officer Pomeroy",
+   "models": [
+    {
+     "displayID": 14492,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 10216,
+   "name": "Gubber Blump",
+   "models": [
+    {
+     "displayID": 9550,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 466,
+   "name": "General Marcus Jonathan",
+   "models": [
+    {
+     "displayID": 1688,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1454,
+   "name": "Jennabink Powerseam",
+   "models": [
+    {
+     "displayID": 5033,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1901,
+   "name": "Kelstrum Stonebreaker",
+   "models": [
+    {
+     "displayID": 3053,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1135,
+   "name": "Wendigo",
+   "models": [
+    {
+     "displayID": 950,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1117,
+   "name": "Rockjaw Bonesnapper",
+   "models": [
+    {
+     "displayID": 726,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263643,
+   "name": "Sean Guardoff",
+   "models": [
+    {
+     "displayID": 2377,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 250631,
+   "name": "The Abandoned",
+   "models": [
+    {
+     "displayID": 138667,
+     "scale": 2.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 4996,
+   "name": "Injured Stockade Guard",
+   "models": [
+    {
+     "displayID": 2985,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2986,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2987,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 2988,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 565,
+   "name": "Rabid Dire Wolf",
+   "models": [
+    {
+     "displayID": 802,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263470,
+   "name": "Bloodhound Runt",
+   "models": [
+    {
+     "displayID": 8180,
+     "scale": 0.6,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3577,
+   "name": "Dalaran Brewmaster",
+   "models": [
+    {
+     "displayID": 3538,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 263390,
+   "name": "Tormented Soul",
+   "models": [
+    {
+     "displayID": 143690,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143692,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143693,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 143691,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14367,
+   "name": "Thief Catcher Thunderbrew",
+   "models": [
+    {
+     "displayID": 14405,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 11029,
+   "name": "Trixie Quikswitch",
+   "models": [
+    {
+     "displayID": 10722,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 2756,
+   "name": "Grund Drokda",
+   "models": [
+    {
+     "displayID": 3428,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 258934,
+   "name": "Reason",
+   "models": [
+    {
+     "displayID": 604,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 913,
+   "name": "Lyria Du Lac",
+   "models": [
+    {
+     "displayID": 1300,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 271,
+   "name": "Ambassador Berrybuck",
+   "models": [
+    {
+     "displayID": 1713,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6569,
+   "name": "Gnoarn",
+   "models": [
+    {
+     "displayID": 5377,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 495,
+   "name": "Watcher Keefer",
+   "models": [
+    {
+     "displayID": 2391,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14423,
+   "name": "Officer Jaxon",
+   "models": [
+    {
+     "displayID": 14472,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1870,
+   "name": "Hand of Ravenclaw",
+   "models": [
+    {
+     "displayID": 732,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2409,
+   "name": "Felicia Maline",
+   "models": [
+    {
+     "displayID": 5129,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1872,
+   "name": "Tharek Blackstone",
+   "models": [
+    {
+     "displayID": 3415,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1104,
+   "name": "Grundel Harkin",
+   "models": [
+    {
+     "displayID": 3397,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6300,
+   "name": "Elisa Steelhand",
+   "models": [
+    {
+     "displayID": 5022,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 8996,
+   "name": "Voidwalker Minion",
+   "models": [
+    {
+     "displayID": 1132,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1265,
+   "name": "Rudra Amberstill",
+   "models": [
+    {
+     "displayID": 1651,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3980,
+   "name": "Raleigh the Devout",
+   "models": [
+    {
+     "displayID": 2048,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1439,
+   "name": "Lord Baurles K. Wishock",
+   "models": [
+    {
+     "displayID": 1758,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1691,
+   "name": "Kreg Bilmn",
+   "models": [
+    {
+     "displayID": 3430,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2369,
+   "name": "Daggerspine Shorehunter",
+   "models": [
+    {
+     "displayID": 11255,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6166,
+   "name": "Yorus Barleybrew",
+   "models": [
+    {
+     "displayID": 4944,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2460,
+   "name": "Barnum Stonemantle",
+   "models": [
+    {
+     "displayID": 3037,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1868,
+   "name": "Ravenclaw Servant",
+   "models": [
+    {
+     "displayID": 828,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1766,
+   "name": "Mottled Worg",
+   "models": [
+    {
+     "displayID": 246,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5387,
+   "name": "High Explorer Magellas",
+   "models": [
+    {
+     "displayID": 3596,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 14552,
+   "name": "Swift White Mechanostrider",
+   "models": [
+    {
+     "displayID": 14376,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9616,
+   "name": "Laris Geardawdle",
+   "models": [
+    {
+     "displayID": 8829,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 887,
+   "name": "Watcher Jordan",
+   "models": [
+    {
+     "displayID": 2390,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12375,
+   "name": "Chestnut Mare",
+   "models": [
+    {
+     "displayID": 2405,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 3537,
+   "name": "Zixil",
+   "models": [
+    {
+     "displayID": 7133,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 708,
+   "name": "Small Crag Boar",
+   "models": [
+    {
+     "displayID": 607,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 214530,
+   "name": "Ardelle Dralta",
+   "models": [
+    {
+     "displayID": 116069,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 256734,
+   "name": "Daniel Stitchsong",
+   "models": [
+    {
+     "displayID": 139801,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2795,
+   "name": "Lenny \"Fingers\" McCoy",
+   "models": [
+    {
+     "displayID": 1505,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1413,
+   "name": "Janey Anship",
+   "models": [
+    {
+     "displayID": 1472,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267336,
+   "name": "Brighid Stormflayer",
+   "models": [
+    {
+     "displayID": 145046,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14183,
+   "name": "Artilleryman Sheldonore",
+   "models": [
+    {
+     "displayID": 14235,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1697,
+   "name": "Keeg Gibn",
+   "models": [
+    {
+     "displayID": 3409,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14981,
+   "name": "Elfarran",
+   "models": [
+    {
+     "displayID": 15098,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1125,
+   "name": "Crag Boar",
+   "models": [
+    {
+     "displayID": 138623,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11996,
+   "name": "Ashley Bridenbecker",
+   "models": [
+    {
+     "displayID": 257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5117,
+   "name": "Regnus Thundergranite",
+   "models": [
+    {
+     "displayID": 3073,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 704,
+   "name": "Ragged Timber Wolf",
+   "models": [
+    {
+     "displayID": 11416,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2540,
+   "name": "Dalaran Serpent",
+   "models": [
+    {
+     "displayID": 5966,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 274942,
+   "name": "Bob McNaught",
+   "models": [
+    {
+     "displayID": 147964,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1328,
+   "name": "Elly Langston",
+   "models": [
+    {
+     "displayID": 1521,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 727,
+   "name": "Ironforge Mountaineer",
+   "models": [
+    {
+     "displayID": 1598,
+     "scale": 1.0,
+     "probability": 9.0
+    },
+    {
+     "displayID": 1608,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5406,
+   "name": "Palomino",
+   "models": [
+    {
+     "displayID": 2408,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12738,
+   "name": "Nori Pridedrift",
+   "models": [
+    {
+     "displayID": 12967,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 1368,
+   "name": "Justin",
+   "models": [
+    {
+     "displayID": 221,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 15384,
+   "name": "World Trigger",
+   "models": [
+    {
+     "displayID": 11686,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 7843,
+   "name": "Gnomeregan Evacuee",
+   "models": [
+    {
+     "displayID": 6973,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6974,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6975,
+     "scale": 1.0,
+     "probability": 1.0
+    },
+    {
+     "displayID": 6976,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 7292,
+   "name": "Dinita Stonemantle",
+   "models": [
+    {
+     "displayID": 6588,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 3085,
+   "name": "Gloria Femmel",
+   "models": [
+    {
+     "displayID": 3375,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 859,
+   "name": "Guard Berton",
+   "models": [
+    {
+     "displayID": 3453,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 12480,
+   "name": "Melris Malagan",
+   "models": [
+    {
+     "displayID": 5567,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 12481,
+   "name": "Justine Demalier",
+   "models": [
+    {
+     "displayID": 5446,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 485,
+   "name": "Blackrock Outrunner",
+   "models": [
+    {
+     "displayID": 6034,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 270196,
+   "name": "Jai'vhanel",
+   "models": [
+    {
+     "displayID": 146349,
+     "scale": 1.2,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11822,
+   "name": "Moonglade Warden",
+   "models": [
+    {
+     "displayID": 11774,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 11775,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 11776,
+     "scale": 1.0,
+     "probability": 25.0
+    },
+    {
+     "displayID": 11777,
+     "scale": 1.0,
+     "probability": 25.0
+    }
+   ]
+  },
+  {
+   "npcID": 1754,
+   "name": "Lord Gregor Lescovar",
+   "models": [
+    {
+     "displayID": 2051,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 14547,
+   "name": "Swift White Ram",
+   "models": [
+    {
+     "displayID": 14346,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 850,
+   "name": "Erin",
+   "models": [
+    {
+     "displayID": 257,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1118,
+   "name": "Rockjaw Backbreaker",
+   "models": [
+    {
+     "displayID": 723,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 11028,
+   "name": "Jemma Quikswitch",
+   "models": [
+    {
+     "displayID": 10571,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 11026,
+   "name": "Sprite Jumpsprocket",
+   "models": [
+    {
+     "displayID": 10569,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5140,
+   "name": "Edris Barleybeard",
+   "models": [
+    {
+     "displayID": 3065,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 265813,
+   "name": "Eric Brighthammer",
+   "models": [
+    {
+     "displayID": 144653,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 5099,
+   "name": "Soleil Stonemantle",
+   "models": [
+    {
+     "displayID": 3039,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 265,
+   "name": "Madame Eva",
+   "models": [
+    {
+     "displayID": 4323,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 9982,
+   "name": "Penny",
+   "models": [
+    {
+     "displayID": 9255,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1377,
+   "name": "Pilot Stonegear",
+   "models": [
+    {
+     "displayID": 5106,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 248779,
+   "name": "Garreth Stills",
+   "models": [
+    {
+     "displayID": 131652,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1976,
+   "name": "Stormwind City Patroller",
+   "models": [
+    {
+     "displayID": 3167,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 1703,
+   "name": "Uthrar Threx",
+   "models": [
+    {
+     "displayID": 10629,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 6579,
+   "name": "Shoni the Shilent",
+   "models": [
+    {
+     "displayID": 5378,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 5137,
+   "name": "Reyna Stonebranch",
+   "models": [
+    {
+     "displayID": 3063,
+     "scale": 1.0,
+     "probability": 0.0
+    }
+   ]
+  },
+  {
+   "npcID": 1573,
+   "name": "Gryth Thurden",
+   "models": [
+    {
+     "displayID": 3007,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 267683,
+   "name": "Red Mechanostrider",
+   "models": [
+    {
+     "displayID": 9473,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 480,
+   "name": "Rusty Harvest Golem",
+   "models": [
+    {
+     "displayID": 514,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 256742,
+   "name": "Dianne Softstep",
+   "models": [
+    {
+     "displayID": 139821,
+     "scale": 1.0,
+     "probability": 100.0
+    }
+   ]
+  },
+  {
+   "npcID": 6174,
+   "name": "Stephanie Turner",
+   "models": [
+    {
+     "displayID": 4888,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 240,
+   "name": "Marshal Dughan",
+   "models": [
+    {
+     "displayID": 1985,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 250651,
+   "name": "Vengeful Citizen",
+   "models": [
+    {
+     "displayID": 146,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  },
+  {
+   "npcID": 2671,
+   "name": "Mechanical Squirrel",
+   "models": [
+    {
+     "displayID": 7937,
+     "scale": 1.0,
+     "probability": 1.0
+    }
+   ]
+  }
+ ]
+}
