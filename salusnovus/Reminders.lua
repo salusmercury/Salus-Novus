@@ -59,6 +59,8 @@ function ns.ReminderAdd(encounterID, r)
 end
 
 function ns.ReminderRemove(encounterID, id)
+    local t = scheduled[id]
+    if t then pcall(t.Cancel, t); scheduled[id] = nil end
     local list = ns.ReminderList(encounterID)
     if list then
         for i = #list, 1, -1 do if list[i].id == id then table.remove(list, i) end end

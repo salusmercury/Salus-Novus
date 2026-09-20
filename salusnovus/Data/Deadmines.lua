@@ -92,8 +92,6 @@ ns.Data[36] = {
             avgLength = 90.2,
             npcs = {
                 { id = 646, name = "Mr. Smite", displayID = 2026 },
-                { id = 657, name = "Defias Pirate", displayID = nil },
-                { id = 1732, name = "Defias Squallshaper", displayID = nil },
             },
             abilities = {
                 { spellID = 6432, name = "Smite Stomp", source = "Mr. Smite", pulls = 1,
@@ -105,18 +103,6 @@ ns.Data[36] = {
                 { spellID = 6435, name = "Smite Slam", source = "Mr. Smite", pulls = 1,
                   casts = { { 79.0, "success", 1 }, { 86.4, "success", 1 } },
                   lanes = { casts = { 79.0, 86.4 }, spread = { 0.0, 0.0 }, support = { 1, 1 }, cast = 0.0 } },
-                { spellID = 5172, name = "Bloodsail Companion", source = "Defias Pirate", pulls = 1,
-                  casts = { { 143.8, "success", 1 }, { 210.6, "success", 1 }, { 486.0, "success", 1 } },
-                  lanes = { casts = { 143.8, 210.6, 486.0 }, spread = { 0.0, 0.0, 0.0 }, support = { 1, 1, 1 }, cast = 0.0 } },
-                { spellID = 2138, name = "Fire Blast", source = "Defias Squallshaper", pulls = 1,
-                  casts = { { 148.6, "success", 1 }, { 159.5, "success", 1 }, { 175.8, "success", 1 }, { 185.5, "success", 1 }, { 239.0, "success", 1 }, { 248.4, "success", 1 }, { 282.4, "success", 1 }, { 284.7, "success", 1 }, { 294.9, "success", 1 }, { 297.3, "success", 1 }, { 305.8, "success", 1 }, { 313.9, "success", 1 }, { 355.2, "success", 1 }, { 446.4, "success", 1 }, { 452.5, "success", 1 }, { 457.3, "success", 1 }, { 464.6, "success", 1 }, { 465.8, "success", 1 } },
-                  lanes = { casts = { 148.6, 159.5, 175.8, 185.5, 239.0, 248.4, 282.4, 284.7, 294.9, 297.3, 305.8, 313.9, 355.2, 446.4, 452.5, 457.3, 464.6, 465.8 }, spread = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, support = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, cast = 0.0 } },
-                { spellID = 122, name = "Frost Nova", source = "Defias Squallshaper", pulls = 1,
-                  casts = { { 172.1, "success", 1 }, { 241.5, "success", 1 } },
-                  lanes = { casts = { 172.1, 241.5 }, spread = { 0.0, 0.0 }, support = { 1, 1 }, cast = 0.0 } },
-                { spellID = 12544, name = "Frost Armor", source = "Defias Squallshaper", pulls = 1,
-                  casts = { { 176.6, "success", 1 }, { 217.5, "success", 1 } },
-                  lanes = { casts = { 176.6, 217.5 }, spread = { 0.0, 0.0 }, support = { 1, 1 }, cast = 0.0 } },
             },
         },
         {

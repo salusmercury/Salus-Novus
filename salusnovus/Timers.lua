@@ -362,6 +362,7 @@ StartEncounter = function(encounterID, name)
 end
 
 EndEncounter = function()
+    if not state.active then return end   -- wipe watch AND a late END: one end, one OnEncounter(false)
     if state.watch then
         state.watch:Cancel()
         state.watch = nil

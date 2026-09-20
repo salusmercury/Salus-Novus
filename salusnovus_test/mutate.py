@@ -541,6 +541,20 @@ MUTATIONS = [
     ("a reused reminder line keeps its old icon texture", "Reminders.lua",
      "        f.icon:SetTexture(nil)",
      "        -- (removed)"),
+    # ---- bug hunt 6
+    ("a slider shows a stored value outside its range as-is", "Theme.lua",
+     "        if type(lo) == \"number\" and type(hi) == \"number\" then v = math.max(lo, math.min(hi, v)) end",
+     "        -- (removed)"),
+    ("EndEncounter ends twice", "Timers.lua",
+     "    if not state.active then return end   -- wipe watch AND a late END: one end, one OnEncounter(false)",
+     "    -- (removed)"),
+    ("removing a reminder leaves its timer running", "Reminders.lua",
+     "function ns.ReminderRemove(encounterID, id)\n    local t = scheduled[id]\n    if t then pcall(t.Cancel, t); scheduled[id] = nil end",
+     "function ns.ReminderRemove(encounterID, id)"),
+    # ---- bug hunt 7
+    ("ability marks hang off their time by half a mark (left-anchored)", "Visualizer.lua",
+     '                m:ClearAllPoints(); m:SetPoint("CENTER", lane.track, "LEFT", x, 0); m:Show()',
+     '                m:ClearAllPoints(); m:SetPoint("LEFT", lane.track, "LEFT", x, 0); m:Show()'),
 ]
 
 

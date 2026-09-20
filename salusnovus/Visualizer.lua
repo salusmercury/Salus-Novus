@@ -1556,7 +1556,7 @@ Refresh = function(fromSlider)
                 m.pulls = pulls > 0 and pulls or nil
                 m.r, m.g, m.b, m.alpha = r, g, b, 0.9
                 m.tex:SetVertexColor(r, g, b, 0.9)
-                m:ClearAllPoints(); m:SetPoint("LEFT", lane.track, "LEFT", x, 0); m:Show()
+                m:ClearAllPoints(); m:SetPoint("CENTER", lane.track, "LEFT", x, 0); m:Show()
                 m.spread = sp
                 if sp and sp > 1 then
                     m.band:SetWidth(math.max(wpx, 2 * sp / Span() * TrackWidth()))

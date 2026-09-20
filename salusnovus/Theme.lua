@@ -323,6 +323,10 @@ function T.MakeSlider(parent, width, minV, maxV, onChange)
     end)
     s:SetScript("OnSizeChanged", Paint)
     function s:SetValueQuiet(v)
+        -- A stored value outside the range (an older version's, a hand
+        -- edit) shows clamped, as the anchor will use it.
+        local lo, hi = self:GetMinMaxValues()
+        if type(lo) == "number" and type(hi) == "number" then v = math.max(lo, math.min(hi, v)) end
         self.quiet = true
         self.last = v
         self:SetValue(v)

@@ -272,7 +272,7 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
         def finish(enc):
             # Working fields out; casts in time order (the client writes a
             # few lines out of order, and every consumer assumes sorted).
-            for k in ("t0", "boss_died_at", "boss_guid"):
+            for k in ("t0", "boss_died_at", "boss_guid", "_recent"):
                 enc.pop(k, None)
             enc["casts"].sort(key=lambda c: c[0])
 
@@ -461,8 +461,12 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
             # it lands in the stream as a "success" so the generator treats it
             # like any instant cast, and cast_health reads the summoner's
             # health off its last advanced block.
+            # Nothing after the boss's death belongs to the pull: with no
+            # ENCOUNTER_END the pull stays open and the trash that follows
+            # would pour in (Mr. Smite: 25 Squallshaper casts, 2026-09-20).
             if current_enc is not None and (subevent in CAST_EVENTS or subevent == "SPELL_SUMMON") \
-                    and source_name not in ENCOUNTER_IGNORE_CASTERS and current_enc["t0"] is not None:
+                    and source_name not in ENCOUNTER_IGNORE_CASTERS and current_enc["t0"] is not None \
+                    and current_enc.get("boss_died_at") is None:
                 t = line_time(split[0])
                 if t is not None:
                     if current_enc["boss_guid"] is None and source_name == current_enc["name"]:
@@ -471,11 +475,16 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
                     kind = "start" if subevent == "SPELL_CAST_START" else "success"
                     # A summon spell logs SPELL_CAST_SUCCESS and SPELL_SUMMON for
                     # the same cast at the same instant (Eject Sneed): one entry.
+                    # Keyed by the caster's GUID, not its name: two Lesser Stone
+                    # Golems trampling at 8.6 s are two casts (Hall of Thanes).
+                    recent = current_enc.setdefault("_recent", [])
                     dup = kind == "success" and any(
-                        c[4] == "success" and c[1] == spell_id and c[3] == source_name and abs(c[0] - off) <= 0.2
-                        for c in current_enc["casts"][-6:])
+                        g == source_guid and sid == spell_id and abs(o - off) <= 0.2 for g, sid, o in recent)
                     if not dup:
                         current_enc["casts"].append([off, spell_id, spell_name, source_name, kind])
+                        if kind == "success":
+                            recent.append((source_guid, spell_id, off))
+                            del recent[:-8]
 
             bucket = dungeons[inst]
             mob = bucket["mobs"][npc]

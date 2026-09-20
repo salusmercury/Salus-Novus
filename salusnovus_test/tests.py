@@ -1219,8 +1219,9 @@ def _():
             if lane:IsShown() then
                 for _, m in ipairs(lane.marks) do
                     if m:IsShown() then
-                        local dx = (m:GetLeft() - lane.track:GetLeft()) - V.X(m.t)
-                        if math.abs(dx) > 0.01 then out[#out+1] = lane.name:GetText() .. "@" .. m.t .. "=" .. dx end
+                        -- a mark is CENTRED on its time (the reminders lane always was)
+                        local dx = (m:GetLeft() + m:GetWidth() / 2 - lane.track:GetLeft()) - V.X(m.t)
+                        if math.abs(dx) > 0.5 then out[#out+1] = lane.name:GetText() .. "@" .. m.t .. "=" .. dx end
                     end
                 end
             end
@@ -6212,3 +6213,226 @@ def _():
     casts = enc["Sneed"][0]["casts"]
     eq(casts, [[66.3, 5141, "Eject Sneed", "Sneed's Shredder", "success"]], "the pair must collapse to one cast: %r" % casts)
 
+
+@test("parse_logs: two same-named adds casting the same spell at the same instant are two casts (dedupe is by GUID)", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    G1 = 'Creature-0-6783-3065-61191-7000-00002FF601,"Lesser Stone Golem",0x10a48,0x80000000'
+    G2 = 'Creature-0-6783-3065-61191-7000-00002FF602,"Lesser Stone Golem",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-golems.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/19/2026 05:00:00.000-5  ENCOUNTER_START,3496,"Durgen Dirgehammer",1,5,3065\n')
+            f.write("9/19/2026 05:00:08.600-5  SPELL_CAST_SUCCESS," + G1 + ',0000000000000000,nil,0x80000000,0x80000000,5568,"Trample",0x1,Creature-0-6783-3065-61191-7000-00002FF601,0000000000000000,900,1000,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            f.write("9/19/2026 05:00:08.600-5  SPELL_CAST_SUCCESS," + G2 + ',0000000000000000,nil,0x80000000,0x80000000,5568,"Trample",0x1,Creature-0-6783-3065-61191-7000-00002FF602,0000000000000000,900,1000,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            f.write('9/19/2026 05:00:40.000-5  ENCOUNTER_END,3496,"Durgen Dirgehammer",1,5,1,40000\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    rec = enc["Durgen Dirgehammer"][0]
+    eq(len(rec["casts"]), 2, "one golem's Trample was swallowed by the other's: %r" % rec["casts"])
+    ok("_recent" not in rec, "working field leaked")
+
+
+# ------------------------------------------------------------------
+# bug hunt 6 (2026-09-20)
+
+
+@test("stepper: SetValue outside min/max range is clamped by the slider", "bughunt6")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    # Find a stepper widget with range 1-8
+    w_idx = int(h.lua("""
+        for i, w in ipairs(ns.Options.widgets) do
+            if w.__kind == 'stepper' and w.__outer == ns.Options.pages.bars and w.__min == 1 and w.__max == 8 then
+                return i
+            end
+        end
+        return -1
+    """))
+    ok(w_idx > 0, "no stepper with range 1-8 found")
+    # Test setting value below minimum
+    h.lua("ns.db.bars.max = 1; ns.ApplyAll(); ns.Options.Refresh()")
+    h.lua("""
+        local w = ns.Options.widgets[%d]
+        w:SetValue(0)  -- try to go below minimum of 1
+    """ % w_idx)
+    val_below = int(h.lua("return ns.Options.widgets[%d]:GetValue()" % w_idx))
+    eq(val_below, 1, "slider value not clamped to min (got %d)" % val_below)
+    # Test setting value above maximum
+    h.lua("ns.db.bars.max = 8; ns.ApplyAll(); ns.Options.Refresh()")
+    h.lua("""
+        local w = ns.Options.widgets[%d]
+        w:SetValue(9)  -- try to go above maximum of 8
+    """ % w_idx)
+    val_above = int(h.lua("return ns.Options.widgets[%d]:GetValue()" % w_idx))
+    eq(val_above, 8, "slider value not clamped to max (got %d)" % val_above)
+    eq(h.errors(), [], "errors during slider clamping")
+
+
+@test("stepper: DB value outside range at open displays clamped and gets re-read by slider", "bughunt6")
+def _():
+    h = Harness()
+    h.login('SalusNovusDB = { options = { bars = { max = 10, width = 50, height = 18 } } }')
+    # bars.max has min=1, max=8, so 10 should be clamped
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    h.lua("ns.Options.Refresh()")
+    # The slider should clamp the out-of-range value
+    slider_val = int(h.lua("""
+        for i, w in ipairs(ns.Options.widgets) do
+            if w.__kind == 'stepper' and w.__outer == ns.Options.pages.bars and w.__min == 1 and w.__max == 8 then
+                return w:GetValue() or -1
+            end
+        end
+        return -1
+    """))
+    eq(slider_val, 8, "slider did not clamp out-of-range value (got %d)" % slider_val)
+    eq(h.errors(), [], "errors")
+
+
+@test("EndEncounter must not fire OnEncounter(false) twice if called re-entrantly", "bughunt6")
+def _():
+    h = fresh()
+    h.lua("""
+        __end_count = 0
+        ns.Timers.Register({
+            OnEncounter = function(active)
+                if not active then __end_count = __end_count + 1 end
+            end
+        })
+        W.encounterID = 0
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 0, "Test", 1, 5, 0)')
+    # Directly call EndEncounter twice (simulating re-entrant call)
+    h.lua('ns.Timers.EndEncounter()')
+    h.lua('ns.Timers.EndEncounter()')
+    end_count = int(h.lua("return __end_count"))
+    # OnEncounter(false) should only fire once, not twice
+    eq(end_count, 1, "OnEncounter(false) should fire exactly once even if EndEncounter called twice")
+
+
+@test("deleted reminder timer still fires after deletion because ReminderRemove doesn't cancel", "bughunt6")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "del", encounterID = 3494, trigger = "time", arg = 5, lead = 0, text = "DELETED", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua('W.advance(1.0)')  # schedule at t=1, will fire at t=5
+    # Delete the reminder - this should cancel the timer
+    h.lua('ns.ReminderRemove(3494, "del")')
+    h.lua('W.advance(4.2)')  # advance to t=5.2, timer fires anyway
+    fired_msgs = fired(h)
+    # The deleted reminder should NOT have fired
+    deleted_fired = sum(1 for msg in fired_msgs if "DELETED" in str(msg))
+    eq(deleted_fired, 0, "deleted reminder should not fire, but fired %d times" % deleted_fired)
+
+
+@test("TOC: every .lua file listed in TOC exists on disk with correct case", "bughunt6")
+def _():
+    import re, io, os
+    from runner import ROOT
+    from collections import Counter
+    toc_path = os.path.join(ROOT, "salusnovus", "SalusNovus.toc")
+    toc = io.open(toc_path, encoding="utf-8").read()
+
+    # Extract lua files (lines that end with .lua, not comments)
+    lua_lines = [l.strip() for l in toc.split('\n') if l.strip() and not l.strip().startswith("#") and l.strip().endswith(".lua")]
+
+    # Check for duplicates
+    counts = Counter(lua_lines)
+    dups = {f: c for f, c in counts.items() if c > 1}
+    ok(not dups, "duplicate TOC entries: %s" % dups)
+
+    # Check each file exists
+    for lua_file in lua_lines:
+        path = os.path.join(ROOT, "salusnovus", lua_file.replace("\\", os.sep))
+        ok(os.path.isfile(path), "TOC lists %s but file not found at %s" % (lua_file, path))
+
+@test("TOC: no .lua files on disk are missing from the TOC", "bughunt6")
+def _():
+    import os
+    from runner import ROOT
+    toc_path = os.path.join(ROOT, "salusnovus", "SalusNovus.toc")
+    toc = open(toc_path).read()
+
+    lua_lines = set(l.strip() for l in toc.split('\n') if l.strip() and not l.strip().startswith("#") and l.strip().endswith(".lua"))
+
+    # Find all lua files on disk
+    on_disk = set()
+    for root, dirs, files in os.walk(os.path.join(ROOT, "salusnovus")):
+        for f in files:
+            if f.endswith(".lua"):
+                path = os.path.join(root, f)
+                rel = os.path.relpath(path, os.path.join(ROOT, "salusnovus")).replace(os.sep, "\\")
+                on_disk.add(rel)
+
+    stray = on_disk - lua_lines
+    ok(not stray, "files on disk not in TOC: %s" % stray)
+
+
+@test("parse_logs: casts after the boss's death (no ENCOUNTER_END) stay out of the pull", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    SQ = 'Creature-0-6783-36-61191-1732-0000AFF63B,"Defias Squallshaper",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-smite2.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/20/2026 11:04:30.005-5  ENCOUNTER_START,2745,"Mr. Smite",1,5,36\n')
+            f.write("9/20/2026 11:05:17.333-5  SPELL_CAST_SUCCESS," + SMITE + ',0000000000000000,nil,0x80000000,0x80000000,6432,"Smite Stomp",0x1,Creature-0-6783-36-61191-646-00002FF63B,0000000000000000,1200,2400,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            f.write("9/20/2026 11:06:00.229-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000," + SMITE + ",0\n")
+            f.write("9/20/2026 11:06:04.909-5  SPELL_CAST_START," + SQ + ',0000000000000000,nil,0x80000000,0x80000000,5401,"Ice Bolt",0x10\n')
+            f.write("9/20/2026 11:06:06.409-5  SPELL_CAST_SUCCESS," + SQ + ',0000000000000000,nil,0x80000000,0x80000000,5401,"Ice Bolt",0x10,Creature-0-6783-36-61191-1732-0000AFF63B,0000000000000000,300,300,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    rec = enc["Mr. Smite"][0]
+    eq([c[2] for c in rec["casts"]], ["Smite Stomp"], "trash after the death leaked into the pull: %r" % rec["casts"])
+    eq(rec["length"], 90.2, "length")
+
+
+# ------------------------------------------------------------------
+# bug hunt 7 (2026-09-20)
+
+@test("visualizer mark placement: every visible mark's centre X = X(cast_time) ±0.5px", "bughunt7")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    misplaced = str(h.lua("""
+        local V = ns.Visualizer
+        local out = {}
+        for li = 2, #V._lanes do
+            local lane = V._lanes[li]
+            if lane:IsShown() then
+                local track_left = lane.track:GetLeft()
+                for _, m in ipairs(lane.marks) do
+                    if m:IsShown() then
+                        local x_computed = V.X(m.t)
+                        local x_mark_centre = m:GetLeft() + m:GetWidth() / 2
+                        local dx = (x_mark_centre - track_left) - x_computed
+                        if math.abs(dx) > 0.5 then
+                            out[#out+1] = string.format("%s@%.1f: dx=%.2f", lane.name:GetText(), m.t, dx)
+                        end
+                    end
+                end
+            end
+        end
+        return table.concat(out, "; ")
+    """))
+    eq(misplaced, "", "marks off position: %s" % misplaced)
