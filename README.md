@@ -24,7 +24,8 @@ Install
 - From source: copy the `salusnovus` folder into `Interface\AddOns\` and
   rename it `SalusNovus`, or run
   `python install_probe.py --addon SalusNovus --install wow_classic_beta`.
-- `python make_release.py` builds the release zip into `dist/`.
+- `python make_release.py` builds the release zip into `dist/`. Pushing a tag
+  `vX.Y.Z` makes GitHub build it and publish a Release automatically.
 
 Data
 - `build_salusnovus_data.py` regenerates `salusnovus/Data/*.lua` from
