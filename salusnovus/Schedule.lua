@@ -118,11 +118,24 @@ end
 --- Abilities the logs show to be HEALTH-triggered (cast at the same boss
 -- health in every pull, at different times): never timed, never on the
 -- lanes or the timed anchors; drawn as markers on the Health Bars anchor.
+-- An ability cast at SEVERAL healths (VanCleef's add waves at 75% and
+-- 50%: the same summon, twice) carries `health.pcts`; it comes back as
+-- one entry per threshold so the anchor draws one marker each.
 function S.HealthAbilities(boss)
     local out = {}
     for _, a in ipairs(boss and boss.abilities or {}) do
         if a.health and type(a.health.pct) == "number" and S.IsBossSource(boss, a.source) then
-            out[#out + 1] = a
+            local pcts = a.health.pcts
+            if type(pcts) == "table" and #pcts > 1 then
+                for _, p in ipairs(pcts) do
+                    if type(p) == "number" then
+                        out[#out + 1] = { spellID = a.spellID, name = a.name, source = a.source,
+                                          health = { pct = p }, ability = a }
+                    end
+                end
+            else
+                out[#out + 1] = a
+            end
         end
     end
     table.sort(out, function(x, y) return x.health.pct > y.health.pct end)

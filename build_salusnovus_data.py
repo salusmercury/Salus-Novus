@@ -33,6 +33,7 @@ OUT_DIR = os.path.join(HERE, "salusnovus", "Data")
 # lives only there (advanced-logging params). Missing dir = no health data.
 LOG_DIR = os.environ.get("SN_LOG_DIR") or r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\Logs"
 
+FALSE_START_SECONDS = 5.0  # a shorter pull with no casts is a false start, not a pull
 HEALTH_HP_SPREAD = 6.0    # % points: casts at the same health across pulls...
 HEALTH_T_SPREAD = 3.0     # ...but not at the same time -> a health trigger
 HEALTH_MAX_PCT = 95.0     # an opener at full health is a timed ability
@@ -46,16 +47,44 @@ def parse_ts(ts):
     return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
 
 
+def adv_hp(f):
+    """(info GUID, hp%) from a raw line's advanced block, or None. The block
+    describes the unit its own leading GUID names; it starts after the 3
+    spell fields for SPELL_/RANGE_ events and right after the 9 base fields
+    for SWING_ ones. Nothing here trusts an offset without checking that a
+    GUID sits where one should."""
+    for start in (12, 9):
+        if len(f) > start + 3 and f[start].startswith(("Creature-", "Vehicle-", "Player-", "Pet-")):
+            try:
+                cur, mx = float(f[start + 2]), float(f[start + 3])
+            except ValueError:
+                return None
+            if mx <= 0:
+                return None
+            return f[start], 100.0 * cur / mx
+    return None
+
+
 def cast_health(files):
     """Per (file, encounter id, pull length): {(spellID, source name, t) -> hp%}
     from SPELL_CAST_SUCCESS lines whose advanced params carry the caster's
-    current and max health. Returns {} when the logs are not on disk."""
+    current and max health -- and from SPELL_SUMMON lines, which carry no
+    block, using the summoner's health off its last block in the file (its
+    melee swings, the hits it took). Returns {} when the logs are not on disk."""
     out = {}
     for fname in sorted(set(files)):
         path = os.path.join(LOG_DIR, fname)
         if not os.path.isfile(path):
             continue
-        block, t0, enc = None, None, None
+        block, t0, enc, name, died = None, None, None, None, None
+        last_hp = {}                    # info GUID -> hp% at its latest advanced block
+
+        def close_on_death():
+            # Mirrors parse_logs.py: no ENCOUNTER_END, the boss's UNIT_DIED
+            # ends the pull, so the key matches the parsed pull's length.
+            if block is not None and died is not None and t0 is not None:
+                out[(fname, enc, round(died - t0, 1))] = block
+
         for line in io.open(path, encoding="utf-8", errors="replace"):
             parts = line.rstrip("\n").split("  ", 1)
             if len(parts) < 2:
@@ -64,28 +93,68 @@ def cast_health(files):
             f = body.split(",")
             ev = f[0]
             if ev == "ENCOUNTER_START":
+                close_on_death()
                 enc, t0, block = int(f[1]), parse_ts(ts), {}
+                name, died = f[2].strip('"') if len(f) > 2 else None, None
             elif ev == "ENCOUNTER_END" and block is not None:
                 t = parse_ts(ts)
                 if t is not None and t0 is not None:
                     out[(fname, enc, round(t - t0, 1))] = block
-                block, t0, enc = None, None, None
-            elif ev == "SPELL_CAST_SUCCESS" and block is not None and len(f) > 16 and f[1].startswith("Creature-"):
+                block, t0, enc, name, died = None, None, None, None, None
+            elif ev == "UNIT_DIED" and block is not None and died is None and len(f) > 6                     and f[6].strip('"') == name:
+                died = parse_ts(ts)
+            elif ev == "SPELL_SUMMON" and block is not None and len(f) > 9 and f[1].startswith("Creature-"):
+                hp = last_hp.get(f[1])
                 try:
-                    sid = int(f[9])
-                    cur, mx = float(f[14]), float(f[15])
-                    t = parse_ts(ts)
+                    sid, t = int(f[9]), parse_ts(ts)
                 except (ValueError, IndexError):
                     continue
-                if mx <= 0 or t is None or t0 is None:
+                if hp is None or t is None or t0 is None:
                     continue
-                src = f[2].strip('"')
-                block[(sid, src, round(t - t0, 1))] = 100.0 * cur / mx
+                block[(sid, f[2].strip('"'), round(t - t0, 1))] = hp
+            else:
+                got = adv_hp(f)
+                if got:
+                    last_hp[got[0]] = got[1]
+                if ev == "SPELL_CAST_SUCCESS" and block is not None and got and f[1].startswith("Creature-") \
+                        and got[0] == f[1]:
+                    try:
+                        sid, t = int(f[9]), parse_ts(ts)
+                    except (ValueError, IndexError):
+                        continue
+                    if t is None or t0 is None:
+                        continue
+                    block[(sid, f[2].strip('"'), round(t - t0, 1))] = got[1]
+        close_on_death()
+    return out
+
+
+def real_pulls(pulls):
+    """A false start (Gilnid 2026-09-20: START, 1.2 s, END with nothing cast)
+    is not a pull: it would count in `pulls` and drag avgLength down."""
+    return [p for p in pulls if p.get("casts") or (p.get("length") or 0) >= FALSE_START_SECONDS]
+
+
+def health_thresholds(hpseq):
+    """hpseq = {pull: [(t, hp%), ...]} -- every cast of one ability that had
+    a health reading, per pull, in time order. Health triggers are judged
+    per ORDINAL: the first cast of each pull against each other, then the
+    second (VanCleef's add waves: the same summon at 75% and again at 50%,
+    which judging only the first cast could never see). Returns the
+    thresholds that qualify, in cast order, or []."""
+    if not hpseq:
+        return []
+    out = []
+    for k in range(max(len(v) for v in hpseq.values())):
+        samples = [(pi, seq[k][0], seq[k][1]) for pi, seq in sorted(hpseq.items()) if len(seq) > k]
+        pct = health_trigger(samples)
+        if pct is not None:
+            out.append(pct)
     return out
 
 
 def health_trigger(samples):
-    """samples = [(pull, t, hp%)] of an ability's FIRST cast per pull. A
+    """samples = [(pull, t, hp%)] of one ordinal of an ability per pull. A
     health trigger: seen in 2+ pulls, at the same health (within
     HEALTH_HP_SPREAD) but not at the same time (HEALTH_T_SPREAD or more),
     below full health. Returns the rounded mean hp% or None."""
@@ -256,7 +325,8 @@ def lanes(casts):
     cast = 0.0
     if lengths:
         ls = sorted(lengths)
-        cast = round(ls[len(ls) // 2], 1)
+        n = len(ls)
+        cast = round(ls[n // 2] if n % 2 else (ls[n // 2 - 1] + ls[n // 2]) / 2.0, 1)
     return out_casts, out_spread, out_support, cast
 
 
@@ -288,6 +358,7 @@ def main():
     enc_json = load_json("forever_logs/encounters.json")
     pulls = enc_json if isinstance(enc_json, list) else [x for v in enc_json.values()
                                                           for x in (v if isinstance(v, list) else [v])]
+    pulls = real_pulls(pulls)
     dungeon = load_json("forever_logs/dungeon_data.json")
     instances = load_json("forever_instances.json")["instances"]
     # Keyed by NPC id: three cache rows share the name "Stalker", and
@@ -388,14 +459,16 @@ def main():
                         continue          # players and pets
                     # One record per (spell, caster): an add's Sunder Armor is
                     # not the boss's, and the Lua filters on source.
-                    a = abil.setdefault((sid, src), {"name": sname, "source": src, "casts": [], "pulls": set(), "hp": {}})
+                    a = abil.setdefault((sid, src), {"name": sname, "source": src, "casts": [], "pulls": set(), "hp": {}, "hpseq": {}})
                     a["casts"].append((round(t, 1), kind, pi))
                     a["pulls"].add(pi)
                     # the caster's health at this cast, when the raw log is on disk
                     blk = health.get((p["file"], int(p["encounter_id"]), round(p["length"], 1)), {})
                     hp = blk.get((sid, src, round(t, 1)))
-                    if hp is not None and pi not in a["hp"]:
-                        a["hp"][pi] = (round(t, 1), hp)     # first cast of the pull
+                    if hp is not None:
+                        if pi not in a["hp"]:
+                            a["hp"][pi] = (round(t, 1), hp)     # first cast of the pull
+                        a["hpseq"].setdefault(pi, []).append((round(t, 1), hp))
 
             # The boss is called what its NPC is called. An encounter whose
             # name is not an NPC (Infurnus) shows as the NPC that was picked
@@ -423,12 +496,14 @@ def main():
                 w("                  casts = { %s }," % ", ".join(
                     "{ %.1f, %s, %d }" % (t, lua_str(kind), pi + 1) for t, kind, pi in a["casts"]))
                 samples = [(pi, t, hp) for pi, (t, hp) in sorted(a["hp"].items())]
-                pct = health_trigger(samples)
-                if pct is not None:
+                pcts = health_thresholds({pi: sorted(seq) for pi, seq in a["hpseq"].items()})
+                if pcts:
                     # Cast at the same health in every pull, at different times:
-                    # a HEALTH trigger. Not timed; drawn on the Health Bars anchor.
-                    w("                  health = { pct = %d, pulls = %d, samples = { %s } } }," % (
-                        pct, len(samples), ", ".join("%.1f" % hp for _, _, hp in samples)))
+                    # a HEALTH trigger. Not timed; drawn on the Health Bars anchor,
+                    # one marker per threshold when there are several.
+                    extra = (" pcts = { %s }," % ", ".join(str(x) for x in pcts)) if len(pcts) > 1 else ""
+                    w("                  health = { pct = %d,%s pulls = %d, samples = { %s } } }," % (
+                        pcts[0], extra, len(samples), ", ".join("%.1f" % hp for _, _, hp in samples)))
                 else:
                     # Timed ability: show lanes clustering
                     lc, lsp, lsu, lcast = lanes(a["casts"])

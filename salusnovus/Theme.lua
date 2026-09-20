@@ -331,6 +331,8 @@ function T.MakeSlider(parent, width, minV, maxV, onChange)
         Paint()
     end
     s.Paint = Paint
+    function s:Repaint() Paint() end
+    T.Paint({ repaint = s })
     return s
 end
 
@@ -521,6 +523,7 @@ function T.MakeCheckBox(parent, size)
     function b:SetChecked(v) self.checked = v and true or false; self:Paint() end
     function b:GetChecked() return self.checked end
     function b:SetEnabled(e) self.enabledState = e and true or false; self:Paint() end
+    function b:Repaint() self:Paint() end
     b:SetScript("OnClick", function(self)
         if not self.enabledState then return end
         self:SetChecked(not self.checked)
@@ -530,6 +533,7 @@ function T.MakeCheckBox(parent, size)
     end)
     b:SetScript("OnLeave", function(self) self:Paint() end)
     b:Paint()
+    T.Paint({ repaint = b })
     return b
 end
 

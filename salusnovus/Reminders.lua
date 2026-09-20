@@ -243,6 +243,7 @@ local function Display(r, lead)
         f.iconFrame:SetPoint("RIGHT", f.text, "LEFT", -8, 0)
         f.iconFrame:Show()
     else
+        f.icon:SetTexture(nil)
         f.iconFrame:Hide()
     end
     f.lastSecs = nil          -- pooled frames keep the old value

@@ -11,6 +11,13 @@ Boss health is a SECRET value on Forever: an addon cannot read or compare
 it, but the client lets a StatusBar display it. Every SetValue is pcall'd;
 if the client refuses, the fill goes dim, the markers stay, and `/sn
 health` says so. Nothing here does arithmetic on the value.
+
+Nothing here polls either. Like a nameplate, the bar is driven by the
+client: UNIT_HEALTH / UNIT_MAXHEALTH for the one unit it follows (filtered
+by RegisterUnitEvent where the client has it), and the unit itself is
+re-resolved only when something that can change it fires -- the target
+or focus changing, a nameplate appearing or going, the encounter engage
+list -- never on a timer. Outside a fight nothing is registered at all.
 ]]
 
 local _, ns = ...
@@ -33,7 +40,7 @@ local frame
 local markers = {}
 H._markers = markers            -- test seam
 local state = { boss = nil, unit = nil, abilities = {}, preview = nil, previewTick = nil,
-                refused = false, lastScan = 0, feeds = 0, refusals = 0 }
+                refused = false, feeds = 0, refusals = 0, events = 0 }
 H.state = state
 
 local function Origin() return "TOP" end
@@ -120,18 +127,21 @@ local function BossName(boss)
     return npc and npc.name or (boss and boss.name)
 end
 
-local function FindUnit(boss)
+--- Does unit id `u` exist and carry the boss's name right now? Secret or
+-- unreadable answers count as "no": the scan moves on, the tick lets go.
+local function UnitIsBoss(u, boss)
     local want = BossName(boss)
-    if type(want) ~= "string" or ns.IsSecret(want) then return nil end
-    if type(UnitExists) ~= "function" or type(UnitName) ~= "function" then return nil end
+    if type(want) ~= "string" or ns.IsSecret(want) then return false end
+    if type(UnitExists) ~= "function" or type(UnitName) ~= "function" then return false end
+    local okE, exists = pcall(UnitExists, u)
+    if not (okE and exists and not ns.IsSecret(exists)) then return false end
+    local okN, name = pcall(UnitName, u)
+    return okN and type(name) == "string" and not ns.IsSecret(name) and name == want
+end
+
+local function FindUnit(boss)
     for _, u in ipairs(CANDIDATES) do
-        local okE, exists = pcall(UnitExists, u)
-        if okE and exists and not ns.IsSecret(exists) then
-            local okN, name = pcall(UnitName, u)
-            if okN and type(name) == "string" and not ns.IsSecret(name) and name == want then
-                return u
-            end
-        end
+        if UnitIsBoss(u, boss) then return u end
     end
     return nil
 end
@@ -211,8 +221,73 @@ local function Placeholders()
     }
 end
 
+-- ------------------------------------------------------------ the unit
+-- The bar's own event frame. Armed on a pull of a boss that has health
+-- abilities, disarmed at the end: while idle it costs nothing.
+local ev = CreateFrame("Frame")
+H._events = ev                  -- test seam
+local HEALTH_EVENTS = { "UNIT_HEALTH", "UNIT_MAXHEALTH" }
+-- Anything that can move the boss to another unit id, or take it away.
+local UNIT_EVENTS = { "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED",
+                      "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED",
+                      "INSTANCE_ENCOUNTER_ENGAGE_UNIT" }
+
+--- Follow unit id `u` (or none). Health events are filtered to the one
+-- unit by the client where RegisterUnitEvent exists; otherwise every
+-- UNIT_HEALTH arrives and the handler drops the ones for other units.
+local function SetUnit(u)
+    state.unit = u
+    for _, e in ipairs(HEALTH_EVENTS) do pcall(ev.UnregisterEvent, ev, e) end
+    if not u then return end
+    for _, e in ipairs(HEALTH_EVENTS) do
+        -- Trust the registration only if the frame says it took (Core.lua's
+        -- bus does the same): a client without the unit form, or a stub
+        -- that swallows the call, falls back to the plain event.
+        local took = false
+        if ev.RegisterUnitEvent then
+            local ok = pcall(ev.RegisterUnitEvent, ev, e, u)
+            local ok2, r = pcall(ev.IsEventRegistered, ev, e)
+            took = ok and ok2 and r and true or false
+        end
+        if not took then pcall(ev.RegisterEvent, ev, e) end
+    end
+    Feed()
+end
+
+local function Arm()
+    for _, e in ipairs(UNIT_EVENTS) do pcall(ev.RegisterEvent, ev, e) end
+end
+local function Disarm()
+    pcall(ev.UnregisterAllEvents, ev)
+    state.unit = nil                -- whatever we followed is stale by the time we re-arm
+end
+
+--- The unit id is only a slot: the tank retargets, a nameplate id is
+-- reused by an add. Keep it while it still holds the boss, else look again.
+local function Resolve()
+    if not state.boss then return end
+    if state.unit and UnitIsBoss(state.unit, state.boss) then return end
+    SetUnit(FindUnit(state.boss))
+end
+
+ev:SetScript("OnEvent", function(_, event, unit)
+    if state.preview or not state.boss then return end
+    state.events = state.events + 1
+    if event == "UNIT_HEALTH" or event == "UNIT_MAXHEALTH" then
+        if unit == state.unit then Feed() end
+    elseif event == "NAME_PLATE_UNIT_ADDED" then
+        -- A plate for the boss while we have no unit (or a reused id).
+        if not state.unit or unit == state.unit then Resolve() end
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        if unit == state.unit then SetUnit(nil); Resolve() end
+    else
+        Resolve()
+    end
+end)
+
 local function Apply()
     if not Enabled() then
+        Disarm()                    -- off mid-fight: nothing runs, not even for a hidden bar
         if frame then frame:Hide() end
         return
     end
@@ -228,16 +303,24 @@ local function Apply()
     end
     frame.unlockBg:SetShown(unlocked)
     frame.unlockLabel:SetShown(unlocked)
+    -- A route toggled mid-fight comes through ApplyAll: re-read the list,
+    -- or an unrouted ability keeps its marker until the next pull.
+    if state.boss then state.abilities = AbilitiesFor(state.boss) end
     if state.boss and #state.abilities > 0 then
         Refresh()
         frame:Show()
+        Arm()                       -- back on mid-fight: pick the unit up again
+        if not state.unit then SetUnit(FindUnit(state.boss)) end
     elseif unlocked then
+        Disarm()
         state.abilities = Placeholders()
         Refresh()
         frame.bar:SetMinMaxValues(0, 1)
         frame.bar:SetValue(0.6)
         frame:Show()
     else
+        Disarm()
+        if state.boss then Refresh() end     -- markers off too, not just the frame
         frame:Hide()
     end
 end
@@ -245,10 +328,11 @@ ns.RegisterApply(Apply, "Health Bars")
 H.Apply = Apply
 
 -- A fight: the bar appears only when the boss has a health-triggered
--- ability; the unit is looked up on the pull and re-looked every second
--- while missing (the tank may not have it targeted yet).
+-- ability; the unit is looked up on the pull and again whenever the
+-- client says a unit id changed (the tank may not have it targeted yet).
 local function OnEncounter(on)
     if not on then
+        Disarm()
         state.boss, state.unit, state.abilities = nil, nil, {}
         state.refused = false
         if frame then frame:SetAlpha(1); frame:Hide() end
@@ -257,38 +341,19 @@ local function OnEncounter(on)
     state.boss = ns.Timers.Boss()
     state.abilities = state.boss and AbilitiesFor(state.boss) or {}
     state.unit = nil
-    state.lastScan = 0
     if not Enabled() or #state.abilities == 0 then
+        Disarm()
         if frame then frame:Hide() end
         return
     end
     Build()
-    state.unit = FindUnit(state.boss)
     Refresh()
-    if state.unit then Feed() end
     frame:Show()
+    Arm()
+    SetUnit(FindUnit(state.boss))
 end
 
 ns.Timers.Register({ OnEncounter = OnEncounter })
-
--- Ten times a second while a boss is up: the fill follows the unit.
-local ticker
-local function EnsureTicker()
-    if ticker then return end
-    ticker = C_Timer.NewTicker(0.1, function()
-        if state.preview or not frame or not frame:IsShown() or not state.boss then return end
-        if not state.unit then
-            local now = GetTime()
-            if now - state.lastScan >= 1 then
-                state.lastScan = now
-                state.unit = FindUnit(state.boss)
-            end
-        end
-        if state.unit then Feed() end
-    end)
-end
-ns.On("PLAYER_ENTERING_WORLD", EnsureTicker)
-EnsureTicker()
 
 -- Options-page preview: two markers and a fill draining over twelve seconds.
 function ns.HealthBarsPreviewStart(stage)
@@ -332,7 +397,7 @@ end
 
 --- /sn health: is the client letting the bar show the secret value?
 ns.Commands.health = function()
-    ns.Print(string.format("health bars: boss=%s unit=%s markers=%d feeds=%d refused=%s (%d)",
-        ns.S(state.boss and state.boss.name or "-"), tostring(state.unit), #state.abilities,
-        state.feeds, tostring(state.refused), state.refusals))
+    ns.Print(string.format("health bars: boss=%s unit=%s markers=%d events=%d feeds=%d refused=%s (%d)",
+        ns.S(state.boss and state.boss.name or "-"), ns.S(state.unit or "-"), #state.abilities,
+        state.events, state.feeds, tostring(state.refused), state.refusals))
 end

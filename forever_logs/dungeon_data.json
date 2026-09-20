@@ -2269,17 +2269,3451 @@
   ],
   "packs": 31
  },
+ "36": {
+  "name": "The Deadmines",
+  "instance_id": 36,
+  "keystone_runs": 0,
+  "mobs": {
+   "634": {
+    "name": "Defias Overseer",
+    "level": 17,
+    "max_hp": 1563,
+    "deaths": 8,
+    "events": 205,
+    "map": 0,
+    "positions": [
+     [
+      -69.71,
+      -373.18,
+      0
+     ],
+     [
+      -68.48,
+      -380.61,
+      0
+     ],
+     [
+      -124.12,
+      -390.06,
+      0
+     ],
+     [
+      -188.02,
+      -480.73,
+      0
+     ],
+     [
+      -189.62,
+      -477.92499999999995,
+      0
+     ],
+     [
+      -223.83,
+      -491.76,
+      0
+     ],
+     [
+      -290.19,
+      -519.12,
+      0
+     ],
+     [
+      -129.41,
+      -627.15,
+      0
+     ]
+    ],
+    "spells": {
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 3,
+      "aura_type": "DEBUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 172,
+      "damage_total": 6550,
+      "damage_max": 53
+     },
+     "5115": {
+      "name": "Battle Command",
+      "school": "0x8",
+      "cast_success": 9,
+      "aura_applied": 21,
+      "aura_type": "BUFF"
+     }
+    }
+   },
+   "1729": {
+    "name": "Defias Evoker",
+    "level": 17,
+    "max_hp": 1563,
+    "deaths": 5,
+    "events": 230,
+    "map": 0,
+    "positions": [
+     [
+      -76.65,
+      -374.92,
+      0
+     ],
+     [
+      -80.59,
+      -376.03,
+      0
+     ],
+     [
+      -188.15,
+      -475.28,
+      0
+     ],
+     [
+      -188.47,
+      -475.63,
+      0
+     ],
+     [
+      -291.53,
+      -519.19,
+      0
+     ]
+    ],
+    "spells": {
+     "12544": {
+      "name": "Frost Armor",
+      "school": "0x10",
+      "cast_success": 2,
+      "aura_applied": 38,
+      "aura_type": "BUFF"
+     },
+     "11829": {
+      "name": "Flamestrike",
+      "school": "0x4",
+      "cast_start": 16,
+      "cast_success": 7,
+      "hits": 58,
+      "damage_total": 1813,
+      "damage_max": 88,
+      "aura_applied": 23,
+      "aura_type": "DEBUFF",
+      "interrupted": 4
+     },
+     "6136": {
+      "name": "Chilled",
+      "school": "0x10",
+      "aura_applied": 24,
+      "aura_type": "DEBUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 46,
+      "damage_total": 1338,
+      "damage_max": 62
+     },
+     "4979": {
+      "name": "Quick Flame Ward",
+      "school": "0x1",
+      "cast_start": 6,
+      "cast_success": 5,
+      "aura_applied": 5,
+      "aura_type": "BUFF"
+     }
+    }
+   },
+   "598": {
+    "name": "Defias Miner",
+    "level": 18,
+    "max_hp": 521,
+    "deaths": 29,
+    "events": 379,
+    "map": 0,
+    "positions": [
+     [
+      -38.4,
+      -372.5,
+      0
+     ],
+     [
+      -38.55,
+      -371.92,
+      0
+     ],
+     [
+      -64.88,
+      -368.15,
+      0
+     ],
+     [
+      -71.1,
+      -370.01,
+      0
+     ],
+     [
+      -72.44,
+      -373.76,
+      0
+     ],
+     [
+      -80.56,
+      -374.38,
+      0
+     ],
+     [
+      -79.69,
+      -374.23,
+      0
+     ],
+     [
+      -125.85,
+      -386.55,
+      0
+     ],
+     [
+      -127.36,
+      -391.55,
+      0
+     ],
+     [
+      -124.62,
+      -389.97,
+      0
+     ],
+     [
+      -124.85,
+      -390.33,
+      0
+     ],
+     [
+      -145.26,
+      -404.97,
+      0
+     ],
+     [
+      -141.82,
+      -406.92,
+      0
+     ],
+     [
+      -148.45,
+      -402.08,
+      0
+     ],
+     [
+      -150.22,
+      -399.33,
+      0
+     ],
+     [
+      -147.21,
+      -399.37,
+      0
+     ],
+     [
+      -167.21,
+      -399.34,
+      0
+     ],
+     [
+      -174.76,
+      -411.21,
+      0
+     ],
+     [
+      -187.41500000000002,
+      -489.06,
+      0
+     ],
+     [
+      -188.505,
+      -484.155,
+      0
+     ],
+     [
+      -184.59,
+      -494.63,
+      0
+     ],
+     [
+      -185.04500000000002,
+      -492.82,
+      0
+     ],
+     [
+      -187.18,
+      -485.73,
+      0
+     ],
+     [
+      -192.17,
+      -484.745,
+      0
+     ],
+     [
+      -195.7,
+      -487.33,
+      0
+     ],
+     [
+      -221.33,
+      -493.25,
+      0
+     ],
+     [
+      -221.15,
+      -494.6,
+      0
+     ],
+     [
+      -220.82,
+      -493.36,
+      0
+     ],
+     [
+      -223.34,
+      -492.17,
+      0
+     ],
+     [
+      -221.12,
+      -490.74,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 342,
+      "damage_total": 8170,
+      "damage_max": 35
+     },
+     "6016": {
+      "name": "Pierce Armor",
+      "school": "0x1",
+      "cast_success": 17,
+      "aura_applied": 16,
+      "aura_type": "DEBUFF"
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 4,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "644": {
+    "name": "Rhahk'Zor",
+    "level": 19,
+    "max_hp": 5720,
+    "deaths": 1,
+    "events": 37,
+    "map": 0,
+    "positions": [
+     [
+      -185.67,
+      -422.66,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 30,
+      "damage_total": 3174,
+      "damage_max": 143
+     },
+     "6304": {
+      "name": "Rhahk'Zor Slam",
+      "school": "0x1",
+      "cast_success": 3,
+      "hits": 2,
+      "damage_total": 89,
+      "damage_max": 49,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "1725": {
+    "name": "Defias Watchman",
+    "level": 18,
+    "max_hp": 1563,
+    "deaths": 2,
+    "events": 39,
+    "map": 0,
+    "positions": [
+     [
+      -185.83,
+      -447.61,
+      0
+     ],
+     [
+      -203.17,
+      -452.7,
+      0
+     ]
+    ],
+    "spells": {
+     "6660": {
+      "name": "Shoot",
+      "school": "0x1",
+      "cast_start": 6,
+      "cast_success": 6,
+      "hits": 5,
+      "damage_total": 129,
+      "damage_max": 30
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 22,
+      "damage_total": 830,
+      "damage_max": 44
+     }
+    }
+   },
+   "641": {
+    "name": "Goblin Woodcarver",
+    "level": 19,
+    "max_hp": 1716,
+    "deaths": 12,
+    "events": 343,
+    "map": 0,
+    "positions": [
+     [
+      -265.97,
+      -482.28,
+      0
+     ],
+     [
+      -268.26,
+      -482.27,
+      0
+     ],
+     [
+      -274.58,
+      -481.3,
+      0
+     ],
+     [
+      -275.54,
+      -485.37,
+      0
+     ],
+     [
+      -278.85,
+      -484.8,
+      0
+     ],
+     [
+      -277.03,
+      -487.19,
+      0
+     ],
+     [
+      -280.16,
+      -481.27,
+      0
+     ],
+     [
+      -283.01,
+      -500.66,
+      0
+     ],
+     [
+      -293.65,
+      -527.95,
+      0
+     ],
+     [
+      -291.98,
+      -521.09,
+      0
+     ],
+     [
+      -298.29,
+      -601.41,
+      0
+     ],
+     [
+      -261.55,
+      -576.45,
+      0
+     ]
+    ],
+    "spells": {
+     "6466": {
+      "name": "Axe Toss",
+      "school": "0x1",
+      "cast_start": 5,
+      "cast_success": 5,
+      "hits": 5,
+      "damage_total": 349,
+      "damage_max": 77,
+      "aura_applied": 5,
+      "aura_type": "DEBUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 298,
+      "damage_total": 11350,
+      "damage_max": 55
+     },
+     "5532": {
+      "name": "Cleave",
+      "school": "0x1",
+      "cast_success": 9,
+      "hits": 15,
+      "damage_total": 938,
+      "damage_max": 80
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "642": {
+    "name": "Sneed's Shredder",
+    "level": 20,
+    "max_hp": 5031,
+    "deaths": 1,
+    "events": 64,
+    "map": 0,
+    "positions": [
+     [
+      -282.14,
+      -495.84,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 56,
+      "damage_total": 4024,
+      "damage_max": 114
+     },
+     "3603": {
+      "name": "Distracting Pain",
+      "school": "0x1",
+      "cast_success": 2,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     },
+     "7399": {
+      "name": "Terrify",
+      "school": "0x20",
+      "cast_success": 2
+     },
+     "5141": {
+      "name": "Eject Sneed",
+      "school": "0x1",
+      "cast_success": 1
+     }
+    }
+   },
+   "643": {
+    "name": "Sneed",
+    "level": 20,
+    "max_hp": 3144,
+    "deaths": 1,
+    "events": 45,
+    "map": 0,
+    "positions": [
+     [
+      -280.96,
+      -494.81,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 42,
+      "damage_total": 2664,
+      "damage_max": 95
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     },
+     "6713": {
+      "name": "Disarm",
+      "school": "0x1",
+      "cast_success": 1,
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "4417": {
+    "name": "Defias Taskmaster",
+    "level": 18,
+    "max_hp": 1563,
+    "deaths": 3,
+    "events": 104,
+    "map": 0,
+    "positions": [
+     [
+      -289.04,
+      -554.62,
+      0
+     ],
+     [
+      -296.9,
+      -567.28,
+      0
+     ],
+     [
+      -300.52,
+      -604.01,
+      0
+     ]
+    ],
+    "spells": {
+     "6660": {
+      "name": "Shoot",
+      "school": "0x1",
+      "cast_start": 12,
+      "cast_success": 12,
+      "hits": 12,
+      "damage_total": 425,
+      "damage_max": 46
+     },
+     "6685": {
+      "name": "Piercing Shot",
+      "school": "0x4",
+      "cast_start": 1,
+      "cast_success": 1,
+      "hits": 1,
+      "damage_total": 22,
+      "damage_max": 22,
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 62,
+      "damage_total": 2736,
+      "damage_max": 57
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "4416": {
+    "name": "Defias Strip Miner",
+    "level": 19,
+    "max_hp": 572,
+    "deaths": 26,
+    "events": 337,
+    "map": 0,
+    "positions": [
+     [
+      -291.56,
+      -557.935,
+      0
+     ],
+     [
+      -290.61,
+      -561.97,
+      0
+     ],
+     [
+      -291.06,
+      -559.06,
+      0
+     ],
+     [
+      -292.19,
+      -559.44,
+      0
+     ],
+     [
+      -297.3,
+      -602.2,
+      0
+     ],
+     [
+      -297.51,
+      -599.85,
+      0
+     ],
+     [
+      -291.26,
+      -602.14,
+      0
+     ],
+     [
+      -294.38,
+      -604.16,
+      0
+     ],
+     [
+      -264.29999999999995,
+      -577.96,
+      0
+     ],
+     [
+      -262.53,
+      -576.04,
+      0
+     ],
+     [
+      -151.82,
+      -578.21,
+      0
+     ],
+     [
+      -140.59,
+      -576.96,
+      0
+     ],
+     [
+      -145.28,
+      -578.22,
+      0
+     ],
+     [
+      -139.93,
+      -579.88,
+      0
+     ],
+     [
+      -141.66,
+      -577.89,
+      0
+     ],
+     [
+      -141.01,
+      -578.56,
+      0
+     ],
+     [
+      -132.92,
+      -606.04,
+      0
+     ],
+     [
+      -133.65,
+      -607.5,
+      0
+     ],
+     [
+      -133.15,
+      -604.26,
+      0
+     ],
+     [
+      -131.11,
+      -609.78,
+      0
+     ],
+     [
+      -127.19,
+      -610.6800000000001,
+      0
+     ],
+     [
+      -124.81,
+      -613.41,
+      0
+     ],
+     [
+      -126.55,
+      -613.37,
+      0
+     ],
+     [
+      -127.11,
+      -613.47,
+      0
+     ],
+     [
+      -117.00999999999999,
+      -640.4,
+      0
+     ],
+     [
+      -116.1,
+      -641.52,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 312,
+      "damage_total": 8794,
+      "damage_max": 79
+     },
+     "6016": {
+      "name": "Pierce Armor",
+      "school": "0x1",
+      "cast_success": 14,
+      "aura_applied": 11,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "1731": {
+    "name": "Goblin Craftsman",
+    "level": 19,
+    "max_hp": 1716,
+    "deaths": 12,
+    "events": 1110,
+    "map": 0,
+    "positions": [
+     [
+      -187.44,
+      -565.05,
+      0
+     ],
+     [
+      -184.15,
+      -566.36,
+      0
+     ],
+     [
+      -202.46,
+      -603.16,
+      0
+     ],
+     [
+      -203.89,
+      -604.77,
+      0
+     ],
+     [
+      -193.3,
+      -605.24,
+      0
+     ],
+     [
+      -197.09,
+      -577.95,
+      0
+     ],
+     [
+      -231.93,
+      -594.03,
+      0
+     ],
+     [
+      -235.82,
+      -594.3,
+      0
+     ],
+     [
+      -238.08,
+      -564.42,
+      0
+     ],
+     [
+      -237.31,
+      -583.5,
+      0
+     ],
+     [
+      -216.04,
+      -549.31,
+      0
+     ],
+     [
+      -207.25,
+      -556.05,
+      0
+     ],
+     [
+      -208.84,
+      -550.61,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 266,
+      "damage_total": 10820,
+      "damage_max": 113
+     },
+     "5159": {
+      "name": "Melt Ore",
+      "school": "0x4",
+      "cast_start": 17,
+      "cast_success": 17,
+      "hits": 769,
+      "damage_total": 4762,
+      "damage_max": 7,
+      "aura_applied": 40,
+      "aura_type": "DEBUFF"
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "622": {
+    "name": "Goblin Engineer",
+    "level": 18,
+    "max_hp": 1716,
+    "deaths": 5,
+    "events": 228,
+    "map": 0,
+    "positions": [
+     [
+      -186.88,
+      -585.2,
+      0
+     ],
+     [
+      -207.34,
+      -571.88,
+      0
+     ],
+     [
+      -212.28,
+      -553.07,
+      0
+     ],
+     [
+      -227.74,
+      -572.54,
+      0
+     ],
+     [
+      -222.48,
+      -598.69,
+      0
+     ]
+    ],
+    "spells": {
+     "6660": {
+      "name": "Shoot",
+      "school": "0x1",
+      "cast_start": 35,
+      "cast_success": 35,
+      "hits": 33,
+      "damage_total": 1097,
+      "damage_max": 43
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 106,
+      "damage_total": 4426,
+      "damage_max": 56
+     },
+     "3605": {
+      "name": "Summon Remote-Controlled Golem",
+      "school": "0x1",
+      "cast_start": 7,
+      "cast_success": 6
+     }
+    }
+   },
+   "2520": {
+    "name": "Remote-Controlled Golem",
+    "level": 18,
+    "max_hp": 1281,
+    "deaths": 5,
+    "events": 165,
+    "map": 0,
+    "positions": [
+     [
+      -205.77,
+      -580.76,
+      0
+     ],
+     [
+      -178.84,
+      -584.2,
+      0
+     ],
+     [
+      -218.32,
+      -610.79,
+      0
+     ],
+     [
+      -239.27,
+      -581.97,
+      0
+     ],
+     [
+      -217.25,
+      -553.04,
+      0
+     ],
+     [
+      -206.69,
+      -570.66,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 162,
+      "damage_total": 3532,
+      "damage_max": 28
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 3,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "1763": {
+    "name": "Gilnid",
+    "level": 20,
+    "max_hp": 3773,
+    "deaths": 1,
+    "events": 47,
+    "map": 0,
+    "positions": [
+     [
+      -209.8,
+      -552.79,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 30,
+      "damage_total": 1948,
+      "damage_max": 76
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "DEBUFF"
+     },
+     "5213": {
+      "name": "Molten Metal",
+      "school": "0x4",
+      "cast_start": 2,
+      "cast_success": 2,
+      "hits": 10,
+      "damage_total": 600,
+      "damage_max": 60,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "4418": {
+    "name": "Defias Wizard",
+    "level": 19,
+    "max_hp": 1716,
+    "deaths": 2,
+    "events": 21,
+    "map": 0,
+    "positions": [
+     [
+      -133.38,
+      -587.52,
+      0
+     ],
+     [
+      -125.32,
+      -613.43,
+      0
+     ]
+    ],
+    "spells": {
+     "9053": {
+      "name": "Fireball",
+      "school": "0x4",
+      "cast_start": 3,
+      "cast_success": 1,
+      "hits": 1,
+      "damage_total": 89,
+      "damage_max": 89,
+      "interrupted": 2
+     },
+     "113": {
+      "name": "Chains of Ice",
+      "school": "0x10",
+      "cast_start": 4,
+      "cast_success": 3,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     },
+     "4979": {
+      "name": "Quick Flame Ward",
+      "school": "0x1",
+      "cast_start": 1,
+      "cast_success": 1,
+      "aura_applied": 1,
+      "aura_type": "BUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 4,
+      "damage_total": 128,
+      "damage_max": 34
+     }
+    }
+   },
+   "1732": {
+    "name": "Defias Squallshaper",
+    "level": 20,
+    "max_hp": 1886,
+    "deaths": 6,
+    "events": 439,
+    "map": 0,
+    "positions": [
+     [
+      -62.28,
+      -730.9,
+      0
+     ],
+     [
+      -90.82,
+      -722.46,
+      0
+     ],
+     [
+      -23.7,
+      -728.6,
+      0
+     ],
+     [
+      -92.43,
+      -707.55,
+      0
+     ],
+     [
+      -131.35,
+      -791.47,
+      0
+     ],
+     [
+      -109.72,
+      -794.8,
+      0
+     ],
+     [
+      -49.56,
+      -783.92,
+      0
+     ],
+     [
+      -69.38,
+      -778.43,
+      0
+     ],
+     [
+      -23.02,
+      -795.75,
+      0
+     ],
+     [
+      -56.38,
+      -782.32,
+      0
+     ],
+     [
+      -40.2,
+      -798.75,
+      0
+     ],
+     [
+      -20.11,
+      -831.5,
+      0
+     ],
+     [
+      -80.26,
+      -806.23,
+      0
+     ],
+     [
+      -121.39,
+      -835.86,
+      0
+     ]
+    ],
+    "spells": {
+     "12544": {
+      "name": "Frost Armor",
+      "school": "0x10",
+      "cast_success": 13,
+      "aura_applied": 53,
+      "aura_type": "BUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 216,
+      "damage_total": 8160,
+      "damage_max": 100
+     },
+     "2138": {
+      "name": "Fire Blast",
+      "school": "0x4",
+      "cast_success": 27,
+      "hits": 26,
+      "damage_total": 2607,
+      "damage_max": 110
+     },
+     "6136": {
+      "name": "Chilled",
+      "school": "0x10",
+      "aura_applied": 47,
+      "aura_type": "DEBUFF"
+     },
+     "122": {
+      "name": "Frost Nova",
+      "school": "0x10",
+      "cast_success": 7,
+      "hits": 24,
+      "damage_total": 475,
+      "damage_max": 24,
+      "aura_applied": 24,
+      "aura_type": "DEBUFF"
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "657": {
+    "name": "Defias Pirate",
+    "level": 19,
+    "max_hp": 1886,
+    "deaths": 11,
+    "events": 471,
+    "map": 0,
+    "positions": [
+     [
+      -90.0,
+      -707.75,
+      0
+     ],
+     [
+      -57.22,
+      -783.07,
+      0
+     ],
+     [
+      -94.09,
+      -703.96,
+      0
+     ],
+     [
+      -46.51,
+      -725.92,
+      0
+     ],
+     [
+      -92.67,
+      -701.64,
+      0
+     ],
+     [
+      -91.4,
+      -721.01,
+      0
+     ],
+     [
+      -24.73,
+      -795.91,
+      0
+     ],
+     [
+      -96.04,
+      -717.39,
+      0
+     ],
+     [
+      -41.79,
+      -726.95,
+      0
+     ],
+     [
+      -30.87,
+      -728.52,
+      0
+     ],
+     [
+      -29.43,
+      -843.89,
+      0
+     ],
+     [
+      -89.81,
+      -853.74,
+      0
+     ],
+     [
+      -22.08,
+      -798.54,
+      0
+     ],
+     [
+      -116.72,
+      -836.99,
+      0
+     ],
+     [
+      -97.29,
+      -743.33,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 454,
+      "damage_total": 21616,
+      "damage_max": 67
+     },
+     "5172": {
+      "name": "Bloodsail Companion",
+      "school": "0x1",
+      "cast_success": 7
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 3,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "3450": {
+    "name": "Defias Companion",
+    "level": 14,
+    "max_hp": 207,
+    "deaths": 8,
+    "events": 116,
+    "map": 0,
+    "positions": [
+     [
+      -93.52,
+      -708.75,
+      0
+     ],
+     [
+      -94.05,
+      -698.03,
+      0
+     ],
+     [
+      -90.215,
+      -723.9,
+      0
+     ],
+     [
+      -40.865,
+      -727.8199999999999,
+      0
+     ],
+     [
+      -23.16,
+      -796.31,
+      0
+     ],
+     [
+      -23.58,
+      -797.89,
+      0
+     ],
+     [
+      -73.88,
+      -780.01,
+      0
+     ],
+     [
+      -56.9,
+      -782.87,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 116,
+      "damage_total": 604,
+      "damage_max": 7
+     }
+    }
+   },
+   "636": {
+    "name": "Defias Blackguard",
+    "level": 20,
+    "max_hp": 1886,
+    "deaths": 2,
+    "events": 48,
+    "map": 0,
+    "positions": [
+     [
+      -77.81,
+      -815.1,
+      0
+     ],
+     [
+      0.6599999999999999,
+      -763.05,
+      0
+     ],
+     [
+      1.9,
+      -771.31,
+      0
+     ]
+    ],
+    "spells": {
+     "1785": {
+      "name": "Stealth",
+      "school": "0x1",
+      "cast_success": 2,
+      "aura_applied": 2,
+      "aura_type": "BUFF"
+     },
+     "6408": {
+      "name": "Faded",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "BUFF"
+     },
+     "0": {
+      "name": "Melee",
+      "hits": 42,
+      "damage_total": 2200,
+      "damage_max": 60
+     }
+    }
+   },
+   "646": {
+    "name": "Mr. Smite",
+    "level": 20,
+    "max_hp": 5031,
+    "deaths": 1,
+    "events": 98,
+    "map": 0,
+    "positions": [
+     [
+      2.04,
+      -761.42,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 76,
+      "damage_total": 5666,
+      "damage_max": 110
+     },
+     "6264": {
+      "name": "Nimble Reflexes",
+      "school": "0x1",
+      "aura_applied": 1,
+      "aura_type": "BUFF"
+     },
+     "6432": {
+      "name": "Smite Stomp",
+      "school": "0x1",
+      "cast_success": 2,
+      "aura_applied": 12,
+      "aura_type": "DEBUFF"
+     },
+     "3391": {
+      "name": "Thrash",
+      "school": "0x1",
+      "cast_success": 1
+     },
+     "6435": {
+      "name": "Smite Slam",
+      "school": "0x1",
+      "cast_success": 2,
+      "hits": 2,
+      "damage_total": 152,
+      "damage_max": 76,
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   },
+   "3947": {
+    "name": "Goblin Shipbuilder",
+    "level": 20,
+    "max_hp": 1886,
+    "deaths": 2,
+    "events": 86,
+    "map": 0,
+    "positions": [
+     [
+      -22.59,
+      -794.37,
+      0
+     ],
+     [
+      -59.12,
+      -783.03,
+      0
+     ]
+    ],
+    "spells": {
+     "0": {
+      "name": "Melee",
+      "hits": 84,
+      "damage_total": 4520,
+      "damage_max": 122
+     },
+     "1604": {
+      "name": "Dazed",
+      "school": "0x1",
+      "aura_applied": 2,
+      "aura_type": "DEBUFF"
+     }
+    }
+   }
+  },
+  "spawns": [
+   {
+    "guid": "00002FF63B",
+    "npc": 1729,
+    "name": "Defias Evoker",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 46,
+    "x": -76.65,
+    "y": -374.92,
+    "pack": 39
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 1729,
+    "name": "Defias Evoker",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 45,
+    "x": -80.59,
+    "y": -376.03,
+    "pack": 39
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 15,
+    "x": -38.4,
+    "y": -372.5,
+    "pack": 40
+   },
+   {
+    "guid": "000EAFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 10,
+    "x": -38.55,
+    "y": -371.92,
+    "pack": 40
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 21,
+    "x": -64.88,
+    "y": -368.15,
+    "pack": 39
+   },
+   {
+    "guid": "0007AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 21,
+    "x": -71.1,
+    "y": -370.01,
+    "pack": 39
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 24,
+    "x": -72.44,
+    "y": -373.76,
+    "pack": 39
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 54,
+    "x": -69.71,
+    "y": -373.18,
+    "pack": 39
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 49,
+    "x": -68.48,
+    "y": -380.61,
+    "pack": 39
+   },
+   {
+    "guid": "0004AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 19,
+    "x": -80.56,
+    "y": -374.38,
+    "pack": 39
+   },
+   {
+    "guid": "00032FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 19,
+    "x": -79.69,
+    "y": -374.23,
+    "pack": 39
+   },
+   {
+    "guid": "000C2FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 19,
+    "x": -125.85,
+    "y": -386.55,
+    "pack": 38
+   },
+   {
+    "guid": "000B2FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 28,
+    "x": -127.36,
+    "y": -391.55,
+    "pack": 38
+   },
+   {
+    "guid": "000BAFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 15,
+    "x": -124.62,
+    "y": -389.97,
+    "pack": 38
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 46,
+    "x": -124.12,
+    "y": -390.06,
+    "pack": 38
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 20,
+    "x": -124.85,
+    "y": -390.33,
+    "pack": 38
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 17,
+    "x": -145.26,
+    "y": -404.97,
+    "pack": 37
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 17,
+    "x": -141.82,
+    "y": -406.92,
+    "pack": 37
+   },
+   {
+    "guid": "0008AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 24,
+    "x": -148.45,
+    "y": -402.08,
+    "pack": 37
+   },
+   {
+    "guid": "0005AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 19,
+    "x": -150.22,
+    "y": -399.33,
+    "pack": 37
+   },
+   {
+    "guid": "00092FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 19,
+    "x": -147.21,
+    "y": -399.37,
+    "pack": 37
+   },
+   {
+    "guid": "000AAFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 11,
+    "x": -167.21,
+    "y": -399.34,
+    "pack": 36
+   },
+   {
+    "guid": "00082FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 16,
+    "x": -174.76,
+    "y": -411.21,
+    "pack": 35
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 644,
+    "name": "Rhahk'Zor",
+    "map": 0,
+    "level": 19,
+    "hp": 5720,
+    "seen": 185,
+    "x": -185.67,
+    "y": -422.66,
+    "pack": 34
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 1725,
+    "name": "Defias Watchman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 56,
+    "x": -185.83,
+    "y": -447.61,
+    "pack": 33
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 1725,
+    "name": "Defias Watchman",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 47,
+    "x": -203.17,
+    "y": -452.7,
+    "pack": 32
+   },
+   {
+    "guid": "0015AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 20,
+    "x": -187.41500000000002,
+    "y": -489.06,
+    "pack": 31
+   },
+   {
+    "guid": "0010AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 18,
+    "x": -188.505,
+    "y": -484.155,
+    "pack": 31
+   },
+   {
+    "guid": "0016AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 20,
+    "x": -184.59,
+    "y": -494.63,
+    "pack": 31
+   },
+   {
+    "guid": "0014AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 22,
+    "x": -185.04500000000002,
+    "y": -492.82,
+    "pack": 31
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 66,
+    "x": -188.02,
+    "y": -480.73,
+    "pack": 31
+   },
+   {
+    "guid": "000F2FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 27,
+    "x": -187.18,
+    "y": -485.73,
+    "pack": 31
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 1729,
+    "name": "Defias Evoker",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 42,
+    "x": -188.15,
+    "y": -475.28,
+    "pack": 31
+   },
+   {
+    "guid": "00002FFBCF",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 60,
+    "x": -189.62,
+    "y": -477.92499999999995,
+    "pack": 31
+   },
+   {
+    "guid": "00002FFBCF",
+    "npc": 1729,
+    "name": "Defias Evoker",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 55,
+    "x": -188.47,
+    "y": -475.63,
+    "pack": 31
+   },
+   {
+    "guid": "0013AFF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 20,
+    "x": -192.17,
+    "y": -484.745,
+    "pack": 31
+   },
+   {
+    "guid": "00172FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 25,
+    "x": -195.7,
+    "y": -487.33,
+    "pack": 31
+   },
+   {
+    "guid": "00122FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 30,
+    "x": -221.33,
+    "y": -493.25,
+    "pack": 30
+   },
+   {
+    "guid": "00112FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 21,
+    "x": -221.15,
+    "y": -494.6,
+    "pack": 30
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 59,
+    "x": -223.83,
+    "y": -491.76,
+    "pack": 30
+   },
+   {
+    "guid": "00162FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 18,
+    "x": -220.82,
+    "y": -493.36,
+    "pack": 30
+   },
+   {
+    "guid": "00102FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 22,
+    "x": -223.34,
+    "y": -492.17,
+    "pack": 30
+   },
+   {
+    "guid": "00132FF63B",
+    "npc": 598,
+    "name": "Defias Miner",
+    "map": 0,
+    "level": 17,
+    "hp": 473,
+    "seen": 21,
+    "x": -221.12,
+    "y": -490.74,
+    "pack": 30
+   },
+   {
+    "guid": "00052FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 70,
+    "x": -265.97,
+    "y": -482.28,
+    "pack": 29
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 65,
+    "x": -268.26,
+    "y": -482.27,
+    "pack": 29
+   },
+   {
+    "guid": "00032FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 67,
+    "x": -274.58,
+    "y": -481.3,
+    "pack": 29
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 75,
+    "x": -275.54,
+    "y": -485.37,
+    "pack": 29
+   },
+   {
+    "guid": "00062FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 73,
+    "x": -278.85,
+    "y": -484.8,
+    "pack": 29
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 64,
+    "x": -277.03,
+    "y": -487.19,
+    "pack": 29
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 72,
+    "x": -280.16,
+    "y": -481.27,
+    "pack": 29
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 65,
+    "x": -283.01,
+    "y": -500.66,
+    "pack": 29
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 642,
+    "name": "Sneed's Shredder",
+    "map": 0,
+    "level": 20,
+    "hp": 5031,
+    "seen": 191,
+    "x": -282.14,
+    "y": -495.84,
+    "pack": 29
+   },
+   {
+    "guid": "00002FFD6F",
+    "npc": 643,
+    "name": "Sneed",
+    "map": 0,
+    "level": 20,
+    "hp": 3144,
+    "seen": 117,
+    "x": -280.96,
+    "y": -494.81,
+    "pack": 29
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 52,
+    "x": -293.65,
+    "y": -527.95,
+    "pack": 28
+   },
+   {
+    "guid": "00002FFD8F",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 65,
+    "x": -290.19,
+    "y": -519.12,
+    "pack": 28
+   },
+   {
+    "guid": "00002FFD8F",
+    "npc": 1729,
+    "name": "Defias Evoker",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 46,
+    "x": -291.53,
+    "y": -519.19,
+    "pack": 28
+   },
+   {
+    "guid": "0004AFF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 57,
+    "x": -291.98,
+    "y": -521.09,
+    "pack": 28
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 4417,
+    "name": "Defias Taskmaster",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 59,
+    "x": -289.04,
+    "y": -554.62,
+    "pack": 27
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 28,
+    "x": -291.56,
+    "y": -557.935,
+    "pack": 27
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 29,
+    "x": -290.61,
+    "y": -561.97,
+    "pack": 27
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 4417,
+    "name": "Defias Taskmaster",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 48,
+    "x": -296.9,
+    "y": -567.28,
+    "pack": 27
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 27,
+    "x": -291.06,
+    "y": -559.06,
+    "pack": 27
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 26,
+    "x": -292.19,
+    "y": -559.44,
+    "pack": 27
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 4417,
+    "name": "Defias Taskmaster",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 50,
+    "x": -300.52,
+    "y": -604.01,
+    "pack": 26
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 24,
+    "x": -297.3,
+    "y": -602.2,
+    "pack": 26
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 51,
+    "x": -298.29,
+    "y": -601.41,
+    "pack": 26
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 31,
+    "x": -297.51,
+    "y": -599.85,
+    "pack": 26
+   },
+   {
+    "guid": "0004AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 21,
+    "x": -291.26,
+    "y": -602.14,
+    "pack": 26
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 20,
+    "x": -294.38,
+    "y": -604.16,
+    "pack": 26
+   },
+   {
+    "guid": "00032FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 20,
+    "x": -264.29999999999995,
+    "y": -577.96,
+    "pack": 25
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 641,
+    "name": "Goblin Woodcarver",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 53,
+    "x": -261.55,
+    "y": -576.45,
+    "pack": 25
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 22,
+    "x": -262.53,
+    "y": -576.04,
+    "pack": 25
+   },
+   {
+    "guid": "00062FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 49,
+    "x": -187.44,
+    "y": -565.05,
+    "pack": 24
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 58,
+    "x": -184.15,
+    "y": -566.36,
+    "pack": 24
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 52,
+    "x": -202.46,
+    "y": -603.16,
+    "pack": 23
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 622,
+    "name": "Goblin Engineer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 125,
+    "x": -186.88,
+    "y": -585.2,
+    "pack": 20
+   },
+   {
+    "guid": "00052FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 65,
+    "x": -203.89,
+    "y": -604.77,
+    "pack": 23
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 110,
+    "x": -193.3,
+    "y": -605.24,
+    "pack": 23
+   },
+   {
+    "guid": "0005AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 19,
+    "x": -197.09,
+    "y": -577.95,
+    "pack": 20
+   },
+   {
+    "guid": "00002FFEFC",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 18,
+    "hp": 1281,
+    "seen": 25,
+    "x": -205.77,
+    "y": -580.76,
+    "pack": 20
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 622,
+    "name": "Goblin Engineer",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 57,
+    "x": -207.34,
+    "y": -571.88,
+    "pack": 20
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 622,
+    "name": "Goblin Engineer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 51,
+    "x": -212.28,
+    "y": -553.07,
+    "pack": 19
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 622,
+    "name": "Goblin Engineer",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 57,
+    "x": -227.74,
+    "y": -572.54,
+    "pack": 22
+   },
+   {
+    "guid": "000030004F",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 18,
+    "hp": 1281,
+    "seen": 69,
+    "x": -178.84,
+    "y": -584.2,
+    "pack": 20
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 50,
+    "x": -231.93,
+    "y": -594.03,
+    "pack": 21
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 622,
+    "name": "Goblin Engineer",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 66,
+    "x": -222.48,
+    "y": -598.69,
+    "pack": 21
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 51,
+    "x": -235.82,
+    "y": -594.3,
+    "pack": 21
+   },
+   {
+    "guid": "00003000C5",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 18,
+    "hp": 1281,
+    "seen": 54,
+    "x": -218.32,
+    "y": -610.79,
+    "pack": 21
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 53,
+    "x": -238.08,
+    "y": -564.42,
+    "pack": 22
+   },
+   {
+    "guid": "0000300102",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 19,
+    "hp": 1280,
+    "seen": 68,
+    "x": -239.27,
+    "y": -581.97,
+    "pack": 21
+   },
+   {
+    "guid": "0004AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 51,
+    "x": -237.31,
+    "y": -583.5,
+    "pack": 21
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 54,
+    "x": -216.04,
+    "y": -549.31,
+    "pack": 19
+   },
+   {
+    "guid": "0000300148",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 18,
+    "hp": 1281,
+    "seen": 65,
+    "x": -217.25,
+    "y": -553.04,
+    "pack": 19
+   },
+   {
+    "guid": "000030017B",
+    "npc": 2520,
+    "name": "Remote-Controlled Golem",
+    "map": 0,
+    "level": 19,
+    "hp": 1280,
+    "seen": 57,
+    "x": -206.69,
+    "y": -570.66,
+    "pack": 20
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 49,
+    "x": -207.25,
+    "y": -556.05,
+    "pack": 19
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 1763,
+    "name": "Gilnid",
+    "map": 0,
+    "level": 20,
+    "hp": 3773,
+    "seen": 111,
+    "x": -209.8,
+    "y": -552.79,
+    "pack": 19
+   },
+   {
+    "guid": "00032FF63B",
+    "npc": 1731,
+    "name": "Goblin Craftsman",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 69,
+    "x": -208.84,
+    "y": -550.61,
+    "pack": 19
+   },
+   {
+    "guid": "000AAFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 19,
+    "x": -151.82,
+    "y": -578.21,
+    "pack": 18
+   },
+   {
+    "guid": "0006AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 22,
+    "x": -140.59,
+    "y": -576.96,
+    "pack": 18
+   },
+   {
+    "guid": "000A2FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 13,
+    "x": -145.28,
+    "y": -578.22,
+    "pack": 18
+   },
+   {
+    "guid": "0007AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 16,
+    "x": -139.93,
+    "y": -579.88,
+    "pack": 18
+   },
+   {
+    "guid": "000C2FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 28,
+    "x": -141.66,
+    "y": -577.89,
+    "pack": 18
+   },
+   {
+    "guid": "00092FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 19,
+    "x": -141.01,
+    "y": -578.56,
+    "pack": 18
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 4418,
+    "name": "Defias Wizard",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 51,
+    "x": -133.38,
+    "y": -587.52,
+    "pack": 18
+   },
+   {
+    "guid": "0009AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 16,
+    "x": -132.92,
+    "y": -606.04,
+    "pack": 17
+   },
+   {
+    "guid": "00082FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 22,
+    "x": -133.65,
+    "y": -607.5,
+    "pack": 17
+   },
+   {
+    "guid": "000D2FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 19,
+    "x": -133.15,
+    "y": -604.26,
+    "pack": 17
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 4418,
+    "name": "Defias Wizard",
+    "map": 0,
+    "level": 18,
+    "hp": 1563,
+    "seen": 46,
+    "x": -125.32,
+    "y": -613.43,
+    "pack": 17
+   },
+   {
+    "guid": "0008AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 19,
+    "x": -131.11,
+    "y": -609.78,
+    "pack": 17
+   },
+   {
+    "guid": "0005AFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 20,
+    "x": -127.19,
+    "y": -610.6800000000001,
+    "pack": 17
+   },
+   {
+    "guid": "00072FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 20,
+    "x": -124.81,
+    "y": -613.41,
+    "pack": 17
+   },
+   {
+    "guid": "000CAFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 19,
+    "hp": 572,
+    "seen": 22,
+    "x": -126.55,
+    "y": -613.37,
+    "pack": 17
+   },
+   {
+    "guid": "00052FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 16,
+    "x": -127.11,
+    "y": -613.47,
+    "pack": 17
+   },
+   {
+    "guid": "0000300278",
+    "npc": 634,
+    "name": "Defias Overseer",
+    "map": 0,
+    "level": 17,
+    "hp": 1419,
+    "seen": 50,
+    "x": -129.41,
+    "y": -627.15,
+    "pack": 17
+   },
+   {
+    "guid": "00062FF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 12,
+    "x": -117.00999999999999,
+    "y": -640.4,
+    "pack": 16
+   },
+   {
+    "guid": "000BAFF63B",
+    "npc": 4416,
+    "name": "Defias Strip Miner",
+    "map": 0,
+    "level": 18,
+    "hp": 521,
+    "seen": 21,
+    "x": -116.1,
+    "y": -641.52,
+    "pack": 16
+   },
+   {
+    "guid": "00072FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 57,
+    "x": -62.28,
+    "y": -730.9,
+    "pack": 15
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 75,
+    "x": -90.82,
+    "y": -722.46,
+    "pack": 11
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 57,
+    "x": -23.7,
+    "y": -728.6,
+    "pack": 10
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 81,
+    "x": -90.0,
+    "y": -707.75,
+    "pack": 11
+   },
+   {
+    "guid": "00062FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 50,
+    "x": -92.43,
+    "y": -707.55,
+    "pack": 11
+   },
+   {
+    "guid": "00012FF63C",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 14,
+    "hp": 207,
+    "seen": 16,
+    "x": -93.52,
+    "y": -708.75,
+    "pack": 11
+   },
+   {
+    "guid": "00062FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 76,
+    "x": -57.22,
+    "y": -783.07,
+    "pack": 2
+   },
+   {
+    "guid": "0006AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 65,
+    "x": -94.09,
+    "y": -703.96,
+    "pack": 11
+   },
+   {
+    "guid": "00032FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -131.35,
+    "y": -791.47,
+    "pack": 14
+   },
+   {
+    "guid": "0005AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -109.72,
+    "y": -794.8,
+    "pack": 13
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 47,
+    "x": -49.56,
+    "y": -783.92,
+    "pack": 2
+   },
+   {
+    "guid": "00022FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 30,
+    "x": -69.38,
+    "y": -778.43,
+    "pack": 2
+   },
+   {
+    "guid": "0006AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 69,
+    "x": -23.02,
+    "y": -795.75,
+    "pack": 5
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 65,
+    "x": -46.51,
+    "y": -725.92,
+    "pack": 10
+   },
+   {
+    "guid": "0003AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 47,
+    "x": -56.38,
+    "y": -782.32,
+    "pack": 2
+   },
+   {
+    "guid": "00002FF666",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 14,
+    "hp": 207,
+    "seen": 17,
+    "x": -94.05,
+    "y": -698.03,
+    "pack": 11
+   },
+   {
+    "guid": "0005AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 66,
+    "x": -92.67,
+    "y": -701.64,
+    "pack": 11
+   },
+   {
+    "guid": "00052FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -40.2,
+    "y": -798.75,
+    "pack": 12
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 15,
+    "hp": 207,
+    "seen": 20,
+    "x": -90.215,
+    "y": -723.9,
+    "pack": 11
+   },
+   {
+    "guid": "000B2FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 65,
+    "x": -91.4,
+    "y": -721.01,
+    "pack": 11
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 636,
+    "name": "Defias Blackguard",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 1,
+    "x": -77.81,
+    "y": -815.1,
+    "pack": 4
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 86,
+    "x": -24.73,
+    "y": -795.91,
+    "pack": 5
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 636,
+    "name": "Defias Blackguard",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 46,
+    "x": 0.6599999999999999,
+    "y": -763.05,
+    "pack": 7
+   },
+   {
+    "guid": "000BAFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 66,
+    "x": -96.04,
+    "y": -717.39,
+    "pack": 11
+   },
+   {
+    "guid": "0008AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 72,
+    "x": -41.79,
+    "y": -726.95,
+    "pack": 10
+   },
+   {
+    "guid": "00003002C2",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 14,
+    "hp": 207,
+    "seen": 10,
+    "x": -40.865,
+    "y": -727.8199999999999,
+    "pack": 10
+   },
+   {
+    "guid": "00072FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 70,
+    "x": -30.87,
+    "y": -728.52,
+    "pack": 10
+   },
+   {
+    "guid": "00042FF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 1,
+    "x": -20.11,
+    "y": -831.5,
+    "pack": 9
+   },
+   {
+    "guid": "0000AFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -29.43,
+    "y": -843.89,
+    "pack": 8
+   },
+   {
+    "guid": "00012FF63B",
+    "npc": 636,
+    "name": "Defias Blackguard",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 62,
+    "x": 1.9,
+    "y": -771.31,
+    "pack": 7
+   },
+   {
+    "guid": "00002FF63B",
+    "npc": 646,
+    "name": "Mr. Smite",
+    "map": 0,
+    "level": 20,
+    "hp": 5031,
+    "seen": 200,
+    "x": 2.04,
+    "y": -761.42,
+    "pack": 7
+   },
+   {
+    "guid": "00092FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -89.81,
+    "y": -853.74,
+    "pack": 6
+   },
+   {
+    "guid": "0000300302",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 15,
+    "hp": 207,
+    "seen": 11,
+    "x": -23.16,
+    "y": -796.31,
+    "pack": 5
+   },
+   {
+    "guid": "0000300304",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 15,
+    "hp": 207,
+    "seen": 7,
+    "x": -23.58,
+    "y": -797.89,
+    "pack": 5
+   },
+   {
+    "guid": "000A2FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 79,
+    "x": -22.08,
+    "y": -798.54,
+    "pack": 5
+   },
+   {
+    "guid": "0004AFF63B",
+    "npc": 3947,
+    "name": "Goblin Shipbuilder",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 50,
+    "x": -22.59,
+    "y": -794.37,
+    "pack": 5
+   },
+   {
+    "guid": "0007AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 1,
+    "x": -80.26,
+    "y": -806.23,
+    "pack": 4
+   },
+   {
+    "guid": "000AAFF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 1,
+    "x": -116.72,
+    "y": -836.99,
+    "pack": 3
+   },
+   {
+    "guid": "0001AFF63B",
+    "npc": 1732,
+    "name": "Defias Squallshaper",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 1,
+    "x": -121.39,
+    "y": -835.86,
+    "pack": 3
+   },
+   {
+    "guid": "00003002BA",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 15,
+    "hp": 207,
+    "seen": 8,
+    "x": -73.88,
+    "y": -780.01,
+    "pack": 2
+   },
+   {
+    "guid": "0002AFF63B",
+    "npc": 3947,
+    "name": "Goblin Shipbuilder",
+    "map": 0,
+    "level": 20,
+    "hp": 1886,
+    "seen": 99,
+    "x": -59.12,
+    "y": -783.03,
+    "pack": 2
+   },
+   {
+    "guid": "00003002B8",
+    "npc": 3450,
+    "name": "Defias Companion",
+    "map": 0,
+    "level": 14,
+    "hp": 207,
+    "seen": 13,
+    "x": -56.9,
+    "y": -782.87,
+    "pack": 2
+   },
+   {
+    "guid": "00082FF63B",
+    "npc": 657,
+    "name": "Defias Pirate",
+    "map": 0,
+    "level": 19,
+    "hp": 1716,
+    "seen": 113,
+    "x": -97.29,
+    "y": -743.33,
+    "pack": 1
+   }
+  ],
+  "packs": 40
+ },
  "_meta": {
-  "built": "2026-09-19",
+  "built": "2026-09-20",
   "build_filter": "1.60",
   "logs": [
    "WoWCombatLog-091926_024706.txt",
    "WoWCombatLog-091926_043613.txt",
-   "WoWCombatLog-091926_133746.txt"
+   "WoWCombatLog-091926_133746.txt",
+   "WoWCombatLog-092026_095152.txt"
   ],
   "builds": [
    "1.60.1"
   ],
-  "encounters": 6
+  "encounters": 11
  }
 }

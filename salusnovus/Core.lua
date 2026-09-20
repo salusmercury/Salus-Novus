@@ -195,7 +195,9 @@ function ns.GetThemeColor()
     local theme = ns.db and ns.db.theme
     if theme and not theme.useClassColor and theme.customColor then
         local c = theme.customColor
-        return c.r, c.g, c.b
+        if type(c) == "table" and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
+            return c.r, c.g, c.b
+        end
     end
     local _, token = UnitClass("player")
     local color = C_ClassColor and C_ClassColor.GetClassColor and token and C_ClassColor.GetClassColor(token)
@@ -532,7 +534,7 @@ ns.Commands = {}
 SLASH_SALUSNOVUS1 = "/sn"
 SLASH_SALUSNOVUS2 = "/salusnovus"
 SlashCmdList["SALUSNOVUS"] = function(msg)
-    msg = (msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    msg = (type(msg) == "string" and msg or ""):gsub("^%s+", ""):gsub("%s+$", "")
     local cmd, rest = msg:match("^(%S+)%s*(.*)$")
     cmd = (cmd or ""):lower()
     local fn = ns.Commands[cmd]

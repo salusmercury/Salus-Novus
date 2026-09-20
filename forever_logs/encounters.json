@@ -249,13 +249,6 @@
      "success"
     ],
     [
-     8.6,
-     5568,
-     "Trample",
-     "Lesser Stone Golem",
-     "success"
-    ],
-    [
      9.8,
      25710,
      "Heroic Strike",
@@ -387,6 +380,407 @@
    ],
    "length": 25.8,
    "success": true
+  }
+ ],
+ "Rhahk'Zor": [
+  {
+   "name": "Rhahk'Zor",
+   "encounter_id": 2741,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092026_095152.txt",
+   "casts": [
+    [
+     2.4,
+     6304,
+     "Rhahk'Zor Slam",
+     "Rhahk'Zor",
+     "success"
+    ],
+    [
+     19.4,
+     6304,
+     "Rhahk'Zor Slam",
+     "Rhahk'Zor",
+     "success"
+    ],
+    [
+     44.9,
+     6304,
+     "Rhahk'Zor Slam",
+     "Rhahk'Zor",
+     "success"
+    ]
+   ],
+   "length": 48.3,
+   "success": true
+  }
+ ],
+ "Sneed": [
+  {
+   "name": "Sneed",
+   "encounter_id": 2742,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092026_095152.txt",
+   "casts": [
+    [
+     2.4,
+     5532,
+     "Cleave",
+     "Goblin Woodcarver",
+     "success"
+    ],
+    [
+     11.8,
+     3603,
+     "Distracting Pain",
+     "Sneed's Shredder",
+     "success"
+    ],
+    [
+     13.0,
+     7399,
+     "Terrify",
+     "Sneed's Shredder",
+     "success"
+    ],
+    [
+     19.8,
+     5532,
+     "Cleave",
+     "Goblin Woodcarver",
+     "success"
+    ],
+    [
+     54.9,
+     7399,
+     "Terrify",
+     "Sneed's Shredder",
+     "success"
+    ],
+    [
+     61.8,
+     3603,
+     "Distracting Pain",
+     "Sneed's Shredder",
+     "success"
+    ],
+    [
+     66.3,
+     5141,
+     "Eject Sneed",
+     "Sneed's Shredder",
+     "success"
+    ],
+    [
+     84.1,
+     6713,
+     "Disarm",
+     "Sneed",
+     "success"
+    ]
+   ],
+   "length": 98.8,
+   "success": true
+  }
+ ],
+ "Gilnid": [
+  {
+   "name": "Gilnid",
+   "encounter_id": 2743,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092026_095152.txt",
+   "casts": [],
+   "length": 1.2,
+   "success": false
+  },
+  {
+   "name": "Gilnid",
+   "encounter_id": 2743,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092026_095152.txt",
+   "casts": [
+    [
+     6.1,
+     5159,
+     "Melt Ore",
+     "Goblin Craftsman",
+     "start"
+    ],
+    [
+     7.6,
+     5159,
+     "Melt Ore",
+     "Goblin Craftsman",
+     "success"
+    ],
+    [
+     7.6,
+     5213,
+     "Molten Metal",
+     "Gilnid",
+     "start"
+    ],
+    [
+     9.6,
+     5213,
+     "Molten Metal",
+     "Gilnid",
+     "success"
+    ],
+    [
+     32.9,
+     5213,
+     "Molten Metal",
+     "Gilnid",
+     "start"
+    ],
+    [
+     34.9,
+     5213,
+     "Molten Metal",
+     "Gilnid",
+     "success"
+    ],
+    [
+     36.6,
+     5159,
+     "Melt Ore",
+     "Goblin Craftsman",
+     "start"
+    ],
+    [
+     38.1,
+     5159,
+     "Melt Ore",
+     "Goblin Craftsman",
+     "success"
+    ]
+   ],
+   "length": 47.0,
+   "success": true
+  }
+ ],
+ "Mr. Smite": [
+  {
+   "name": "Mr. Smite",
+   "encounter_id": 2745,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092026_095152.txt",
+   "casts": [
+    [
+     47.3,
+     6432,
+     "Smite Stomp",
+     "Mr. Smite",
+     "success"
+    ],
+    [
+     64.4,
+     3391,
+     "Thrash",
+     "Mr. Smite",
+     "success"
+    ],
+    [
+     68.1,
+     6432,
+     "Smite Stomp",
+     "Mr. Smite",
+     "success"
+    ],
+    [
+     79.0,
+     6435,
+     "Smite Slam",
+     "Mr. Smite",
+     "success"
+    ],
+    [
+     86.4,
+     6435,
+     "Smite Slam",
+     "Mr. Smite",
+     "success"
+    ],
+    [
+     143.8,
+     5172,
+     "Bloodsail Companion",
+     "Defias Pirate",
+     "success"
+    ],
+    [
+     148.6,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     159.5,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     172.1,
+     122,
+     "Frost Nova",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     175.8,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     176.6,
+     12544,
+     "Frost Armor",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     185.5,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     210.6,
+     5172,
+     "Bloodsail Companion",
+     "Defias Pirate",
+     "success"
+    ],
+    [
+     217.5,
+     12544,
+     "Frost Armor",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     239.0,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     241.5,
+     122,
+     "Frost Nova",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     248.4,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     282.4,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     284.7,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     294.9,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     297.3,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     305.8,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     313.9,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     355.2,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     446.4,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     452.5,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     457.3,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     464.6,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     465.8,
+     2138,
+     "Fire Blast",
+     "Defias Squallshaper",
+     "success"
+    ],
+    [
+     486.0,
+     5172,
+     "Bloodsail Companion",
+     "Defias Pirate",
+     "success"
+    ]
+   ],
+   "length": 90.2,
+   "success": true,
+   "closed_by": "boss death (no ENCOUNTER_END)"
   }
  ]
 }

@@ -895,8 +895,15 @@ RenderDesc = function(f)
     local lanes = f and ns.Schedule.Lanes(f) or {}
     -- Health-triggered abilities have no lane but keep their card, after
     -- the timed ones, tagged with the health they fire at.
+    -- One card per ABILITY: a multi-threshold one comes back from
+    -- HealthAbilities as one entry per marker, and its card lists them all.
+    local seen = {}
     for _, ha in ipairs(f and ns.Schedule.HealthAbilities(f) or {}) do
-        lanes[#lanes + 1] = { a = ha, health = true }
+        local a = ha.ability or ha
+        if not seen[a] then
+            seen[a] = true
+            lanes[#lanes + 1] = { a = a, health = true }
+        end
     end
     local content = win.descScroll.child
     local w = math.max(200, (win.descScroll:GetWidth() or 200))
@@ -920,7 +927,16 @@ RenderDesc = function(f)
         row.real:SetText(mine and real or "")
         row.health = a.health and a.health.pct or nil
         if row.health then
-            row.pill:Set(string.format("HEALTH  %d%%", row.health), 1.00, 0.55, 0.30)
+            local pcts = a.health.pcts
+            local label
+            if type(pcts) == "table" and #pcts > 1 then
+                local parts = {}
+                for _, p in ipairs(pcts) do parts[#parts + 1] = string.format("%d%%", p) end
+                label = "HEALTH  " .. table.concat(parts, " / ")
+            else
+                label = string.format("HEALTH  %d%%", row.health)
+            end
+            row.pill:Set(label, 1.00, 0.55, 0.30)
             row.real:ClearAllPoints(); row.real:SetPoint("LEFT", row.pill, "RIGHT", 8, 0)
         else
             row.pill:Hide()

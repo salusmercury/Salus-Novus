@@ -3078,7 +3078,7 @@ def _():
     x = float(h.lua("local m = ns.HealthBars._markers[1] return m:GetLeft() + m:GetWidth() / 2 - SalusNovusHealthBars.bar:GetLeft()"))
     ok(abs(x - 260 * 0.48) < 0.6, "marker not at 48%% of the bar: %r" % x)
     health_units(h, hp=911)
-    h.lua("W.advance(0.3)")
+    h.lua('W.fireEvent("UNIT_HEALTH", "target")')
     lo, hi, v = h.lua("local b = SalusNovusHealthBars.bar local lo, hi = b:GetMinMaxValues() return lo, hi, b:GetValue()")
     ok(int(hi) == 1922 and int(v) == 911, "bar not fed from the unit: %r" % ((lo, hi, v),))
     # a rename and a colour reach the marker
@@ -3098,17 +3098,17 @@ def _():
     ok(h.lua("return SalusNovusHealthBars:IsShown() and ns.HealthBars.state.unit == nil"), "should show with markers while the unit is unknown")
     h.lua("__units['target'] = { name = 'Lesser Stone Golem', hp = 300, max = 300 }")   # a decoy: the add, not the boss
     health_units(h, unit="nameplate3")
-    h.lua("W.advance(1.3)")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate3")')
     eq(str(h.lua("return ns.HealthBars.state.unit")), "nameplate3", "late unit not found by name")
     # the client refuses the secret value: pcall catches it, the fill dims, the markers stay
     h.lua("""
         __orig = SalusNovusHealthBars.bar.SetValue
         SalusNovusHealthBars.bar.SetValue = function() error("secret value") end
-        W.advance(0.3)
+        W.fireEvent("UNIT_HEALTH", "nameplate3")
     """)
     ok(h.lua("return ns.HealthBars.state.refused and SalusNovusHealthBars:GetAlpha() == 1 and SalusNovusHealthBars.bar:GetAlpha() < 0.5"), "refusal not handled")
     ok(h.lua("return ns.HealthBars._markers[1]:IsShown()"), "markers dropped on refusal")
-    h.lua("SalusNovusHealthBars.bar.SetValue = __orig; W.advance(0.3)")
+    h.lua('SalusNovusHealthBars.bar.SetValue = __orig; W.fireEvent("UNIT_HEALTH", "nameplate3")')
     ok(not h.lua("return ns.HealthBars.state.refused") and h.lua("return SalusNovusHealthBars.bar:GetAlpha() == 1"), "did not recover")
     h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
@@ -5649,3 +5649,566 @@ def _():
         return cp .. "/" .. tostring(crp) .. " " .. sp .. "/" .. tostring(srel == f.cancel) .. "/" .. tostring(srp) .. " " .. dp
     """)
     eq(str(pts), "BOTTOMRIGHT/BOTTOMRIGHT RIGHT/true/LEFT BOTTOMLEFT", "button anchors: %r" % pts)
+
+
+# ------------------------------------------------------------------
+# bug hunt 4 (2026-09-20): Health Bars live tracking, slash guard, theme repaint
+
+
+@test("health bar: when unit dies, re-scan finds a new unit instead of reading stale values", "bughunt4")
+def _():
+    h = fresh()
+    health_units(h, hp=500, mx=1000, unit="target")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "bar not shown")
+    unit1 = str(h.lua("return ns.HealthBars.state.unit"))
+    eq(unit1, "target", "boss not on target")
+    v0 = float(h.lua("return SalusNovusHealthBars.bar:GetValue()"))
+    ok(v0 > 100 and v0 < 600, "initial health value wrong: %r" % v0)
+    # Unit dies: target no longer has the boss
+    h.lua("__units['target'] = nil")
+    # Boss is still alive but on focus now
+    h.lua("__units['focus'] = { name = 'Durgen Dirgehammer', hp = 400, max = 1000 }")
+    h.lua('W.fireEvent("PLAYER_TARGET_CHANGED")')   # the client says the target slot changed
+    unit2 = str(h.lua("return ns.HealthBars.state.unit"))
+    v1 = float(h.lua("return SalusNovusHealthBars.bar:GetValue()"))
+    # Bar should have found the boss on focus and updated the value
+    eq(unit2, "focus", "unit not re-scanned: still %s" % unit2)
+    ok(abs(v1 - 400) < 1, "health not updated from focus: %r" % v1)
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("health bar: when ability is unrouted mid-fight, marker disappears", "bughunt4")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "bar not shown")
+    # Marker should be visible initially
+    ok(h.lua("return ns.HealthBars._markers[1]:IsShown()"), "initial marker not shown")
+    # Unroute the ability mid-fight
+    h.lua("ns.Abilities.SetRoute(19134, 'health', false)")
+    # Advance time to trigger the ticker's ability refresh
+    h.lua("W.advance(0.6)")
+    # The marker should disappear
+    ok(not h.lua("return ns.HealthBars._markers[1]:IsShown()"), "marker not removed after unroute")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("health bar: nameplate reuse is handled (boss on nameplate7, unit changes to add on same nameplate)", "bughunt4")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return ns.HealthBars.state.unit") is None, "no unit yet")
+    # Boss's plate appears as nameplate7
+    h.lua("__units['nameplate7'] = { name = 'Durgen Dirgehammer', hp = 800, max = 1000 }")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate7")')
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "nameplate7", "boss not found on nameplate7")
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 800) < 1, "not fed on resolve")
+    # The plate goes and its id is reused by an add
+    h.lua("__units['nameplate7'] = nil")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_REMOVED", "nameplate7")')
+    ok(h.lua("return ns.HealthBars.state.unit") is None, "unit kept after its plate went")
+    h.lua("__units['nameplate7'] = { name = 'Lesser Stone Golem', hp = 100, max = 200 }")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate7")')
+    ok(h.lua("return ns.HealthBars.state.unit") is None, "an add on the reused id was taken for the boss")
+    h.lua('W.fireEvent("UNIT_HEALTH", "nameplate7")')
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 800) < 1, "the add's health reached the bar")
+    # The boss's new plate
+    h.lua("__units['nameplate2'] = { name = 'Durgen Dirgehammer', hp = 400, max = 1000 }")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate2")')
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "nameplate2", "boss not found on its new plate")
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 400) < 1, "not fed from the new plate")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("health bar: unrouting an ability does not cause marker to linger on screen", "bughunt4")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "bar not shown")
+    # Marker should be visible initially
+    m1_shown = h.lua("return ns.HealthBars._markers[1]:IsShown()")
+    ok(m1_shown, "initial marker not shown")
+    # Unroute the first ability mid-fight
+    h.lua("ns.Abilities.SetRoute(19134, 'health', false)")
+    # Advance time to trigger the ticker's ability refresh
+    h.lua("W.advance(0.6)")
+    # The marker should disappear
+    m1_shown_after = h.lua("return ns.HealthBars._markers[1]:IsShown()")
+    ok(not m1_shown_after, "marker still shown after unroute (bug: state.abilities not refreshed)")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("slash handler: msg can be a number without crashing", "bughunt4")
+def _():
+    h = fresh()
+    h.lua("SlashCmdList['SALUSNOVUS'](42)")
+    eq(h.errors(), [], "number msg caused error")
+
+
+@test("BUG: CheckBox colors are not repainted when accent changes", "bughunt4")
+def _():
+    h = fresh()
+    h.lua("""
+        _G.__cb = ns.Theme.MakeCheckBox(UIParent, 16)
+        _G.__cb:SetChecked(true)
+        local r1, g1, b1 = _G.__cb.fill:GetVertexColor()
+        _G.__color1 = {r1, g1, b1}
+    """)
+    # Change the accent color and call ApplyAll (which calls RepaintAll)
+    h.lua("""
+        ns.db.theme.customColor = { r = 1.0, g = 0.0, b = 0.0 }
+        ns.Theme.RepaintAll(true)
+    """)
+    # Get the new color
+    color2 = h.lua("""
+        local r2, g2, b2 = _G.__cb.fill:GetVertexColor()
+        return {r2, g2, b2}
+    """)
+    color1 = h.lua("return _G.__color1")
+    r1, g1, b1 = [float(x) for x in color1.values()]
+    r2, g2, b2 = [float(x) for x in color2.values()]
+    # The colors should be different, but they won't be due to the bug
+    ok(not (abs(r1 - r2) < 0.01 and abs(g1 - g2) < 0.01 and abs(b1 - b2) < 0.01), 
+       "CheckBox should be repainted on color change, was (%.2f,%.2f,%.2f), now (%.2f,%.2f,%.2f)" % (r1, g1, b1, r2, g2, b2))
+    eq(h.errors(), [], "errors")
+
+
+@test("BUG: Slider fill colors are not repainted when accent changes", "bughunt4")
+def _():
+    h = fresh()
+    h.lua("""
+        _G.__slider = ns.Theme.MakeSlider(UIParent, 150, 0, 100, function() end)
+        _G.__slider:SetValueQuiet(50)
+        local r1, g1, b1 = _G.__slider.fill:GetVertexColor()
+        _G.__color1 = {r1, g1, b1}
+    """)
+    # Change the accent color and call RepaintAll
+    h.lua("""
+        ns.db.theme.customColor = { r = 1.0, g = 0.0, b = 0.0 }
+        ns.Theme.RepaintAll(true)
+    """)
+    # Get the new color
+    color2 = h.lua("""
+        local r2, g2, b2 = _G.__slider.fill:GetVertexColor()
+        return {r2, g2, b2}
+    """)
+    color1 = h.lua("return _G.__color1")
+    r1, g1, b1 = [float(x) for x in color1.values()]
+    r2, g2, b2 = [float(x) for x in color2.values()]
+    ok(not (abs(r1 - r2) < 0.01 and abs(g1 - g2) < 0.01 and abs(b1 - b2) < 0.01), 
+       "Slider should be repainted on color change")
+    eq(h.errors(), [], "errors")
+
+
+# ------------------------------------------------------------------
+# 2026-09-20 Deadmines run: a kill whose ENCOUNTER_END never came, false starts
+
+HDR = "COMBAT_LOG_VERSION,20,ADVANCED_LOG_ENABLED,1,BUILD_VERSION,1.60.1,PROJECT_ID,18\n"
+SMITE = 'Creature-0-6783-36-61191-646-00002FF63B,"Mr. Smite",0x10a48,0x80000000'
+
+
+@test("parse_logs: a boss that dies with no ENCOUNTER_END still counts as a kill, ended at its death", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-smite.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/20/2026 11:04:30.005-5  ENCOUNTER_START,2745,"Mr. Smite",1,5,36\n')
+            f.write("9/20/2026 11:06:00.229-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000," + SMITE + ",0\n")
+            f.write('9/20/2026 11:08:49.521-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000,Creature-0-6783-36-61191-1732-0000AFF63B,"Defias Squallshaper",0x10a48,0x80000000,0\n')
+            # a second pull that ends at EOF with the boss alive is still dropped
+            f.write('9/20/2026 11:20:00.000-5  ENCOUNTER_START,2746,"Cookie",1,5,36\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    runs = enc.get("Mr. Smite", [])
+    eq(len(runs), 1, "Mr. Smite's pull was dropped: %r" % dict(enc))
+    eq(runs[0]["success"], True, "a boss death is a kill")
+    eq(runs[0]["length"], 90.2, "the pull ends at the death, not at EOF")
+    ok("t0" not in runs[0] and "boss_died_at" not in runs[0], "working fields leaked into the record")
+    eq(enc.get("Cookie", []), [], "an open pull with no death must still be dropped")
+
+
+@test("cast_health: the death-closed pull is keyed by the same length as the parsed pull", "data")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    with tempfile.TemporaryDirectory() as tmp:
+        os.environ["SN_LOG_DIR"] = tmp
+        g.LOG_DIR = tmp
+        with open(os.path.join(tmp, "smite.txt"), "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/20/2026 11:04:30.005-5  ENCOUNTER_START,2745,"Mr. Smite",1,5,36\n')
+            # SPELL_CAST_SUCCESS with an advanced block: f[9] spell id, f[14] cur hp, f[15] max hp
+            f.write("9/20/2026 11:05:17.333-5  SPELL_CAST_SUCCESS," + SMITE + ",0000000000000000,nil,0x80000000,0x80000000,"
+                    '6432,"Smite Stomp",0x1,Creature-0-6783-36-61191-646-00002FF63B,0000000000000000,1200,2400,0,0,0,0,0,0,0,0,0,0\n')
+            f.write("9/20/2026 11:06:00.229-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000," + SMITE + ",0\n")
+        out = g.cast_health(["smite.txt"])
+    key = ("smite.txt", 2745, 90.2)
+    ok(key in out, "death-closed pull not keyed by its death length: %r" % list(out))
+    eq(round(list(out[key].values())[0]), 50, "the caster's health at the cast")
+
+
+@test("real_pulls: a cast-free pull under five seconds is a false start, not a pull", "data")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    pulls = [
+        {"name": "Gilnid", "length": 1.2, "success": False, "casts": []},
+        {"name": "Gilnid", "length": 47.0, "success": True, "casts": [[6.1, 5159, "Melt Ore", "Goblin Craftsman", "start"]]},
+        {"name": "X", "length": 2.0, "success": False, "casts": [[0.5, 1, "Opener", "X", "success"]]},   # short but real
+        {"name": "Y", "length": 9.0, "success": False, "casts": []},                                     # long enough, a wipe
+    ]
+    kept = [p["length"] for p in g.real_pulls(pulls)]
+    eq(kept, [47.0, 2.0, 9.0], "false start filter kept/dropped the wrong pulls: %r" % kept)
+
+
+# ------------------------------------------------------------------
+# 2026-09-20 Health Bars the nameplate way: events, never a poll
+
+@test("health bar: registers nothing while idle, the unit events during a fight, nothing again after; no ticker", "health")
+def _():
+    h = fresh()
+    reg = lambda e: h.lua("return ns.HealthBars._events:IsEventRegistered('%s')" % e)
+    ok(not reg("UNIT_HEALTH") and not reg("PLAYER_TARGET_CHANGED") and not reg("NAME_PLATE_UNIT_ADDED"), "registered while idle")
+    # the hub starts its own timers on any pull: a boss with no health
+    # abilities sets the baseline the bar must not add to
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    before = int(h.lua("return W.pendingTimers()"))
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(reg("UNIT_HEALTH") and reg("UNIT_MAXHEALTH"), "health events not registered for the unit")
+    ok(reg("PLAYER_TARGET_CHANGED") and reg("PLAYER_FOCUS_CHANGED") and reg("NAME_PLATE_UNIT_ADDED")
+       and reg("NAME_PLATE_UNIT_REMOVED") and reg("INSTANCE_ENCOUNTER_ENGAGE_UNIT"), "unit-change events not registered")
+    eq(int(h.lua("return W.pendingTimers()")), before, "a timer was started: the bar must be event-driven")
+    # a boss with no health abilities arms nothing either
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    ok(not reg("UNIT_HEALTH") and not reg("PLAYER_TARGET_CHANGED"), "still registered after the fight")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(not reg("UNIT_HEALTH") and not reg("PLAYER_TARGET_CHANGED"), "armed for a boss with no health abilities")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("health bar: UNIT_HEALTH for another unit is ignored; for ours it feeds; the target changing away re-resolves", "health")
+def _():
+    h = fresh()
+    health_units(h, hp=1000, mx=1922)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    feeds = int(h.lua("return ns.HealthBars.state.feeds"))
+    h.lua('W.fireEvent("UNIT_HEALTH", "nameplate5"); W.fireEvent("UNIT_HEALTH", "player")')
+    eq(int(h.lua("return ns.HealthBars.state.feeds")), feeds, "fed from a unit that is not ours")
+    health_units(h, hp=500, mx=1922)
+    h.lua('W.fireEvent("UNIT_HEALTH", "target")')
+    eq(int(h.lua("return ns.HealthBars.state.feeds")), feeds + 1, "not fed from our unit")
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 500) < 1, "value not on the bar")
+    # tank targets an add; the boss is on focus
+    h.lua("__units['target'] = { name = 'Lesser Stone Golem', hp = 50, max = 200 }")
+    h.lua("__units['focus'] = { name = 'Durgen Dirgehammer', hp = 450, max = 1922 }")
+    h.lua('W.fireEvent("PLAYER_TARGET_CHANGED")')
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "focus", "did not move to the focus")
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 450) < 1, "not fed on the move")
+    h.lua('W.fireEvent("UNIT_HEALTH", "target")')
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 450) < 1, "the add's health reached the bar")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("parse_logs: a hostile SPELL_SUMMON inside a pull joins the cast stream as an instant cast", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    VC = 'Creature-0-6783-36-61191-639-00002FF63C,"Edwin VanCleef",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-vc.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/21/2026 20:00:00.000-5  ENCOUNTER_START,2748,"Edwin VanCleef",1,5,36\n')
+            f.write("9/21/2026 20:00:30.500-5  SPELL_SUMMON," + VC + ',Creature-0-6783-36-61191-636-00002FF700,"Defias Blackguard",0x10a48,0x80000000,5400,"Summon Defias Blackguard",0x1\n')
+            f.write('9/21/2026 20:00:31.000-5  SPELL_SUMMON,Player-1-000001,"Merk",0x511,0x0,Pet-0-1-1-1-1-1,"Voidwalker",0x1111,0x0,697,"Summon Voidwalker",0x20\n')
+            f.write('9/21/2026 20:01:00.000-5  ENCOUNTER_END,2748,"Edwin VanCleef",1,5,1,60000\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    casts = enc["Edwin VanCleef"][0]["casts"]
+    eq(casts, [[30.5, 5400, "Summon Defias Blackguard", "Edwin VanCleef", "success"]], "summon not in the stream (or the player's was): %r" % casts)
+
+
+@test("cast_health: a SPELL_SUMMON carries no health block, so the summoner's last block (a swing it made) supplies it", "data")
+def _():
+    import sys, os, tempfile
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    VCG = "Creature-0-6783-36-61191-639-00002FF63C"
+    VC = VCG + ',"Edwin VanCleef",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        g.LOG_DIR = tmp
+        with open(os.path.join(tmp, "vc.txt"), "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/21/2026 20:00:00.000-5  ENCOUNTER_START,2748,"Edwin VanCleef",1,5,36\n')
+            # a player hits him: SPELL_DAMAGE, block describes the VICTIM (him) at 90%
+            f.write('9/21/2026 20:00:10.000-5  SPELL_DAMAGE,Player-1-000001,"Merk",0x511,0x0,' + VC + ',100,"Strike",0x1,'
+                    + VCG + ',0000000000000000,1800,2000,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            # his own swing: SWING_DAMAGE block describes the SOURCE (him) at 75%
+            f.write('9/21/2026 20:00:29.000-5  SWING_DAMAGE,' + VC + ',Player-1-000001,"Merk",0x511,0x0,'
+                    + VCG + ',0000000000000000,1500,2000,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            f.write("9/21/2026 20:00:30.500-5  SPELL_SUMMON," + VC + ',Creature-0-6783-36-61191-636-00002FF700,"Defias Blackguard",0x10a48,0x80000000,5400,"Summon Defias Blackguard",0x1\n')
+            f.write('9/21/2026 20:01:00.000-5  ENCOUNTER_END,2748,"Edwin VanCleef",1,5,1,60000\n')
+        out = g.cast_health(["vc.txt"])
+    key = ("vc.txt", 2748, 60.0)
+    ok(key in out, "pull not keyed: %r" % list(out))
+    eq(out[key].get((5400, "Edwin VanCleef", 30.5)), 75.0, "summon not given the summoner's last health: %r" % out[key])
+
+
+# ------------------------------------------------------------------
+# bug hunt 5 (2026-09-20)
+
+
+@test("health bars: disabling bossWarnings module mid-fight hides bar and ignores events", "bughunt5")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "bar not shown at start")
+    h.lua("ns.db.modules.bossWarnings = false; ns.ApplyAll()")
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "bar not hidden when bossWarnings off")
+    # Fire an event: should NOT feed because Enabled() checks the module
+    feeds_before = int(h.lua("return ns.HealthBars.state.feeds"))
+    h.lua('W.fireEvent("UNIT_HEALTH", "target")')
+    feeds_after = int(h.lua("return ns.HealthBars.state.feeds"))
+    eq(feeds_after, feeds_before, "Feed called after bossWarnings disabled mid-fight")
+    h.lua("ns.db.modules.bossWarnings = true; ns.ApplyAll()")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("parse_logs: casts are sorted by offset", "bughunt5")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    BOSS = 'Creature-0-6783-36-61191-646-00002FF63B,"Boss",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/21/2026 20:00:00.000-5  ENCOUNTER_START,2750,"Boss",1,5,36\n')
+            # Write casts out of order (to detect sorting)
+            f.write('9/21/2026 20:00:30.000-5  SPELL_CAST_SUCCESS,' + BOSS + ',0000000000000000,nil,0x80000000,0x80000000,5003,"Third",0x1\n')
+            f.write('9/21/2026 20:00:10.000-5  SPELL_CAST_SUCCESS,' + BOSS + ',0000000000000000,nil,0x80000000,0x80000000,5001,"First",0x1\n')
+            f.write('9/21/2026 20:00:20.000-5  SPELL_CAST_SUCCESS,' + BOSS + ',0000000000000000,nil,0x80000000,0x80000000,5002,"Second",0x1\n')
+            f.write('9/21/2026 20:00:40.000-5  ENCOUNTER_END,2750,"Boss",1,5,1,40000\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    runs = enc.get("Boss", [])
+    casts = runs[0]["casts"]
+    offsets = [c[0] for c in casts]
+    eq(offsets, sorted(offsets), "casts not sorted by offset: %r" % casts)
+
+
+@test("parse_logs: boss_died_at only closes on death without ENCOUNTER_END if GUID matches encounter name", "bughunt5")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    # When an add with the same name dies first, then real boss dies,
+    # the real boss's death (closer in time) should be used for death-close
+    BOSS_GUID = 'Creature-0-6783-36-61191-646-00002FF63B'
+    BOSS = BOSS_GUID + ',"Boss",0x10a48,0x80000000'
+    ADD = 'Creature-0-6783-36-61191-647-00002FF63C,"Boss",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/21/2026 20:00:00.000-5  ENCOUNTER_START,2750,"Boss",1,5,36\n')
+            f.write('9/21/2026 20:00:10.000-5  SPELL_CAST_SUCCESS,' + BOSS + ',0000000000000000,nil,0x80000000,0x80000000,5001,"Cast",0x1\n')
+            # Add with same name dies (different GUID)
+            f.write('9/21/2026 20:00:12.000-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000,' + ADD + ',0\n')
+            # Real boss dies
+            f.write('9/21/2026 20:00:20.000-5  UNIT_DIED,0000000000000000,nil,0x80000000,0x80000000,' + BOSS + ',0\n')
+            # No ENCOUNTER_END - death-close should use real boss death time
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    runs = enc.get("Boss", [])
+    eq(len(runs), 1, "pull should be closed by boss death: %r" % list(enc.keys()))
+    # The code currently sets boss_died_at on the FIRST death with matching name (the add at 12.0)
+    # but it should only set it on the ACTUAL boss's death (20.0)
+    # This is a bug if the length is 12.0 instead of 20.0
+    eq(runs[0]["length"], 20.0, "should use real boss death time (20.0), not add death (12.0): got %s" % runs[0]["length"])
+
+
+@test("lanes: cast bar uses median formula, not just taking upper middle", "bughunt5")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    from build_salusnovus_data import lanes
+    # Two bars: 1.0s and 3.0s, median = 2.0
+    # This test would fail with old code that did ls[len(ls)//2] = ls[1] = 3.0
+    casts = [(10, 'start', 0), (11, 'success', 0)]   # 1.0s bar
+    casts += [(20, 'start', 1), (23, 'success', 1)]  # 3.0s bar
+    result = lanes(casts)
+    eq(result[3], 2.0, "two bars (1.0, 3.0): expected median 2.0, got %s" % result[3])
+
+
+@test("icon texture in reused frame: old texture is cleared when new reminder has no icon", "bughunt5")
+def _():
+    h = fresh()
+    h.lua("""
+        -- First reminder WITH icon (spell 11130)
+        ns.DefaultReminders = {
+            { id = "ic_persist", encounterID = 3494, trigger = "pull", text = "WITH_ICON", icon = 11130, hold = 0.6, sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(0.1)")
+    # Get the texture from the first reminder
+    tex_before = h.lua("return ns.Reminders._active[1].icon:GetTexture() or 'NONE'")
+    ok(str(tex_before) != 'NONE', "first reminder should have icon texture: %r" % tex_before)
+    # Let the first reminder expire
+    h.lua("W.advance(1)")
+    # Now create a second reminder WITHOUT icon (icon=0) in the same pool
+    h.lua("""
+        ns.Reminders._fired = {}
+        ns.DefaultReminders[1].id = "ic_no_icon"
+        ns.DefaultReminders[1].icon = 0
+        ns.DefaultReminders[1].text = "NO_ICON"
+        ns.DefaultReminders[1].hold = 0.6
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(0.1)")
+    # Check if the icon texture is cleared (should be NONE or nil)
+    tex_after = h.lua("return ns.Reminders._active[1].icon:GetTexture() or 'NONE'")
+    eq(str(tex_after), 'NONE', "icon texture should be cleared when icon=0: old=%r, new=%r" % (tex_before, tex_after))
+
+
+@test("customColor with numeric indices does not crash OnAccent", "bughunt5")
+def _():
+    h = fresh()
+    # This is invalid but can happen from bad edits to SavedVariables
+    h.lua("ns.db.theme.customColor = { 0.5, 0.3, 0.8 }; ns.ApplyAll()")
+    # GetThemeColor should handle this gracefully, not return nil, nil, nil
+    r, g, b = h.lua("return ns.GetThemeColor()")
+    ok(r is not None and g is not None and b is not None,
+       "GetThemeColor returned nil for invalid customColor: (%r, %r, %r)" % (r, g, b))
+    # OnAccent should not crash
+    h.lua("return ns.Theme.OnAccent()")
+    eq(h.errors(), [], "errors in OnAccent")
+
+
+@test("health_thresholds: the same summon at 75% then 50% in every pull is two thresholds; a timed second cast is not", "data")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    # VanCleef: wave 1 at ~75% (20 s / 35 s in), wave 2 at ~50% (48 s / 70 s in)
+    eq(g.health_thresholds({0: [(20.0, 75.2), (48.0, 50.4)], 1: [(35.0, 74.6), (70.0, 49.8)]}), [75, 50], "two waves")
+    # Durgen: one cast per pull, as before
+    eq(g.health_thresholds({0: [(16.0, 47.4)], 1: [(11.0, 47.8)]}), [48], "one threshold")
+    # first cast health-triggered, second cast at the same TIME in both pulls (timed): only the first qualifies
+    eq(g.health_thresholds({0: [(16.0, 47.4), (30.0, 40.0)], 1: [(11.0, 47.8), (30.2, 35.0)]}), [48], "timed second cast")
+    # one pull only: nothing
+    eq(g.health_thresholds({0: [(20.0, 75.2), (48.0, 50.4)]}), [], "one pull is no evidence")
+    eq(g.health_thresholds({}), [], "empty")
+
+
+@test("an ability with health.pcts comes back from HealthAbilities as one marker per threshold, highest first; the card pill lists them", "health")
+def _():
+    h = fresh()
+    n = int(h.lua("""
+        local b = ns.BossByEncounter(3496)
+        b.abilities[#b.abilities + 1] = { spellID = 5400, name = "Summon Defias Blackguard", source = b.name,
+            pulls = 2, casts = {}, health = { pct = 75, pcts = { 75, 50 }, pulls = 2, samples = { 75.2, 74.6 } } }
+        return #ns.Schedule.HealthAbilities(b)
+    """))
+    eq(n, 3, "expected Intimidating Shout + two wave markers")
+    pcts = h.lua("local out = {} for _, a in ipairs(ns.Schedule.HealthAbilities(ns.BossByEncounter(3496))) do out[#out + 1] = a.health.pct end return table.concat(out, ',')")
+    eq(str(pcts), "75,50,48", "order / thresholds")
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    shown = h.lua("local out = {} for i = 1, 8 do local m = ns.HealthBars._markers[i] if m:IsShown() then out[#out + 1] = m.label:GetText() end end return table.concat(out, '|')")
+    eq(str(shown), "Summon Defias Blackguard|Summon Defias Blackguard|Intimidating Shout", "markers")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.BossByEncounter(3496))")
+    pill = h.lua("""
+        for _, r in ipairs(SalusNovusVisualizer.descRows) do
+            if r:IsShown() and r.spellID == 5400 then return r.pill.text and r.pill.text:GetText() or r.pill:GetText() end
+        end
+        return "?"
+    """)
+    ok("75%" in str(pill) and "50%" in str(pill), "pill should list both thresholds: %r" % pill)
+    cards = int(h.lua("local n = 0 for _, r in ipairs(SalusNovusVisualizer.descRows) do if r:IsShown() and r.spellID == 5400 then n = n + 1 end end return n"))
+    eq(cards, 1, "one card per ability, not one per marker")
+    eq(h.errors(), [], "errors")
+
+
+@test("health bar: the anchor's Enable box off then on mid-fight disarms and re-arms, picking the unit back up", "health")
+def _():
+    h = fresh()
+    health_units(h, hp=900, mx=1922)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    reg = lambda e: h.lua("return ns.HealthBars._events:IsEventRegistered('%s')" % e)
+    ok(reg("UNIT_HEALTH") and reg("PLAYER_TARGET_CHANGED"), "not armed")
+    h.lua("ns.db.healthBars.enabled = false; ns.ApplyAll()")
+    ok(not reg("UNIT_HEALTH") and not reg("PLAYER_TARGET_CHANGED"), "still armed while off")
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "shown while off")
+    h.lua("__units['target'] = nil; __units['focus'] = { name = 'Durgen Dirgehammer', hp = 600, max = 1922 }")
+    h.lua("ns.db.healthBars.enabled = true; ns.ApplyAll()")
+    ok(reg("UNIT_HEALTH") and reg("PLAYER_TARGET_CHANGED"), "not re-armed")
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "focus", "unit not picked back up on re-enable")
+    ok(abs(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) - 600) < 1, "not fed on re-enable")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("parse_logs: a summon spell's SPELL_CAST_SUCCESS + SPELL_SUMMON pair is one cast, not two", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    SH = 'Creature-0-6783-36-61191-642-00002FF6AA,"Sneed\'s Shredder",0x10a48,0x80000000'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-sneed.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('9/20/2026 10:35:09.124-5  ENCOUNTER_START,2742,"Sneed",1,5,36\n')
+            f.write("9/20/2026 10:36:15.424-5  SPELL_CAST_SUCCESS," + SH + ',0000000000000000,nil,0x80000000,0x80000000,5141,"Eject Sneed",0x1,Creature-0-6783-36-61191-642-00002FF6AA,0000000000000000,10,2400,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6\n')
+            f.write("9/20/2026 10:36:15.424-5  SPELL_SUMMON," + SH + ',Creature-0-6783-36-61191-643-00002FF6AB,"Sneed",0x10a48,0x80000000,5141,"Eject Sneed",0x1\n')
+            f.write('9/20/2026 10:36:47.957-5  ENCOUNTER_END,2742,"Sneed",1,5,1,98831\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    casts = enc["Sneed"][0]["casts"]
+    eq(casts, [[66.3, 5141, "Eject Sneed", "Sneed's Shredder", "success"]], "the pair must collapse to one cast: %r" % casts)
+
