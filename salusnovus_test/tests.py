@@ -366,7 +366,7 @@ def _():
 def _():
     h = fresh()
     open_options(h)
-    h.lua("ns.Options.SelectPage('global')")
+    h.lua("ns.Options.SelectPage('font')")
     h.lua("""
         for _, w in ipairs(ns.Options.widgets) do
             if w.__kind == "choice" and w.__values and type(w.__values[1]) == "string" and w.__values[1]:find("Fonts") then __fontBtn = w end
@@ -431,13 +431,14 @@ def _():
         eq(str(h.lua("return %s.__font" % expr)), "Fonts\\MORPHEUS.TTF", "%s not re-fonted" % expr)
     # the picker's rows show their own fonts, never the global one
     h.lua("""
-        SalusNovusOptions:Show(); ns.Options.SelectPage('global')
+        SalusNovusOptions:Show(); ns.Options.SelectPage('font')
         for _, w in ipairs(ns.Options.widgets) do
             if w.__kind == "choice" and w.__values and type(w.__values[1]) == "string" and w.__values[1]:find("Fonts") then __fontBtn = w end
         end
         __fontBtn:Click()
     """)
-    eq(str(h.lua("return SalusNovusPickerList.rows[1].text.__font")), stock, "picker preview lost its own font")
+    eq(str(h.lua("return SalusNovusPickerList.rows[1].sample.__font")), stock, "picker sample lost its own font")
+    eq(str(h.lua("return SalusNovusPickerList.rows[1].text.__font")), "Fonts\\MORPHEUS.TTF", "picker row NAME should follow the global font")
     ok(h.lua("return ns._following[SalusNovusPickerList.rows[1].text] == nil"), "a preview string was enrolled")
     # and nothing re-fonts when the font did not change
     eq(int(h.lua("return ns.RefontAll() or 0")), 0, "RefontAll should be a no-op without a change")
@@ -2085,7 +2086,8 @@ def _():
     open_options(h)
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings ~= nil"), "no module switch")
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings:GetChecked()"), "switch should start on")
-    eq(int(h.lua("local n = 0 for _ in pairs(ns.Options.moduleSwitches) do n = n + 1 end return n")), 1, "Global must not have a switch")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.Options.moduleSwitches) do n = n + 1 end return n")), 2, "two module switches: Boss Warnings and Quality of Life; Global has none")
+    ok(h.lua("return ns.Options.moduleSwitches.qol ~= nil and ns.Options.moduleSwitches.global == nil"), "Quality of Life needs a switch, Global must not")
     ok(h.lua("return ns.Options.launcher ~= nil and ns.Options.launcher.label:GetText() == 'BOSS VISUALIZER'"), "launcher row missing")   # nav labels are uppercase (Slab)
     ok(float(h.lua("return ns.Options.launcher:GetTop()")) < float(h.lua("return ns.Options.launcher:GetParent():GetTop()")) - 100, "launcher row not in the module list")
     h.lua("ns.Options.launcher:Click(); W.advance(0.1)")
@@ -6625,10 +6627,22 @@ def _():
 
 # ---------------------------------------------------------------- chat filter
 
-@test("a chat line containing 'asmon' in any case is dropped on every player chat event", "chat")
+DEFAULT_WORDS = ["asmon", "democrat", "olympus", "republican", "trump"]
+
+
+def shown_words(h):
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for _, ln in ipairs(ns.Options.chatList.lines) do if ln:IsShown() then out[#out + 1] = ln.text:GetText() end end
+        return out
+    """).values()]
+
+
+@test("a chat line containing any default word in any case is dropped on every player chat event", "chat")
 def _():
     h = fresh()
     ok(bool(h.lua("return ns.ChatFilter.IsInstalled()")), "filter not installed at load")
+    eq([str(x) for x in h.lua("return ns.ChatFilter.List()").values()], DEFAULT_WORDS, "default word set")
     events = [str(x) for x in h.lua("return ns.ChatFilter.EVENTS").values()]
     ok(len(events) >= 15, "too few chat events covered: %r" % events)
     for ev in events:
@@ -6636,11 +6650,12 @@ def _():
         eq(int(n), 1, "%s should carry exactly one filter" % ev)
         got = h.lua('return (W.chat(%r, "did you see ASMONGOLD last night", "Bob"))' % ev)
         ok(got is True, "%s: a line mentioning asmon got through" % ev)
-    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "xXasmonXx is here", "Bob"))') is True, "substring inside a word should match")
+    for line in ("xXasmonXx is here", "OLYMPUS guild recruiting", "Trump said", "the republican party", "any Democrats here"):
+        ok(h.lua('return (W.chat("CHAT_MSG_SAY", %r, "Bob"))' % line) is True, "not blocked: %s" % line)
     eq(h.errors(), [], "errors")
 
 
-@test("a chat line without the word passes through with its text and sender intact", "chat")
+@test("a chat line without a blocked word passes through with its text and sender intact", "chat")
 def _():
     h = fresh()
     block, msg, author = h.lua('return W.chat("CHAT_MSG_SAY", "lfm deadmines need heals", "Bob")')
@@ -6651,64 +6666,302 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("a sender whose name contains the word is dropped even when the line is clean", "chat")
+@test("a sender whose name contains a blocked word is dropped even when the line is clean", "chat")
 def _():
     h = fresh()
     ok(h.lua('return (W.chat("CHAT_MSG_CHANNEL", "hello", "Asmonfan"))') is True, "sender name not checked")
-    ok(h.lua('return (W.chat("CHAT_MSG_WHISPER", "hello", "Asmonfan-Realm"))') is True, "realm-qualified sender not checked")
+    ok(h.lua('return (W.chat("CHAT_MSG_WHISPER", "hello", "Trumpet-Realm"))') is True, "realm-qualified sender not checked")
     eq(h.errors(), [], "errors")
 
 
-@test("the Settings toggle turns the filter off and back on without re-registering", "chat")
+@test("the Quality of Life module switch turns the filter off and back on without re-registering", "chat")
 def _():
     h = fresh()
-    h.lua("ns.db.chatFilter.enabled = false; ns.ApplyAll()")
-    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "still blocking while off")
+    h.lua("ns.db.modules.qol = false; ns.ApplyAll()")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "still blocking while the module is off")
     eq(int(h.lua('return #__chatFilters["CHAT_MSG_SAY"]')), 1, "filter count changed on toggle")
-    h.lua("ns.db.chatFilter.enabled = true; ns.ApplyAll()")
+    h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is True, "not blocking after re-enable")
     h.lua("ns.ChatFilter.Install()")
     eq(int(h.lua('return #__chatFilters["CHAT_MSG_SAY"]')), 1, "a second Install stacked a duplicate filter")
+    ok(h.lua("return ns.db.chatFilter.enabled == nil"), "there must be no separate chatFilter.enabled setting")
     eq(h.errors(), [], "errors")
 
 
-@test("a corrupt word list, a secret line and a non-string message never throw inside the filter", "chat")
+@test("adding a word trims and lower-cases it, refuses blanks and duplicates, and blocks at once", "chat")
 def _():
     h = fresh()
-    h.lua('ns.db.chatFilter.words = { 7, "", false, "asmon" }')
+    eq(str(h.lua('return ns.ChatFilter.AddWord("  Kappa ")')), "kappa", "stored form")
+    ok(h.lua('return ns.ChatFilter.AddWord("KAPPA") == nil'), "duplicate accepted")
+    ok(h.lua('return ns.ChatFilter.AddWord("   ") == nil'), "blank accepted")
+    ok(h.lua('return ns.ChatFilter.AddWord(nil) == nil'), "nil accepted")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "KappaPride", "Bob"))') is True, "new word not blocking")
+    eq([str(x) for x in h.lua("return ns.ChatFilter.List()").values()], sorted(DEFAULT_WORDS + ["kappa"]), "list after add")
+    eq(h.errors(), [], "errors")
+
+
+@test("removing a default word stores false so a reload's re-seeding does not bring it back", "chat")
+def _():
+    h = fresh()
+    h.lua('ns.ChatFilter.RemoveWord("trump")')
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "trump", "Bob"))') is False, "removed word still blocks")
+    ok(h.lua('return ns.db.chatFilter.words.trump == false'), "removal must be stored as false, not nil")
+    h.lua("ns.InitDB()")            # what the next login does to the saved table
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "trump", "Bob"))') is False, "re-seeding brought the word back")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is True, "other defaults lost")
+    eq(str(h.lua('return ns.ChatFilter.AddWord("trump")')), "trump", "re-adding a removed default")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "trump", "Bob"))') is True, "re-added word not blocking")
+    eq(h.errors(), [], "errors")
+
+
+@test("a corrupt word set, an old array form, a secret line and a non-string message never throw inside the filter", "chat")
+def _():
+    h = fresh()
+    h.lua('ns.db.chatFilter.words = { [7] = true, [""] = true, asmon = true, olympus = false, [1] = "Kappa" }')
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is True, "valid word lost among junk")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "kappa", "Bob"))') is True, "old array-form entry not read")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "olympus", "Bob"))') is False, "a false entry matched")
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", "clean", "Bob"))') is False, "junk entries matched something")
     h.lua('ns.db.chatFilter.words = "asmon"')
-    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "a non-table list should block nothing, not throw")
-    h.lua('ns.db.chatFilter.words = { "asmon" }')
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "a non-table set should block nothing, not throw")
+    eq(str(h.lua('return ns.ChatFilter.AddWord("asmon")')), "asmon", "AddWord should repair a non-table set")
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", W.secretString("asmon"), "Bob"))') is False, "a secret line must pass through, not throw")
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmongold stream", W.secretString("Bob")))') is True, "a secret sender must not hide a blocked line")
     ok(h.lua('return (W.chat("CHAT_MSG_SAY", nil, nil))') is False, "nil message threw or blocked")
     eq(h.errors(), [], "errors")
 
 
-@test("the Settings page shows the chat toggle bound to the saved setting", "chat")
+@test("Quality of Life is a module section with a switch; Chat and Font are its rows, each with one tab", "chat")
 def _():
     h = fresh()
     open_options(h)
-    h.lua("ns.Options.SelectPage('global')")
-    found = h.lua("""
-        for _, c in ipairs(ns.Options.widgets) do
-            if c.__kind == "check" and c.__get and c.__set then
-                ns.db.chatFilter.enabled = false
-                local offv = c.__get()
-                ns.db.chatFilter.enabled = true
-                local onv = c.__get()
-                if offv == false and onv == true then
-                    c.__set(false)
-                    local r = ns.db.chatFilter.enabled
-                    c.__set(true)
-                    return r == false
+    ok(h.lua("return ns.Options.moduleSwitches.qol ~= nil and ns.Options.moduleSwitches.qol:GetChecked()"), "no Quality of Life switch, or it starts off")
+    for key, label in (("chat", "Chat"), ("font", "Font")):
+        ok(h.lua("return ns.Options.tabs[%r] ~= nil and ns.Options.tabs[%r].label:GetText() == ns.Theme.Upper(%r)" % (key, key, label)), "no %s row" % label)
+        ok(h.lua("return ns.Options.strips[%r].order[1] == %r and ns.Options.strips[%r].order[2] == nil" % (key, key, key)), "%s row should hold exactly its own tab" % label)
+        ok(h.lua("return ns.Options.strips[%r].buttons[%r].text:GetText() == ns.Theme.Upper(%r)" % (key, key, label)), "the %s tab is mislabelled" % label)
+    ok(h.lua("return ns.Options.tabs.qol == nil"), "the old Quality of Life row must be gone")
+    # the two rows sit under the Boss Warnings rows, in a section of their own
+    ok(float(h.lua("return ns.Options.tabs.chat:GetTop()")) < float(h.lua("return ns.Options.launcher:GetTop()")), "Chat should sit below Boss Visualizer")
+    ok(float(h.lua("return ns.Options.tabs.font:GetTop()")) < float(h.lua("return ns.Options.tabs.chat:GetTop()")), "Font should sit below Chat")
+    h.lua("ns.Options.tabs.chat:Click()")
+    eq(str(h.lua("return ns.Options.ActivePage()")), "chat", "clicking Chat should land on the chat page")
+    h.lua("ns.Options.tabs.font:Click()")
+    eq(str(h.lua("return ns.Options.ActivePage()")), "font", "clicking Font should land on the font page")
+    eq(h.errors(), [], "errors")
+
+
+@test("the chat page is one Blocked Words card: no toggle, one line per word with Remove, an Add box", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('chat')")
+    ok(not h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.chat and w.__kind == "check" then return true end
+        end
+        return false
+    """), "the chat page must not carry a check box")
+    ok(h.lua("""
+        local pg = ns.Options.pages.chat.__content
+        local n = 0
+        for _ in pairs(pg.__card or {}) do n = n + 1 end
+        return n == 1
+    """), "the chat page should be a single card")
+    eq(shown_words(h), DEFAULT_WORDS, "one line per word, sorted")
+    eq(int(h.lua("return ns.Options.chatList:GetHeight()")), 28 * 5, "list height follows the word count")
+    h.lua("ns.Options.chatList.lines[5].remove:Click()")      # trump
+    eq(shown_words(h), DEFAULT_WORDS[:4], "Remove should drop the line")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "trump", "Bob"))') is False, "removed via the UI but still blocking")
+    h.lua('ns.Options.chatAdd:SetText(" Kappa "); ns.Options.chatAddButton:Click()')
+    eq(str(h.lua("return ns.Options.chatAdd:GetText()")), "", "the box should clear after Add")
+    eq(shown_words(h), sorted(DEFAULT_WORDS[:4] + ["kappa"]), "Add should add the word, sorted")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "KAPPA", "Bob"))') is True, "added via the UI but not blocking")
+    h.lua('ns.Options.chatAdd:SetText("kappa"); ns.Options.chatAdd:GetScript("OnEnterPressed")(ns.Options.chatAdd)')
+    eq(int(h.lua("return ns.Options.chatList:GetHeight()")), 28 * 5, "a duplicate via Enter should not add a line")
+    # module off: the page reads as disabled
+    h.lua("ns.Options.moduleSwitches.qol:Click()")
+    ok(not h.lua("return ns.Options.chatAdd.enabledState"), "the Add box should read disabled while the module is off")
+    ok(not h.lua("return ns.Options.chatList.lines[1].remove.enabledState"), "Remove should read disabled while the module is off")
+    h.lua("ns.Options.moduleSwitches.qol:Click()")
+    ok(h.lua("return ns.Options.chatAdd.enabledState and ns.Options.chatList.lines[1].remove.enabledState"), "controls should come back with the module")
+    eq(h.errors(), [], "errors")
+
+
+@test("the Font tab holds the picker and the whole-UI switch; Settings no longer does; the module switch drops the font to stock", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font'); ns.Options.SelectPage('global')")
+    kinds = h.lua("""
+        local out = { font = {}, global = {} }
+        for _, w in ipairs(ns.Options.widgets) do
+            for _, k in ipairs({ "font", "global" }) do
+                if w.__outer == ns.Options.pages[k] then
+                    local tag = w.__kind
+                    if w.__kind == "choice" and w.__values and type(w.__values[1]) == "string" and w.__values[1]:find("Fonts") then tag = "fontpicker" end
+                    out[k][#out[k] + 1] = tag
                 end
             end
         end
-        return nil
+        return out
     """)
-    ok(found is True, "no check box on Settings reads and writes chatFilter.enabled")
+    font = [str(x) for x in kinds["font"].values()]
+    glob = [str(x) for x in kinds["global"].values()]
+    ok("fontpicker" in font, "font picker missing from the Font tab: %r" % font)
+    ok("fontpicker" not in glob, "font picker still on Settings")
+    ok(h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.font and w.__kind == "check" then
+                ns.db.font.wholeUI = false
+                local a = w.__get()
+                ns.db.font.wholeUI = true
+                if a == false and w.__get() == true then w.__set(false) local r = ns.db.font.wholeUI w.__set(true) return r == false end
+            end
+        end
+        return false
+    """), "the whole-UI switch does not read and write font.wholeUI on the Font tab")
+    custom = str(h.lua("return ns.ActiveFont()"))
+    ok(custom != str(h.lua("return ns.StockFont()")), "precondition: a custom font is active")
+    h.lua("ns.db.font.wholeUI = true; ns.db.modules.qol = false; ns.ApplyAll()")
+    eq(str(h.lua("return ns.ActiveFont()")), str(h.lua("return ns.StockFont()")), "module off should fall back to the stock font")
+    ok(not h.lua("return ns.WholeUIFontWanted()"), "module off must not re-font the whole UI")
+    h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
+    eq(str(h.lua("return ns.ActiveFont()")), custom, "module on should restore the picked font")
+    ok(h.lua("return ns.WholeUIFontWanted()"), "module on should honour wholeUI again")
     eq(h.errors(), [], "errors")
 
+
+@test("the font button shows the font's NAME even for a saved path the list spells differently, never a path", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font')")
+    got = h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__kind == "choice" and w.__values and type(w.__values[1]) == "string" and w.__values[1]:find("Fonts") then __fontBtn = w end
+        end
+        local listed = __fontBtn.__values[2]                      -- some font other than the stock one
+        ns.db.font.path = listed:upper()                          -- the same file, spelt differently
+        ns.Options.RefreshAll()
+        local a = __fontBtn.text:GetText()
+        ns.db.font.path = [[Interface\\AddOns\\Nowhere\\fonts\\Mystery Face.ttf]]   -- not offered at all
+        ns.Options.RefreshAll()
+        local b = __fontBtn.text:GetText()
+        local expect = ns.Options.ValueLabel(__fontBtn.__values, {}, listed, "font")
+        for _, f in ipairs(ns.GetFonts()) do if f.path == listed then expect = f.name end end
+        return { a = a, b = b, expect = expect }
+    """)
+    eq(str(got["a"]), str(got["expect"]), "a differently-spelt saved path should still show the list's name")
+    eq(str(got["b"]), "Mystery Face", "an unknown path should show its file name without the extension")
+    ok("\\" not in str(got["a"]) and "\\" not in str(got["b"]), "the button must never show a path")
+    eq(h.errors(), [], "errors")
+
+
+@test("font picker rows draw the NAME in the addon font and a sample in the row's own font", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font')")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__kind == "choice" and w.__values and type(w.__values[1]) == "string" and w.__values[1]:find("Fonts") then __fontBtn = w end
+        end
+        __fontBtn:Click()
+    """)
+    ok(h.lua("return SalusNovusPickerList and SalusNovusPickerList:IsShown()"), "picker list did not open")
+    bad = [str(x) for x in h.lua("""
+        local out = {}
+        local active = ns.ActiveFont()
+        for i, r in ipairs(SalusNovusPickerList.rows) do
+            if r:IsShown() then
+                if r.text.__font ~= active then out[#out + 1] = ("row %d name in %s"):format(i, tostring(r.text.__font)) end
+                if r.sample.__font ~= r.value then out[#out + 1] = ("row %d sample in %s not %s"):format(i, tostring(r.sample.__font), tostring(r.value)) end
+                if r.sample:GetText() == "" then out[#out + 1] = ("row %d sample empty"):format(i) end
+                if r.text:GetText():find([[\]], 1, true) then out[#out + 1] = ("row %d shows a path"):format(i) end
+            end
+        end
+        return out
+    """).values()]
+    eq(bad, [], "picker rows")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- sidebar folding
+
+def row_shown(h, key):
+    return bool(h.lua("return ns.Options.tabs[%r]:IsShown()" % key))
+
+
+@test("a section heading folds and unfolds its rows, the rows below move up, and the choice is saved", "sidebar")
+def _():
+    h = fresh()
+    open_options(h)
+    ok(row_shown(h, "anchors") and row_shown(h, "chat"), "rows should start unfolded")
+    chat_top = float(h.lua("return ns.Options.tabs.chat:GetTop()"))
+    h.lua("ns.Options.sectionFolds.bossWarnings:Click()")
+    ok(not row_shown(h, "anchors") and not h.lua("return ns.Options.launcher:IsShown()"), "Boss Warnings rows should hide when folded")
+    ok(row_shown(h, "chat") and row_shown(h, "font"), "other sections must stay")
+    ok(float(h.lua("return ns.Options.tabs.chat:GetTop()")) > chat_top, "the Quality of Life rows should move up into the space")
+    ok(h.lua("return ns.db.sidebar.collapsed.bossWarnings == true"), "the fold should be saved")
+    h.lua("ns.Options.sectionFolds.bossWarnings:Click()")
+    ok(row_shown(h, "anchors") and h.lua("return ns.Options.launcher:IsShown()"), "rows should come back")
+    ok(abs(float(h.lua("return ns.Options.tabs.chat:GetTop()")) - chat_top) < 1e-6, "rows should return to their place")
+    ok(h.lua("return ns.db.sidebar.collapsed.bossWarnings == false"), "the unfold should be saved too")
+    h.lua("ns.Options.sectionFolds.global:Click()")
+    ok(not row_shown(h, "global"), "Global folds like the rest")
+    eq(h.errors(), [], "errors")
+
+
+@test("switching a module off folds its section and on unfolds it; a later manual choice wins and sticks across reopen", "sidebar")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.moduleSwitches.bossWarnings:Click()")        # off
+    ok(not row_shown(h, "anchors"), "off should fold the section")
+    ok(h.lua("return ns.db.sidebar.collapsed.bossWarnings == true"), "off should save the fold")
+    h.lua("ns.Options.sectionFolds.bossWarnings:Click()")           # user re-opens it while off
+    ok(row_shown(h, "anchors"), "a manual unfold should win while the module is off")
+    h.lua("SalusNovusOptions:Hide(); SalusNovusOptions:Show(); ns.Options.RefreshAll()")
+    ok(row_shown(h, "anchors"), "the manual unfold should survive a reopen")
+    ok(not h.lua("return ns.Options.moduleSwitches.bossWarnings:GetChecked()"), "the module should still be off")
+    h.lua("ns.Options.moduleSwitches.bossWarnings:Click()")        # on
+    ok(row_shown(h, "anchors"), "on should unfold")
+    h.lua("ns.Options.sectionFolds.bossWarnings:Click()")           # user folds it while on
+    ok(not row_shown(h, "anchors"), "a manual fold should win while the module is on")
+    h.lua("SalusNovusOptions:Hide(); SalusNovusOptions:Show(); ns.Options.RefreshAll()")
+    ok(not row_shown(h, "anchors"), "the manual fold should survive a reopen")
+    # a fresh session reads the saved choice
+    saved = h.lua("return ns.db.sidebar.collapsed.bossWarnings")
+    ok(saved is True, "fold state not saved: %r" % saved)
+    h2 = Harness().login("SalusNovusDB = { options = { sidebar = { collapsed = { bossWarnings = true, qol = true } } } }")
+    open_options(h2)
+    ok(not row_shown(h2, "anchors") and not row_shown(h2, "chat") and row_shown(h2, "global"), "saved folds not applied on a fresh session")
+    eq(h2.errors(), [], "errors (fresh session)")
+    eq(h.errors(), [], "errors")
+
+
+@test("card section headers are centred over their card", "theme")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('chat'); ns.Options.SelectPage('bars')")
+    bad = [str(x) for x in h.lua("""
+        local out = {}
+        for _, key in ipairs({ "chat", "bars" }) do
+            local pg = ns.Options.pages[key].__content
+            for col, card in pairs(pg.__card or {}) do
+                local title = pg.__sectionTitles and pg.__sectionTitles[col]
+                if not title then out[#out + 1] = key .. ": no title recorded for column " .. col
+                else
+                    if title:GetJustifyH() ~= "CENTER" then out[#out + 1] = key .. ": title not centred (" .. tostring(title:GetJustifyH()) .. ")" end
+                    local tc = (title:GetLeft() + title:GetRight()) / 2
+                    local cc = (card:GetLeft() + card:GetRight()) / 2
+                    if math.abs(tc - cc) > 0.5 then out[#out + 1] = ("%s: title centre %.1f vs card centre %.1f"):format(key, tc, cc) end
+                end
+            end
+        end
+        return out
+    """).values()]
+    eq(bad, [], "headers")
+    eq(h.errors(), [], "errors")

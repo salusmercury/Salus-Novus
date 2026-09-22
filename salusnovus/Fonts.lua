@@ -120,6 +120,8 @@ function ns.ActiveFont()
     if fontCache then return fontCache end
     local opts = ns.db and ns.db.font
     local path = opts and opts.path
+    -- The Quality of Life module off = the stock font everywhere.
+    if ns.ModuleOn and not ns.ModuleOn("qol") then path = nil end
     fontCache = (type(path) == "string" and path ~= "") and path or StockFont()
     return fontCache
 end
@@ -336,8 +338,12 @@ if type(hooksecurefunc) == "function" and type(_G.FCF_SetChatWindowFontSize) == 
         if ok then pcall(chatFrame.SetFont, chatFrame, uiApplied, size, flags or "") end
     end)
 end
+local function WholeUIWanted()
+    return ns.db and ns.db.font and ns.db.font.wholeUI and ns.ModuleOn("qol") and true or false
+end
+ns.WholeUIFontWanted = WholeUIWanted
 ns.RegisterApply(function()
-    ns.ApplyUIFont(ns.db and ns.db.font and ns.db.font.wholeUI)
+    ns.ApplyUIFont(WholeUIWanted())
 end, "Whole-UI font")
 
 -- A Blizzard addon loading on demand (Professions, Collections, the
@@ -345,10 +351,10 @@ end, "Whole-UI font")
 -- Objects already fonted keep their remembered original.
 ns.On("ADDON_LOADED", function(name)
     if name == "SalusNovus" then return end
-    if ns.db and ns.db.font and ns.db.font.wholeUI then ns.ApplyUIFont(true, true) end
+    if WholeUIWanted() then ns.ApplyUIFont(true, true) end
 end)
 ns.On("PLAYER_ENTERING_WORLD", function()
-    if ns.db and ns.db.font and ns.db.font.wholeUI then ns.ApplyUIFont(true, true) end
+    if WholeUIWanted() then ns.ApplyUIFont(true, true) end
     -- Strings set once during loading (anchor captions) may have caught
     -- the first-load false: the whole following set gets the font again.
     ns.RefontAll(true)

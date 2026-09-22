@@ -456,7 +456,8 @@ end)
 --------------------------------------------------------------------------------
 function T.Status()
     ns.Print(("hub: engaged=%s  live timers=%d"):format(tostring(state.active), #T.Sorted()))
-    ns.Print("  modules: Boss Warnings " .. (ns.ModuleOn("bossWarnings") and "on" or "off"))
+    ns.Print("  modules: Boss Warnings " .. (ns.ModuleOn("bossWarnings") and "on" or "off")
+        .. ", Quality of Life " .. (ns.ModuleOn("qol") and "on" or "off"))
     if diag.encName or diag.encID then
         ns.Print(("  last encounter: %s (id %s) -- boss data %s"):format(
             tostring(diag.encName), tostring(diag.encID), tostring(diag.bossFound)))

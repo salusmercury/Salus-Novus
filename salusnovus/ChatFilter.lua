@@ -1,15 +1,20 @@
 --[[ Salus Novus -- ChatFilter: drop chat lines that mention a blocked word.
 
-One rule, asked for by Alex (2026-09-21): any chat line whose text or sender
-contains "asmon" (case-insensitive, substring) never reaches a chat frame.
-The words live in ns.db.chatFilter.words so more can follow the same path.
+Alex (2026-09-21): any chat line whose text or sender contains one of a set
+of words (case-insensitive, substring) never reaches a chat frame. The set
+is the user's to edit on the Chat tab under Quality of Life; it ships with
+asmon, olympus, trump, republican and democrat.
+
+Storage: ns.db.chatFilter.words is a SET, word -> true. A removed default
+is stored as FALSE rather than deleted, because CopyDefaults re-seeds any
+nil key on the next load and the word would come back. Only `true` counts.
 
 Mechanics: ChatFrame_AddMessageEventFilter runs a filter for every chat
 frame before the line is added; returning true swallows it. Filters are
-installed once at load and read the setting on each call, so the Settings
-toggle needs no re-registration. Chat text is never a secret value on this
-client, but the guards below make a secret line pass through untouched
-rather than throw inside Blizzard's chat handler.
+installed once at load and read the setting on each call, so the module
+switch and the word list need no re-registration. Chat text is never a secret
+value on this client, but the guards below make a secret line pass through
+untouched rather than throw inside Blizzard's chat handler.
 ]]
 
 local _, ns = ...
@@ -32,22 +37,54 @@ C.EVENTS = {
 
 local function O() return ns.db and ns.db.chatFilter end
 
+-- On/off is the Quality of Life module's master switch.
 local function Enabled()
-    local o = O()
-    return o and o.enabled and true or false
+    return ns.ModuleOn("qol") and true or false
 end
 
---- The blocked words, lower-cased, skipping anything that is not a
--- non-empty string (a corrupt saved list must not throw per chat line).
-local function Words()
+--- A word as stored: trimmed, lower-cased; nil when nothing is left.
+function C.Normalize(text)
+    if type(text) ~= "string" or ns.IsSecret(text) then return nil end
+    local w = text:lower():gsub("^%s+", ""):gsub("%s+$", "")
+    if w == "" then return nil end
+    return w
+end
+
+--- The active words, sorted, skipping anything that is not word -> true
+-- (a corrupt saved set must not throw per chat line). An older array
+-- form ({ "asmon" }) still reads.
+function C.List()
     local o = O()
-    local list = o and o.words
-    if type(list) ~= "table" then return {} end
+    local set = o and o.words
+    if type(set) ~= "table" then return {} end
     local out = {}
-    for _, w in ipairs(list) do
-        if type(w) == "string" and w ~= "" then out[#out + 1] = w:lower() end
+    for k, v in pairs(set) do
+        if type(k) == "string" and v == true and k ~= "" then
+            out[#out + 1] = k
+        elseif type(k) == "number" and type(v) == "string" and v ~= "" then
+            out[#out + 1] = v:lower()
+        end
     end
+    table.sort(out)
     return out
+end
+
+--- Add a word; returns the stored form, or nil when empty or already there.
+function C.AddWord(text)
+    local w = C.Normalize(text)
+    local o = O()
+    if not w or not o then return nil end
+    if type(o.words) ~= "table" then o.words = {} end
+    if o.words[w] == true then return nil end
+    o.words[w] = true
+    return w
+end
+
+--- Remove a word. FALSE, not nil: see the header.
+function C.RemoveWord(w)
+    local o = O()
+    if not o or type(o.words) ~= "table" or type(w) ~= "string" then return end
+    o.words[w] = false
 end
 
 --- True when `text` contains any blocked word. Plain substring, case-
@@ -55,7 +92,7 @@ end
 function C.Matches(text)
     if type(text) ~= "string" or ns.IsSecret(text) then return false end
     local lower = text:lower()
-    for _, w in ipairs(Words()) do
+    for _, w in ipairs(C.List()) do
         if lower:find(w, 1, true) then return true end
     end
     return false

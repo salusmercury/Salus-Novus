@@ -74,6 +74,9 @@ class Harness:
                     return c[1], c[2], c[3], c[4]
                 end
                 local function SetTextColor(self, r, g, b, a) rawset(self, "__tc", { r, g, b, a == nil and 1 or a }) end
+                -- Justification is recorded: "the title is centred" is a real check.
+                local function SetJustifyH(self, j) rawset(self, "__justifyH", j) end
+                local function GetJustifyH(self) return rawget(self, "__justifyH") or "LEFT" end
                 local function GetTextColor(self)
                     local c = rawget(self, "__tc") or { 1, 1, 1, 1 }
                     return c[1], c[2], c[3], c[4]
@@ -89,6 +92,8 @@ class Harness:
                     if k == "SetVertexColor" then return SetVertexColor end
                     if k == "GetVertexColor" then return GetVertexColor end
                     if k == "SetTextColor" then return SetTextColor end
+                    if k == "SetJustifyH" then return SetJustifyH end
+                    if k == "GetJustifyH" then return GetJustifyH end
                     if k == "GetTextColor" then return GetTextColor end
                     return idx(t, k)
                 end

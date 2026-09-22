@@ -108,12 +108,19 @@ ns.defaults = {
     },
     -- Chat filter: lines whose text or sender contains a word here are
     -- dropped before any chat frame shows them (Alex, 2026-09-21).
-    chatFilter = { enabled = true, words = { "asmon" } },
+    -- `words` is a SET (word -> true); a removed default is stored as
+    -- false so this seeding does not bring it back. On/off is the Quality
+    -- of Life module switch (modules.qol), not a setting of its own.
+    chatFilter = { words = { asmon = true, olympus = true, trump = true, republican = true, democrat = true } },
+    -- Sidebar sections fold: [moduleKey or "global"] = true (folded) /
+    -- false (open). A module switch writes it; a click on the heading
+    -- overrides it; both stick (Alex, 2026-09-21).
+    sidebar = { collapsed = {} },
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing
     -- of that module renders or arms in a fight; its pages stay listed.
-    modules = { bossWarnings = true },
+    modules = { bossWarnings = true, qol = true },
 }
 
 function ns.ModuleOn(key)

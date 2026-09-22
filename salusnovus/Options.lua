@@ -43,6 +43,7 @@ local COL_LEFT  = { PAGE_PAD, PAGE_PAD + COL_W + COL_GAP }
 -- group with `launch` is a row that opens another window instead of pages.
 local MODULES = {
     { key = "bossWarnings", label = "Boss Warnings" },
+    { key = "qol",          label = "Quality of Life" },
 }
 local MODULE_BY_SECTION = {}
 for _, m in ipairs(MODULES) do MODULE_BY_SECTION[m.label] = m end
@@ -51,6 +52,8 @@ local GROUPS = {
     { section = "Global",                                 key = "global",     label = "Settings",        pages = { "global" } },
     { section = "Boss Warnings", module = "bossWarnings", key = "anchors",    label = "Anchors",         pages = { "bars", "queue", "preview", "messages", "health", "reminders" } },
     { section = "Boss Warnings", module = "bossWarnings", key = "visualizer", label = "Boss Visualizer", launch = true },
+    { section = "Quality of Life", module = "qol",       key = "chat",       label = "Chat",            pages = { "chat" } },
+    { section = "Quality of Life", module = "qol",       key = "font",       label = "Font",            pages = { "font" } },
 }
 local PAGE_GROUP, PAGE_MODULE = {}, {}
 for _, g in ipairs(GROUPS) do
@@ -61,7 +64,27 @@ for _, g in ipairs(GROUPS) do
 end
 local NAV_HEAD_H = 26
 local NAV_SUB_H  = 32
-local function LayoutSidebar()
+
+-- A section folds under its heading. The key is the module's, or "global".
+local function SectionKey(section)
+    local m = MODULE_BY_SECTION[section]
+    return m and m.key or "global"
+end
+local function SectionCollapsed(section)
+    local c = ns.db and ns.db.sidebar and ns.db.sidebar.collapsed
+    local v = c and c[SectionKey(section)]
+    return v == true
+end
+local function SetSectionCollapsed(section, on)
+    if not ns.db then return end
+    ns.db.sidebar = ns.db.sidebar or {}
+    ns.db.sidebar.collapsed = ns.db.sidebar.collapsed or {}
+    ns.db.sidebar.collapsed[SectionKey(section)] = on and true or false
+end
+
+-- Positions per group from the fold state: headY for the first group of a
+-- section, navY for a visible row, nil for a folded one.
+local function MeasureSidebar()
     local y = 0
     local last
     for _, g in ipairs(GROUPS) do
@@ -70,15 +93,21 @@ local function LayoutSidebar()
             g.headY = y
             y = y + NAV_HEAD_H
             last = g.section
+        else
+            g.headY = nil
         end
-        g.navY = y
-        y = y + NAV_SUB_H
+        if SectionCollapsed(g.section) then
+            g.navY = nil
+        else
+            g.navY = y
+            y = y + NAV_SUB_H
+        end
     end
     return y
 end
-LayoutSidebar()
+MeasureSidebar()
 
-local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings" }
+local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings", chat = "Chat", font = "Font" }
 
 local panel
 local shell
@@ -96,6 +125,7 @@ local previewStages = {}
 local O = {}
 ns.Options = O
 O.widgets, O.pages, O.previewStages = widgets, pages, previewStages
+O.tabs, O.strips = tabs, strips
 
 -- Forward: GroupTab's launcher row calls it and it is defined below
 -- (a local used above its declaration is a silent nil global).
@@ -157,7 +187,7 @@ local function Refresh()
 end
 O.Refresh = Refresh
 
-local function RefreshAll() Sweep(widgets); T.SnapCheckBoxes() end
+local function RefreshAll() Sweep(widgets); T.SnapCheckBoxes(); if O.LayoutSidebar then O.LayoutSidebar() end end
 O.RefreshAll = RefreshAll
 
 --------------------------------------------------------------------------------
@@ -218,8 +248,9 @@ local function MakeSection(page, anchor, text, column)
     local fs = T.MakeText(page, 20, T.HEAD_TEXT)
     T.SetDisplay(fs, 20)
     text = T.Upper(text)
-    fs:SetJustifyH("LEFT")
-    fs:SetWidth(COL_W - 40)
+    -- Centred over the card (Alex, 2026-09-21: a global rule for cards).
+    fs:SetJustifyH("CENTER")
+    fs:SetWidth(COL_W)
     local col = (column == 2) and 2 or ((anchor and anchor.__col) or 1)
     fs.__col = col
     fs:SetText(text)
@@ -230,14 +261,16 @@ local function MakeSection(page, anchor, text, column)
     local h = fs:GetStringHeight() or 15
     local drop = math.floor((HEAD_H - h) / 2 + 0.5)   -- whole pixels: a half-pixel row draws the boxes lopsided
     if column == 2 then
-        fs:SetPoint("TOPLEFT", page, "TOPLEFT", COL_LEFT[2] + T.RAIL_W + 14, -23 - drop)
+        fs:SetPoint("TOPLEFT", page, "TOPLEFT", COL_LEFT[2], -23 - drop)
     else
         fs:SetPoint("TOP", anchor, "BOTTOM", 0, -20 - drop)
-        fs:SetPoint("LEFT", page, "LEFT", COL_LEFT[col] + T.RAIL_W + 14, 0)
+        fs:SetPoint("LEFT", page, "LEFT", COL_LEFT[col], 0)
     end
 
     -- The card is placed from the section's anchor and the title is
     -- centred on the card's head band (Alex: "vertically centered").
+    page.__sectionTitles = page.__sectionTitles or {}
+    page.__sectionTitles[col] = fs                       -- test seam
     local card = CreateFrame("Frame", nil, page)
     card:SetFrameLevel(page:GetFrameLevel())
     if column == 2 then
@@ -655,6 +688,24 @@ end
 -- entry IS its preview, drawn in that font, so many can be compared at
 -- once. (The client's menu forbids SetFont on its buttons.)
 local pickerList
+--- The label for a value; a font path that is not in the list (a saved
+-- path differing in case, or a file no longer offered) still shows as a
+-- name, never as a path.
+local function ValueLabel(values, labels, v, preview)
+    local l = labels[v]
+    if l then return l end
+    if preview == "font" and type(v) == "string" then
+        local lv = v:lower()
+        for _, cand in ipairs(values) do
+            if type(cand) == "string" and cand:lower() == lv and labels[cand] then return labels[cand] end
+        end
+        local base = v:match("([^\\/]+)$") or v
+        return (base:gsub("%.[%w]+$", ""))
+    end
+    return tostring(v)
+end
+O.ValueLabel = ValueLabel
+
 local function OpenPickerList(anchorBtn, values, labels, current, onPick)
     if pickerList and pickerList:IsShown() and pickerList.owner == anchorBtn then
         pickerList:Hide()
@@ -708,21 +759,29 @@ local function OpenPickerList(anchorBtn, values, labels, current, onPick)
             r.hl:SetVertexColor(1, 1, 1, 0.12)
             r.text = T.MakeText(r, 13, T.TEXT)
             r.text:SetPoint("LEFT", 8, 0)
-            r.text:SetPoint("RIGHT", -8, 0)
             r.text:SetJustifyH("LEFT")
             r.text:SetWordWrap(false)
             r.text:SetShadowColor(0, 0, 0, 0.9)
             r.text:SetShadowOffset(1, -1)
+            -- The NAME is always in the addon's own font, so a row never
+            -- goes blank; the entry's own font draws a sample at the right
+            -- (Alex saw half the list empty when the names drew in
+            -- themselves: fonts still loading, or without Latin glyphs).
+            r.sample = T.MakeText(r, 13, T.TEXT_DIM)
+            r.sample:SetPoint("RIGHT", -8, 0)
+            r.sample:SetJustifyH("RIGHT")
+            r.sample:SetWordWrap(false)
+            r.sample:SetText("AaBb 123")
+            r.text:SetPoint("RIGHT", r.sample, "LEFT", -8, 0)
             f.rows[i] = r
         end
         r.value = v
         r:ClearAllPoints()
         r:SetPoint("TOPLEFT", content, "TOPLEFT", 2, -(i - 1) * ROW - 2)
-        r.text:SetText(labels[v] or tostring(v))
+        r.text:SetText(ValueLabel(values, labels, v, "font"))
         r.bar:SetVertexColor(1, 1, 1, (v == current) and 0.10 or 0.03)
-        -- The entry in its own font; a rejected path falls back to the
-        -- active font inside SetFontSafe, so the row never goes blank.
-        ns.SetFontSafe(r.text, 14, "", type(v) == "string" and v or T.FontPath())
+        ns.SetFontSafe(r.text, 14, "", T.FontPath())
+        ns.SetFontSafe(r.sample, 14, "", type(v) == "string" and v or T.FontPath())
         r.text:SetTextColor(1, 1, 1, 1)
         r:SetScript("OnClick", function()
             f:Hide()
@@ -808,7 +867,7 @@ local function MakeDropdown(page, label, anchor, values, labels, get, set, enabl
     btn:SetPoint("RIGHT", row, "RIGHT", -12, 0)
     btn.Update = function(self)
         local v = get()
-        self.text:SetText(labels[v] or tostring(v))
+        self.text:SetText(ValueLabel(values, labels, v, preview))
         if preview == "font" then
             ns.SetFontSafe(self.text, 13, "", type(v) == "string" and v or T.FontPath())
         end
@@ -863,17 +922,60 @@ function O.ActivePage() return activePage end
 local sectionHeads = {}
 local NAV_BASE = HEADER_H + 14
 
+-- Re-place every heading and row from the fold state (the rows of a
+-- folded section hide). Safe before the sidebar exists.
+local function LayoutSidebar()
+    if not shell then return end
+    MeasureSidebar()
+    for _, g in ipairs(GROUPS) do
+        local head = g.headY and sectionHeads[g.section]
+        if head then
+            head:ClearAllPoints()
+            head:SetPoint("TOPLEFT", shell.side, "TOPLEFT", 22, -NAV_BASE - g.headY - 8)
+            if head.caret then head.caret:SetText(SectionCollapsed(g.section) and "+" or "-") end
+        end
+        local tab = tabs[g.key]
+        if tab then
+            if g.navY then
+                tab:ClearAllPoints()
+                tab:SetPoint("TOPLEFT", shell.side, "TOPLEFT", 0, -NAV_BASE - g.navY)
+                tab:Show()
+            else
+                tab:Hide()
+            end
+        end
+    end
+end
+O.LayoutSidebar = LayoutSidebar
+O.SectionCollapsed, O.SetSectionCollapsed = SectionCollapsed, SetSectionCollapsed
+
 local function GroupTab(g, order)
     if tabs[g.key] then return tabs[g.key] end
-    if g.section and g.headY and not sectionHeads[g.section] then
+    if g.section and not sectionHeads[g.section] then
         local head = T.MakeText(shell.side, 12, T.TEXT_MUTE)
-        head:SetPoint("TOPLEFT", shell.side, "TOPLEFT", 22, -NAV_BASE - g.headY - 8)
+        head:SetPoint("TOPLEFT", shell.side, "TOPLEFT", 22, -NAV_BASE - (g.headY or 0) - 8)
         head:SetText(string.upper(g.section))
         local line = T.SolidTex(shell.side, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
         line:SetHeight(1)
         line:SetPoint("TOPLEFT", head, "BOTTOMLEFT", 0, -4)
         line:SetPoint("RIGHT", shell.side, "RIGHT", -14, 0)
         sectionHeads[g.section] = head
+        -- The heading folds its rows: "-" open, "+" folded, sticky.
+        head.caret = T.MakeText(shell.side, 12, T.TEXT_MUTE)
+        head.caret:SetPoint("LEFT", head, "RIGHT", 6, 0)
+        head.caret:SetText("-")
+        local fold = CreateFrame("Button", nil, shell.side)
+        fold:SetPoint("TOPLEFT", head, "TOPLEFT", -22, 6)
+        fold:SetSize(SIDEBAR_W - 48, NAV_HEAD_H)
+        fold:SetScript("OnClick", function()
+            SetSectionCollapsed(g.section, not SectionCollapsed(g.section))
+            LayoutSidebar()
+        end)
+        fold:SetScript("OnEnter", function() head:SetTextColor(1, 1, 1, 1) end)
+        fold:SetScript("OnLeave", function() head:SetTextColor(T.TEXT_MUTE[1], T.TEXT_MUTE[2], T.TEXT_MUTE[3], 1) end)
+        head.fold = fold
+        O.sectionFolds = O.sectionFolds or {}
+        O.sectionFolds[SectionKey(g.section)] = fold
         -- A module heading carries its master switch at the right edge.
         local m = MODULE_BY_SECTION[g.section]
         if m then
@@ -883,7 +985,12 @@ local function GroupTab(g, order)
             sw:SetChecked(ns.ModuleOn(m.key))
             sw:HookScript("OnClick", function(self)
                 ns.db.modules = ns.db.modules or {}
-                ns.db.modules[m.key] = self:GetChecked() and true or false
+                local on = self:GetChecked() and true or false
+                ns.db.modules[m.key] = on
+                -- Off folds the section, on unfolds it; a later click on
+                -- the heading overrides either, and that sticks too.
+                SetSectionCollapsed(g.section, not on)
+                LayoutSidebar()
                 ns.ApplyAll()
                 RefreshAll()
                 SyncPreviews()
@@ -904,6 +1011,7 @@ local function GroupTab(g, order)
     local tab = CreateFrame("Button", nil, shell.side)
     tab:SetSize(SIDEBAR_W, NAV_SUB_H)
     tab:SetPoint("TOPLEFT", shell.side, "TOPLEFT", 0, -NAV_BASE - (g.navY or ((order - 1) * NAV_SUB_H)))
+    if not g.navY then tab:Hide() end
     for _, part in ipairs(T.DecorateNavRow(tab)) do shell:Register(part) end
     T.NavLabel(tab, g.label)
     ns.SetFontSafe(tab.label, 13.5, "")
@@ -1318,17 +1426,18 @@ PAGE_BODY.global = function()
     local gSnap = MakeCheckbox(pg, "Snap dropped frames", gGridSize,
         function() return ns.db.anchorsGlobal.snap ~= false end,
         function(v) ns.db.anchorsGlobal.snap = v end)
-    local gSnapRange = MakeStepper(pg, "Snap within:", gSnap, 2, 30,
+    MakeStepper(pg, "Snap within:", gSnap, 2, 30,
         function() return ns.db.anchorsGlobal.snapRange or 8 end,
         function(v) ns.db.anchorsGlobal.snapRange = v end,
         function(v) return v .. " px" end,
         function() return ns.db.anchorsGlobal.snap ~= false end)
-    local sChat = MakeSection(pg, gSnapRange, "CHAT")
-    MakeCheckbox(pg, "Hide chat mentioning 'asmon'", sChat,
-        function() return ns.db.chatFilter.enabled ~= false end,
-        function(v) ns.db.chatFilter.enabled = v end)
+end
 
-    local sFont = MakeSection(pg, nil, "FONT", 2)
+-- Font (Quality of Life): the addon's face, optionally the whole UI's.
+PAGE_BODY.font = function()
+    local pg = pages.font.__content
+    local t = MakeTitle(pg, "Font")
+    local sFont = MakeSection(pg, t, "FONT")
     local fontValues, fontLabels = {}, {}
     for _, f in ipairs(ns.GetFonts()) do
         table.insert(fontValues, f.path)
@@ -1343,6 +1452,90 @@ PAGE_BODY.global = function()
     MakeCheckbox(pg, "Apply this font to the whole game UI", gFont,
         function() return ns.db.font.wholeUI == true end,
         function(v) ns.db.font.wholeUI = v end)
+end
+
+-- Chat (Quality of Life): the filter switch and the word set it reads.
+-- The list is one row that grows a line per word; the Add row hangs off
+-- it, so the card follows the list.
+local WORD_H = 28
+PAGE_BODY.chat = function()
+    local pg = pages.chat.__content
+    local t = MakeTitle(pg, "Chat")
+    local sWords = MakeSection(pg, t, "BLOCKED WORDS")
+    local list = MakeRow(pg, sWords, WORD_H)
+    list.label:SetText("")
+    list.lines = {}
+    function list:Relayout()
+        local words = ns.ChatFilter.List()
+        for i, w in ipairs(words) do
+            local ln = self.lines[i]
+            if not ln then
+                ln = CreateFrame("Frame", nil, self)
+                ln:SetHeight(WORD_H)
+                ln.text = T.MakeText(ln, 14, T.TEXT)
+                ln.text:SetPoint("LEFT", ln, "LEFT", T.RAIL_W + 14, 0)
+                ln.remove = T.MakeButton(ln)
+                ln.remove:SetSize(84, 22)
+                ln.remove:SetPoint("RIGHT", ln, "RIGHT", -12, 0)
+                ln.remove:SetText("Remove")
+                ln.remove:SetScript("OnClick", function()
+                    ns.ChatFilter.RemoveWord(ln.word)
+                    list:Relayout()
+                end)
+                self.lines[i] = ln
+            end
+            ln.word = w
+            ln.text:SetText(w)
+            ln:ClearAllPoints()
+            ln:SetPoint("TOPLEFT", self, "TOPLEFT", 0, -(i - 1) * WORD_H)
+            ln:SetPoint("RIGHT", self, "RIGHT", 0, 0)
+            ln:Show()
+        end
+        for i = #words + 1, #self.lines do self.lines[i]:Hide() end
+        self:SetHeight(math.max(1, #words) * WORD_H)
+        self.label:SetText(#words == 0 and "No words" or "")
+    end
+    list:Relayout()
+    -- Registered so the page reads as disabled while the module is off.
+    list.SetEnabledState = function(self, e)
+        self.enabledState = e and true or false
+        for _, ln in ipairs(self.lines) do
+            ln.remove:SetEnabledState(self.enabledState)
+            local c = e and T.TEXT or T.TEXT_MUTE
+            ln.text:SetTextColor(c[1], c[2], c[3], 1)
+        end
+    end
+    list.__kind = "list"
+    Register(pg, list)
+    O.chatList = list                                    -- test seam
+
+    local addRow = MakeRow(pg, list)
+    addRow.label:SetText("Add word:")
+    local addBtn = T.MakeButton(addRow)
+    addBtn:SetSize(64, 24)
+    addBtn:SetPoint("RIGHT", addRow, "RIGHT", -12, 0)
+    addBtn:SetText("Add")
+    local eb = T.MakeEditBox(addRow, 170)
+    eb:SetPoint("RIGHT", addBtn, "LEFT", -8, 0)
+    addRow:SetControl(eb)
+    local function Add()
+        local w = ns.ChatFilter.AddWord(eb:GetText())
+        eb:SetText("")
+        eb:ClearFocus()
+        if w then list:Relayout() end
+    end
+    eb:SetScript("OnEnterPressed", Add)
+    addBtn:SetScript("OnClick", Add)
+    eb.SetEnabledState = function(self, e)
+        self.enabledState = e and true or false
+        self:SetEnabled(self.enabledState)
+        self:SetAlpha(e and 1 or 0.45)
+        addBtn:SetEnabledState(self.enabledState)
+        addRow:SetLabelEnabled(e)
+    end
+    eb.__kind = "edit"
+    Register(pg, eb)
+    O.chatAdd, O.chatAddButton = eb, addBtn              -- test seams
 end
 
 --------------------------------------------------------------------------------
@@ -1411,6 +1604,8 @@ local function BuildPanel()
     footerReload:SetScript("OnClick", function() if ReloadUI then ReloadUI() end end)
 
     MakeTab("global", "Global")
+    MakeTab("chat", "Chat")
+    MakeTab("font", "Font")
     MakeTab("bars", "Bars")
     MakeTab("queue", "Ability Queue")
     MakeTab("preview", "Ability Preview")
@@ -1422,6 +1617,7 @@ local function BuildPanel()
     for i, g in ipairs(GROUPS) do
         if g.launch then O.launcher = GroupTab(g, i) end
     end
+    LayoutSidebar()
     SelectPage("global")
     lastR, lastG, lastB = T.Accent()
     shell:Repaint()
