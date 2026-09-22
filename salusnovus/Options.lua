@@ -157,7 +157,7 @@ local function Refresh()
 end
 O.Refresh = Refresh
 
-local function RefreshAll() Sweep(widgets) end
+local function RefreshAll() Sweep(widgets); T.SnapCheckBoxes() end
 O.RefreshAll = RefreshAll
 
 --------------------------------------------------------------------------------
@@ -183,8 +183,8 @@ local function MakeRow(page, anchor, height)
         row.bg = T.SolidTex(row, "BACKGROUND", 1, 1, 1, 0.035)
         row.bg:SetAllPoints()
     end
-    row.label = T.MakeText(row, 13, T.TEXT)
-    row.label:SetPoint("LEFT", 12, 0)
+    row.label = T.MakeText(row, 14, T.TEXT)
+    row.label:SetPoint("LEFT", T.RAIL_W + 14, 0)
     row.label:SetPoint("RIGHT", row, "RIGHT", -250, 0)
     row.label:SetWordWrap(false)
     function row:SetLabelEnabled(e)
@@ -215,9 +215,11 @@ end
 -- way round: MakeRow anchors the card's BOTTOM to the row and the row to the
 -- label, so a label anchored to the card closes an anchor cycle.
 local function MakeSection(page, anchor, text, column)
-    local fs = T.MakeText(page, 15, T.HEAD_TEXT)
-    fs:SetJustifyH("CENTER")
-    fs:SetWidth(COL_W - 6)
+    local fs = T.MakeText(page, 20, T.HEAD_TEXT)
+    T.SetDisplay(fs, 20)
+    text = T.Upper(text)
+    fs:SetJustifyH("LEFT")
+    fs:SetWidth(COL_W - 40)
     local col = (column == 2) and 2 or ((anchor and anchor.__col) or 1)
     fs.__col = col
     fs:SetText(text)
@@ -228,10 +230,10 @@ local function MakeSection(page, anchor, text, column)
     local h = fs:GetStringHeight() or 15
     local drop = math.floor((HEAD_H - h) / 2 + 0.5)   -- whole pixels: a half-pixel row draws the boxes lopsided
     if column == 2 then
-        fs:SetPoint("TOPLEFT", page, "TOPLEFT", COL_LEFT[2] + 3, -23 - drop)
+        fs:SetPoint("TOPLEFT", page, "TOPLEFT", COL_LEFT[2] + T.RAIL_W + 14, -23 - drop)
     else
         fs:SetPoint("TOP", anchor, "BOTTOM", 0, -20 - drop)
-        fs:SetPoint("LEFT", page, "LEFT", COL_LEFT[col] + 3, 0)
+        fs:SetPoint("LEFT", page, "LEFT", COL_LEFT[col] + T.RAIL_W + 14, 0)
     end
 
     -- The card is placed from the section's anchor and the title is
@@ -246,22 +248,25 @@ local function MakeSection(page, anchor, text, column)
     card:SetPoint("LEFT", page, "LEFT", COL_LEFT[col], 0)
     card:SetWidth(COL_W)
     card:SetHeight(40)
-    card.bg = T.SolidTex(card, "BACKGROUND", 1, 1, 1, 0.035)
+    -- Slab: a solid card a step lighter than the window, a 6 px accent
+    -- rail down the left, no hairline, no head band.
+    card.bg = T.SolidTex(card, "BACKGROUND", T.CARD[1], T.CARD[2], T.CARD[3], 1)
     card.bg:SetAllPoints()
     card.border = ns.CreateBorder(card)
     card.border:Layout(card, 1, 0)
-    card.border:SetColor(1, 1, 1, 0.08)
-    card.border:Show()
+    card.border:SetColor(1, 1, 1, 0)
+    card.border:Hide()
     card.accent = T.SolidTex(card, "ARTWORK", 1, 1, 1, 1)
-    card.accent:SetWidth(3)
+    card.accent:SetWidth(T.RAIL_W)
     card.accent:SetPoint("TOPLEFT", 0, 0)
     card.accent:SetPoint("BOTTOMLEFT", 0, 0)
-    T.Paint({ tex = card.accent, a = 0.55 })
+    T.Paint({ tex = card.accent, a = 1 })
     card.head = T.SolidTex(card, "BACKGROUND", 1, 1, 1, 1, 1)
     card.head:SetHeight(HEAD_H)
-    card.head:SetPoint("TOPLEFT", card, "TOPLEFT", 3, 0)
+    card.head:SetPoint("TOPLEFT", card, "TOPLEFT", T.RAIL_W, 0)
     card.head:SetPoint("TOPRIGHT", card, "TOPRIGHT", 0, 0)
-    T.Paint({ tex = card.head, a = 0.22 })
+    card.head:SetVertexColor(1, 1, 1, 0)
+    card.head:Hide()
 
     page.__card = page.__card or {}
     page.__card[col] = card
@@ -494,13 +499,13 @@ local function MakeStepper(page, label, anchor, minV, maxV, get, set, fmt, enabl
     local box = CreateFrame("Frame", nil, row)
     box:SetSize(56, 24)
     box:SetPoint("RIGHT", row, "RIGHT", -12, 0)
-    box.bg = T.SolidTex(box, "BACKGROUND", 1, 1, 1, 0.05)
+    box.bg = T.SolidTex(box, "BACKGROUND", T.BG[1], T.BG[2], T.BG[3], 1)
     box.bg:SetAllPoints()
     box.border = ns.CreateBorder(box)
     box.border:Layout(box, 1, 0)
     box.border:SetColor(1, 1, 1, 0.10)
     box.border:Show()
-    box.text = T.MakeText(box, 12, T.TEXT)
+    box.text = T.MakeText(box, 13, T.TEXT)
     box.text:SetPoint("CENTER", 0, 0)
     box.text:SetJustifyH("CENTER")
 
@@ -926,7 +931,7 @@ local function GroupStrip(g)
     strip:SetHeight(STRIP_H)
     strip:SetPoint("TOPLEFT", panel, "TOPLEFT", SIDEBAR_W + 1, -HEADER_H)
     strip:SetPoint("RIGHT", panel, "RIGHT", 0, 0)
-    strip.band = T.SolidTex(strip, "BACKGROUND", 0, 0, 0, 0.18)
+    strip.band = T.SolidTex(strip, "BACKGROUND", 0, 0, 0, 0)
     strip.band:SetAllPoints()
     strip.line = T.SolidTex(strip, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
     strip.line:SetHeight(1)
@@ -954,25 +959,30 @@ end
 local function StripButton(strip, key, label, index)
     local b = CreateFrame("Button", nil, strip)
     b:SetHeight(STRIP_H)
-    b.text = T.MakeText(b, 13, T.TEXT_MUTE)
+    b.text = T.MakeText(b, 12, T.TEXT_MUTE)
     b.text:SetPoint("CENTER", 0, 0)
-    b.text:SetText(label)
+    b.text:SetText(T.Upper(label))
     b:SetWidth(math.max(60, (b.text:GetStringWidth() or 30) + 30))
     b.hover = T.SolidTex(b, "BACKGROUND", 1, 1, 1, 0.04)
-    b.hover:SetAllPoints()
+    b.hover:SetPoint("TOPLEFT", 0, -7)
+    b.hover:SetPoint("BOTTOMRIGHT", 0, 7)
     b.hover:Hide()
-    b.line = T.SolidTex(b, "ARTWORK", 1, 1, 1, 1)
-    b.line:SetHeight(2)
-    b.line:SetPoint("BOTTOMLEFT", 8, 0)
-    b.line:SetPoint("BOTTOMRIGHT", -8, 0)
+    -- Slab: the active tab is a solid accent block with near-black text.
+    b.line = T.SolidTex(b, "BACKGROUND", 1, 1, 1, 1, 1)
+    b.line:SetPoint("TOPLEFT", 0, -7)
+    b.line:SetPoint("BOTTOMRIGHT", 0, 7)
     T.Paint({ tex = b.line, a = 1 })
     function b:SetActive(on)
         self.active = on
         self.line:SetShown(on)
-        local c = on and T.TEXT or T.TEXT_MUTE
-        self.text:SetTextColor(c[1], c[2], c[3], 1)
+        if on then
+            local r, g, bb = T.OnAccent()
+            self.text:SetTextColor(r, g, bb, 1)
+        else
+            self.text:SetTextColor(T.TEXT_MUTE[1], T.TEXT_MUTE[2], T.TEXT_MUTE[3], 1)
+        end
     end
-    b:SetScript("OnEnter", function(self) self.hover:Show() self.text:SetTextColor(1, 1, 1, 1) end)
+    b:SetScript("OnEnter", function(self) if not self.active then self.hover:Show() self.text:SetTextColor(1, 1, 1, 1) end end)
     b:SetScript("OnLeave", function(self) self.hover:Hide() self:SetActive(self.active) end)
     b:SetScript("OnClick", function() SelectPage(key) end)
     strip.buttons[key] = b
@@ -985,7 +995,7 @@ local function StripButton(strip, key, label, index)
             if btn then
                 btn:SetWidth(math.max(60, math.ceil(btn.text:GetStringWidth() or 30) + 30))
                 btn:ClearAllPoints()
-                if prev then btn:SetPoint("LEFT", prev, "RIGHT", 2, 0)
+                if prev then btn:SetPoint("LEFT", prev, "RIGHT", 6, 0)
                 else btn:SetPoint("LEFT", self, "LEFT", 18, 0) end
                 prev = btn
             end
@@ -1201,7 +1211,7 @@ PAGE_BODY.messages = function()
     MakeColorSwatch(pg, "Default color:", msIcon,
         function() return ms().color end, msOn)
     -- Which abilities show here is chosen per ability on the Boss
-    -- Visualizer's cards (opt-in).
+    -- Visualizer's cards (on by default).
 end
 
 PAGE_BODY.health = function()
@@ -1220,16 +1230,31 @@ PAGE_BODY.health = function()
         function() return hb().width or 260 end, function(v) hb().width = v end,
         function(v) return v .. " px" end, hbOn)
     local hbHeight = MakeStepper(pg, "Height:", hbWidth, 8, 40,
-        function() return hb().height or 16 end, function(v) hb().height = v end,
+        function() return hb().height or 20 end, function(v) hb().height = v end,
         function(v) return v .. " px" end, hbOn)
-    MakeColorSwatch(pg, "Bar color:", hbHeight,
+    -- A council fight stacks one bar per boss.
+    local hbDir = MakeDropdown(pg, "Grow direction:", hbHeight,
+        { "down", "up" }, { down = "Down", up = "Up" },
+        function() return hb().direction or "up" end, function(v) hb().direction = v end, hbOn)
+    local hbGap = MakeStepper(pg, "Gap between bars:", hbDir, 0, 20,
+        function() return hb().spacing or 20 end, function(v) hb().spacing = v end,
+        function(v) return v .. " px" end, hbOn)
+    MakeColorSwatch(pg, "Bar color:", hbGap,
         function() return hb().color end, hbOn)
     local sText = MakeSection(pg, nil, "TEXT", 2)
-    local hbName = MakeCheckbox(pg, "Show the boss's name", sText,
-        function() return hb().showName ~= false end, function(v) hb().showName = v end, hbOn)
-    MakeStepper(pg, "Marker label size:", hbName, 8, 16,
+    local hbName = MakeDropdown(pg, "Boss name:", sText,
+        { "above", "inside", "below", "off" }, { above = "Above", inside = "Inside", below = "Below", off = "Off" },
+        function()
+            local p = hb().namePos
+            if p == nil and hb().showName == false then return "off" end
+            return p or "inside"
+        end,
+        function(v) hb().namePos = v; hb().showName = (v ~= "off") end, hbOn)
+    local hbLabel = MakeStepper(pg, "Marker label size:", hbName, 8, 16,
         function() return hb().labelSize or 11 end, function(v) hb().labelSize = v end,
         function(v) return v .. " pt" end, hbOn)
+    MakeCheckbox(pg, "Ability icons", hbLabel,
+        function() return hb().showIcons and true or false end, function(v) hb().showIcons = v end, hbOn)
     -- Which abilities get a marker is decided by the logs (cast at a health,
     -- not a time) and per ability on the Boss Visualizer's cards.
 end
@@ -1293,11 +1318,15 @@ PAGE_BODY.global = function()
     local gSnap = MakeCheckbox(pg, "Snap dropped frames", gGridSize,
         function() return ns.db.anchorsGlobal.snap ~= false end,
         function(v) ns.db.anchorsGlobal.snap = v end)
-    MakeStepper(pg, "Snap within:", gSnap, 2, 30,
+    local gSnapRange = MakeStepper(pg, "Snap within:", gSnap, 2, 30,
         function() return ns.db.anchorsGlobal.snapRange or 8 end,
         function(v) ns.db.anchorsGlobal.snapRange = v end,
         function(v) return v .. " px" end,
         function() return ns.db.anchorsGlobal.snap ~= false end)
+    local sChat = MakeSection(pg, gSnapRange, "CHAT")
+    MakeCheckbox(pg, "Hide chat mentioning 'asmon'", sChat,
+        function() return ns.db.chatFilter.enabled ~= false end,
+        function(v) ns.db.chatFilter.enabled = v end)
 
     local sFont = MakeSection(pg, nil, "FONT", 2)
     local fontValues, fontLabels = {}, {}
@@ -1360,7 +1389,8 @@ local function BuildPanel()
     end)
     shell.subtitle:SetText("")
 
-    shell.pageTitle = T.MakeText(shell.header, 22, T.TEXT)
+    shell.pageTitle = T.MakeText(shell.header, 34, T.TEXT)
+    T.SetDisplay(shell.pageTitle, 34)
     shell.pageTitle:SetPoint("LEFT", shell.header, "LEFT", SIDEBAR_W + 26, 0)
 
     -- Footer: Reload UI and Close, bottom-right.
@@ -1372,6 +1402,7 @@ local function BuildPanel()
     footerClose:SetSize(110, 30)
     footerClose:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -18, 14)
     footerClose:SetText("Close")
+    footerClose:SetPrimary(true)
     footerClose:SetScript("OnClick", function() panel:Hide() end)
     local footerReload = T.MakeButton(panel)
     footerReload:SetSize(110, 30)

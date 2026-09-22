@@ -75,7 +75,7 @@ ns.defaults = {
     },
     queue = {
         enabled = true, count = 5, size = 48, shrink = 100, gap = 6, direction = "right",
-        desaturate = true, fade = 50, timeOnIcon = "edge", labels = "lead", labelSize = 14,
+        desaturate = true, fade = 50, timeOnIcon = "none", labels = "lead", labelSize = 14,
         showTimers = true, timerPos = "center", timerSize = 12, border = 2,
         backdrop = false, backdropAlpha = 40,
     },
@@ -91,7 +91,7 @@ ns.defaults = {
         enabled = true, countdownSeconds = 5, showIcon = true, fontSize = 28,
         direction = "up", spacing = 4, max = 4, color = { r = 1, g = 0.82, b = 0 },
     },
-    -- Messages: big text when a routed (opt-in) ability lands.
+    -- Messages: big text when a routed (on by default) ability lands.
     messages = {
         enabled = true, max = 3, hold = 2.5, spacing = 4, direction = "up",
         showIcon = true, size = 24, color = { r = 1, g = 0.82, b = 0 },
@@ -99,9 +99,16 @@ ns.defaults = {
     -- Health Bars: the engaged boss's health with a marker per
     -- health-triggered ability (cast at a health, not a time).
     healthBars = {
-        enabled = true, width = 260, height = 16, showName = true, labelSize = 11,
+        enabled = true, width = 260, height = 20, showName = true, labelSize = 11,
         color = { r = 0.25, g = 0.80, b = 0.30 },
+        -- A council fight stacks one bar per boss: growth, gap, where the
+        -- name goes (above / inside / below / off), icons under the markers.
+        -- Alex's picks (2026-09-20): up, 20 px gap, the name inside the bar.
+        direction = "up", spacing = 20, namePos = "inside", showIcons = false,
     },
+    -- Chat filter: lines whose text or sender contains a word here are
+    -- dropped before any chat frame shows them (Alex, 2026-09-21).
+    chatFilter = { enabled = true, words = { "asmon" } },
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing
@@ -377,7 +384,8 @@ function ns.ShowAlignGrid(show)
             t:SetPoint("LEFT", UIParent, "BOTTOMLEFT", 0, pos)
             t:SetPoint("RIGHT", UIParent, "BOTTOMRIGHT", 0, pos)
         end
-        if center then t:SetVertexColor(ar, ag, ab, 0.7) else t:SetVertexColor(1, 1, 1, 0.08) end
+        -- The accent throughout (Alex): the centre lines strong, the rest faint.
+        if center then t:SetVertexColor(ar, ag, ab, 0.7) else t:SetVertexColor(ar, ag, ab, 0.18) end
         t:Show()
     end
     for x = cx, w, size do Line(true, x, x == cx) end

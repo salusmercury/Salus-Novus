@@ -1,9 +1,9 @@
 --[[ Salus Novus -- Queue: the strip of upcoming casts.
 
 MerkUI's Ability Queue (MerkUI/BossQueue.lua) as a hub listener: the
-soonest cast large, the ones after it smaller and fainter, each with the
-time left draining along its bottom edge (or a cooldown swipe), the
-ability's name under the lead. Every record comes from the hub; nothing
+soonest cast large, the ones after it smaller and fainter, the ability's
+name under the lead (the draining bottom edge is gone -- Alex, 2026-09-20;
+a cooldown swipe remains as `timeOnIcon = "swipe"`, off by default). Every record comes from the hub; nothing
 is predicted beyond it. Left behind from retail: everything keyed on
 BigWigs (emphasize, countdown glyph, roles, colours), nameplate timers
 and their "xN" badge, specials, instructions, the caster line, the pulse.
@@ -70,21 +70,6 @@ local function MakeIcon()
     if f.cd.SetHideCountdownNumbers then f.cd:SetHideCountdownNumbers(true) end
     if f.cd.SetSwipeColor then f.cd:SetSwipeColor(0, 0, 0, 0.6) end
     f.cd:Hide()
-
-    -- Time-on-icon, edge flavour: a strip along the bottom that drains.
-    f.edgeBg = f:CreateTexture(nil, "OVERLAY", nil, 1)
-    f.edgeBg:SetTexture(SOLID)
-    f.edgeBg:SetPoint("BOTTOMLEFT", 0, 0)
-    f.edgeBg:SetPoint("BOTTOMRIGHT", 0, 0)
-    f.edgeBg:SetHeight(3)
-    f.edgeBg:SetVertexColor(0, 0, 0, 0.7)
-    f.edgeBg:Hide()
-    f.edge = f:CreateTexture(nil, "OVERLAY", nil, 2)
-    f.edge:SetTexture(SOLID)
-    f.edge:SetPoint("BOTTOMLEFT", 0, 0)
-    f.edge:SetHeight(3)
-    f.edge:SetVertexColor(1, 1, 1, 0.9)
-    f.edge:Hide()
 
     -- Seconds until the cast.
     f.timer = f:CreateFontString(nil, "OVERLAY")
@@ -166,33 +151,20 @@ end
 
 local function ApplyTimeOnIcon(f, e, opts, now)
     local b = e.bar
-    local mode = opts.timeOnIcon or "edge"
-    if e.placeholder or mode == "none" then
+    if e.placeholder or (opts.timeOnIcon or "none") ~= "swipe" then
         f.cd:Hide()
-        f.edge:Hide()
-        f.edgeBg:Hide()
         return
     end
     local dur = b.duration or 0
     local left = state.preview and (dur * 0.6) or (b.at - now)
-    local frac = (dur > 0) and math.max(0, math.min(1, left / dur)) or 0
-    if mode == "swipe" then
-        f.edge:Hide()
-        f.edgeBg:Hide()
-        if state.preview then
-            pcall(f.cd.SetCooldown, f.cd, now - (dur - left), dur)
-            if f.cd.Pause then pcall(f.cd.Pause, f.cd) end
-        else
-            pcall(f.cd.SetCooldown, f.cd, b.at - dur, dur)
-            if f.cd.Resume then pcall(f.cd.Resume, f.cd) end
-        end
-        f.cd:Show()
+    if state.preview then
+        pcall(f.cd.SetCooldown, f.cd, now - (dur - left), dur)
+        if f.cd.Pause then pcall(f.cd.Pause, f.cd) end
     else
-        f.cd:Hide()
-        f.edgeBg:Show()
-        f.edge:SetWidth(math.max(1, f:GetWidth() * frac))
-        f.edge:Show()
+        pcall(f.cd.SetCooldown, f.cd, b.at - dur, dur)
+        if f.cd.Resume then pcall(f.cd.Resume, f.cd) end
     end
+    f.cd:Show()
 end
 
 local function Refresh(placeholder)
@@ -289,20 +261,18 @@ local function Refresh(placeholder)
             end
             ApplyTimeOnIcon(f, e, opts, now)
 
-            -- Borders stay plain black; the draining edge carries the
-            -- accent. Layout is 12 widget calls per icon, so only when the
-            -- thickness actually changes.
+            -- Borders stay plain black. Layout is 12 widget calls per
+            -- icon, so only when the thickness actually changes.
             local thick = (i == 1) and (opts.border or 2) or 1
             if f.borderThick ~= thick then
                 f.borderThick = thick
                 f.border:Layout(f, thick, 0)
                 f.border:SetColor(0, 0, 0, 0.9)
             end
-            -- The ability's own colour (Abilities.lua) takes the edge and
-            -- the name; otherwise the accent and white.
+            -- The ability's own colour (Abilities.lua) takes the name;
+            -- otherwise white.
             local cr, cg, cb
             if not e.placeholder then cr, cg, cb = ns.Timers.AbilityColor(b) end
-            if cr then f.edge:SetVertexColor(cr, cg, cb, 0.9) else f.edge:SetVertexColor(ar, ag, ab, 0.9) end
 
             local showLabel = Labelled(i)
             if showLabel then
@@ -329,8 +299,7 @@ local function Refresh(placeholder)
 end
 Q.Refresh = Refresh
 
---- The hub's 0.2s tick: seconds rewritten only when the integer changes;
--- the edge follows the time left.
+--- The hub's 0.2s tick: seconds rewritten only when the integer changes.
 local function Tick(now)
     if not frame or not frame:IsShown() or state.preview then return end
     local opts = O() or {}
@@ -345,12 +314,6 @@ local function Tick(now)
                     f.lastSecs = secs
                     f.timer:SetText(string.format("%d", secs))
                 end
-            end
-            if (opts.timeOnIcon or "edge") == "edge" then
-                local dur = b.duration or 0
-                local left = b.at - now
-                local frac = (dur > 0) and math.max(0, math.min(1, left / dur)) or 0
-                f.edge:SetWidth(math.max(1, f:GetWidth() * frac))
             end
         end
     end

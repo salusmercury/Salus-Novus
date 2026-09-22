@@ -16,15 +16,30 @@ ns.Theme = T
 
 T.SOLID = "Interface\\Buttons\\WHITE8x8"
 
--- Palette (Ellesmere-adjacent: near-black, cool, low contrast).
-T.BG        = { 0.066, 0.066, 0.078 }
-T.SIDEBAR   = { 0.085, 0.078, 0.105 }
-T.HEADER    = { 0.075, 0.070, 0.092 }
-T.LINE      = { 1, 1, 1, 0.07 }
-T.TEXT      = { 0.94, 0.93, 0.96 }
-T.HEAD_TEXT = { 0.86, 0.85, 0.90 }
-T.TEXT_DIM  = { 0.60, 0.58, 0.66 }
-T.TEXT_MUTE = { 0.42, 0.40, 0.48 }
+-- Palette: "Slab / Soft" (Alex, 2026-09-20). Charcoal surfaces a step
+-- apart (#141418 window, #0f0f12 sidebar, #1b1b21 cards), heavy uppercase
+-- display type, thick accent rails, chunky controls, small radii where
+-- the client can draw them (it cannot round a solid texture: squares).
+T.BG        = { 0.078, 0.078, 0.094 }    -- #141418
+T.SIDEBAR   = { 0.059, 0.059, 0.071 }    -- #0f0f12
+T.HEADER    = { 0.078, 0.078, 0.094 }    -- same as the window: no header band
+T.CARD      = { 0.106, 0.106, 0.129 }    -- #1b1b21
+T.EDGE      = { 0.227, 0.227, 0.267 }    -- #3a3a44 button borders
+T.LINE      = { 1, 1, 1, 0.08 }          -- #2a2a31-ish hairlines
+T.TEXT      = { 0.925, 0.925, 0.94 }     -- #ececf0
+T.HEAD_TEXT = { 1, 1, 1 }
+T.TEXT_DIM  = { 0.81, 0.81, 0.84 }       -- #cfcfd6
+T.TEXT_MUTE = { 0.455, 0.455, 0.50 }     -- #74747f
+T.RAIL_W    = 6                          -- the accent rail on cards and sections
+
+-- The display face: heavy, condensed, uppercase (Anton in the mock;
+-- Impact from the font pack is its nearest cousin). Falls back to the
+-- active font when the pack is absent (SetFontSafe never warns for a path).
+T.DISPLAY = "Interface\\AddOns\\SharedMediaAdditionalFonts\\fonts\\impact.ttf"
+function T.SetDisplay(fs, size)
+    ns.SetFontSafe(fs, size, "", T.DISPLAY)
+end
+function T.Upper(s) return string.upper(tostring(s or "")) end
 
 T.PILL = {
     boss = { 1.00, 0.81, 0.30 },
@@ -173,44 +188,66 @@ end
 
 -- --------------------------------------------------------------- button
 
---- Dark button: 4% fill, thin border, accent border on hover. SetText/
--- GetText like a Blizzard button and SetEnabledState for the options sweep.
+--- Slab button: card fill, 2px edge, uppercase display label, accent
+-- edge on hover. SetPrimary(true) fills it with the accent (the Close /
+-- Save of a screen). SetText / GetText like a Blizzard button and
+-- SetEnabledState for the options sweep.
 function T.MakeButton(parent)
     local btn = CreateFrame("Button", nil, parent)
-    btn.bg = T.SolidTex(btn, "BACKGROUND", 1, 1, 1, 0.04)
+    btn.bg = T.SolidTex(btn, "BACKGROUND", T.CARD[1], T.CARD[2], T.CARD[3], 1)
     btn.bg:SetAllPoints()
     btn.border = T.Border(btn)
-    btn.border:Layout(btn, 1, -1)
-    btn.border:SetColor(1, 1, 1, 0.12)
+    btn.border:Layout(btn, 2, -2)
+    btn.border:SetColor(T.EDGE[1], T.EDGE[2], T.EDGE[3], 1)
     btn.border:Show()
-    local text = T.MakeText(btn, 13, T.TEXT)
+    local text = T.MakeText(btn, 15, T.TEXT)
+    T.SetDisplay(text, 15)
     text:SetPoint("CENTER", 0, 0)
     text:SetJustifyH("CENTER")
     btn.text = text
-    btn.SetText = function(_, t) text:SetText(t) end
-    btn.GetText = function() return text:GetText() end
-    btn.enabledState = true
+    btn.raw = ""
+    btn.SetText = function(_, t) btn.raw = tostring(t or ""); text:SetText(T.Upper(t)) end
+    btn.GetText = function() return btn.raw end
+    btn.enabledState, btn.primary = true, false
+    local function Rest(self)
+        if self.primary then
+            local r, g, b = T.Accent()
+            local a = self.enabledState and 1 or 0.4
+            self.bg:SetVertexColor(r, g, b, a)
+            self.border:SetColor(r, g, b, a)
+            local tr, tg, tb = T.OnAccent()
+            text:SetTextColor(tr, tg, tb, 1)
+        else
+            self.bg:SetVertexColor(T.CARD[1], T.CARD[2], T.CARD[3], 1)
+            self.border:SetColor(T.EDGE[1], T.EDGE[2], T.EDGE[3], self.enabledState and 1 or 0.5)
+            local c = self.enabledState and T.TEXT or T.TEXT_MUTE
+            text:SetTextColor(c[1], c[2], c[3], 1)
+        end
+    end
+    btn.Rest = Rest
     btn:SetScript("OnEnter", function(self)
         if not self.enabledState then return end
         local r, g, b = T.Accent()
-        self.border:SetColor(r, g, b, 0.9)
-        self.bg:SetVertexColor(1, 1, 1, 0.07)
+        if self.primary then self.bg:SetVertexColor(r, g, b, 0.85)
+        else self.border:SetColor(r, g, b, 1) end
     end)
-    btn:SetScript("OnLeave", function(self)
-        self.border:SetColor(1, 1, 1, 0.12)
-        self.bg:SetVertexColor(1, 1, 1, 0.04)
-    end)
+    btn:SetScript("OnLeave", Rest)
     btn:SetScript("OnMouseDown", function(self)
         if self.enabledState then self.bg:SetVertexColor(1, 1, 1, 0.12) end
     end)
-    btn:SetScript("OnMouseUp", function(self) self.bg:SetVertexColor(1, 1, 1, 0.04) end)
+    btn:SetScript("OnMouseUp", Rest)
     btn.SetEnabledState = function(self, e)
         self.enabledState = e and true or false
         self:SetEnabled(self.enabledState)
-        local c = e and T.TEXT or T.TEXT_MUTE
-        text:SetTextColor(c[1], c[2], c[3], 1)
-        self.border:SetColor(1, 1, 1, e and 0.12 or 0.06)
+        Rest(self)
     end
+    btn.SetPrimary = function(self, on)
+        self.primary = on and true or false
+        Rest(self)
+    end
+    function btn:Repaint() Rest(self) end
+    T.Paint({ repaint = btn })
+    Rest(btn)
     return btn
 end
 
@@ -290,17 +327,19 @@ function T.MakeSlider(parent, width, minV, maxV, onChange)
     s:SetMinMaxValues(minV, maxV)
     s:SetValueStep(1)
     if s.SetObeyStepOnDrag then s:SetObeyStepOnDrag(true) end
-    s.track = T.SolidTex(s, "BACKGROUND", 1, 1, 1, 0.12)
-    s.track:SetHeight(4)
+    -- Slab: an 8 px track a step lighter than the card, the accent fill,
+    -- a white bar for the thumb.
+    s.track = T.SolidTex(s, "BACKGROUND", 1, 1, 1, 0.10)
+    s.track:SetHeight(8)
     s.track:SetPoint("LEFT", 0, 0)
     s.track:SetPoint("RIGHT", 0, 0)
     s.fill = T.SolidTex(s, "BACKGROUND", 1, 1, 1, 1, 1)
-    s.fill:SetHeight(4)
+    s.fill:SetHeight(8)
     s.fill:SetPoint("LEFT", 0, 0)
     s.fill:SetWidth(1)
     s:SetThumbTexture(T.SOLID)
     s.thumb = s:GetThumbTexture()
-    if s.thumb then s.thumb:SetSize(12, 12) end
+    if s.thumb then s.thumb:SetSize(10, 16) end
     s.quiet, s.last, s.primed = false, nil, false
     local function Paint()
         local r, g, b = T.Accent()
@@ -309,8 +348,8 @@ function T.MakeSlider(parent, width, minV, maxV, onChange)
         local frac = (hi > lo) and ((v - lo) / (hi - lo)) or 0
         s.fill:SetWidth(math.max(1, frac * (s:GetWidth() or width)))
         local on = (not s.IsEnabled) or s:IsEnabled()
-        s.fill:SetVertexColor(r, g, b, on and 0.9 or 0.35)
-        if s.thumb then s.thumb:SetVertexColor(r, g, b, on and 1 or 0.4) end
+        s.fill:SetVertexColor(r, g, b, on and 1 or 0.35)
+        if s.thumb then s.thumb:SetVertexColor(1, 1, 1, on and 1 or 0.4) end
     end
     s:SetScript("OnValueChanged", function(self, v)
         v = math.floor((v or 0) + 0.5)
@@ -408,54 +447,49 @@ end
 
 -- ------------------------------------------------------------- nav rows
 
---- 3px accent indicator on the left + faint accent glow when active, 6%
--- white wash on hover. Returns the accent parts for the owner to register.
+--- Slab nav row: the active one is a solid accent block (inset 12 px
+-- from the sidebar's edges) with near-black text; the rest are dim
+-- uppercase display labels with a faint wash on hover. Returns the accent
+-- parts for the owner to register.
 function T.DecorateNavRow(btn)
+    btn.fill = T.SolidTex(btn, "BACKGROUND", 1, 1, 1, 1)
+    btn.fill:SetPoint("TOPLEFT", 12, -3)
+    btn.fill:SetPoint("BOTTOMRIGHT", -12, 3)
+    btn.fill:Hide()
+    -- Kept for callers that predate the block: never shown now.
     btn.indicator = T.SolidTex(btn, "ARTWORK", 1, 1, 1, 1)
-    btn.indicator:SetWidth(3)
+    btn.indicator:SetWidth(0.01)
     btn.indicator:SetPoint("TOPLEFT", 0, 0)
-    btn.indicator:SetPoint("BOTTOMLEFT", 0, 0)
     btn.indicator:Hide()
-    btn.glow = T.SolidTex(btn, "BACKGROUND", 1, 1, 1, 1)
-    btn.glow:SetAllPoints()
-    -- Opacity capped on the TEXTURE: the client ignores per-colour alpha in
-    -- SetGradient, so the gradient only shapes the fade.
-    btn.glow:SetAlpha(0.14)
-    btn.glow:Hide()
+    btn.glow = btn.fill
     btn.hover = T.SolidTex(btn, "HIGHLIGHT", 1, 1, 1, 0.06)
-    btn.hover:SetAllPoints()
+    btn.hover:SetPoint("TOPLEFT", 12, -3)
+    btn.hover:SetPoint("BOTTOMRIGHT", -12, 3)
     return {
-        { tex = btn.indicator, a = 1 },
-        { tex = btn.glow, gradient = true, a1 = 1, a2 = 0 },
+        { tex = btn.fill, a = 1 },
     }
 end
 
 function T.SetNavActive(btn, active)
-    btn.indicator:SetShown(active)
-    btn.glow:SetShown(active)
+    btn.fill:SetShown(active)
     if btn.label then
-        if active then btn.label:SetTextColor(1, 1, 1, 1)
-        else btn.label:SetTextColor(T.TEXT_DIM[1], T.TEXT_DIM[2], T.TEXT_DIM[3], 1) end
-    end
-    -- The glow is a fade (opaque at the indicator, clear at the right), so
-    -- white still reads on the label's side; the glow alpha is capped to
-    -- keep it that way with a bright accent.
-    if active and btn.glow then
-        local r, g, b = T.Accent()
-        local luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
-        btn.glow:SetAlpha(luma > 0.55 and 0.09 or 0.14)
+        if active then
+            local r, g, b = T.OnAccent()
+            btn.label:SetTextColor(r, g, b, 1)
+        else
+            btn.label:SetTextColor(T.TEXT_DIM[1], T.TEXT_DIM[2], T.TEXT_DIM[3], 1)
+        end
     end
 end
 
 function T.NavLabel(btn, text)
-    btn.label = T.MakeText(btn, 15, T.TEXT_DIM)
-    btn.label:SetPoint("LEFT", 22, 0)
-    btn.label:SetPoint("RIGHT", btn, "RIGHT", -10, 0)
+    btn.label = T.MakeText(btn, 18, T.TEXT_DIM)
+    T.SetDisplay(btn.label, 18)
+    btn.label:SetPoint("LEFT", 24, 0)
+    btn.label:SetPoint("RIGHT", btn, "RIGHT", -14, 0)
     btn.label:SetJustifyH("LEFT")
     btn.label:SetWordWrap(false)
-    btn.label:SetShadowColor(0, 0, 0, 0.9)
-    btn.label:SetShadowOffset(1, -1)
-    btn.label:SetText(text)
+    btn.label:SetText(T.Upper(text))
     return btn.label
 end
 
@@ -487,6 +521,28 @@ function T.SnapPx(v, unit)
     return n * unit
 end
 
+--- Whole-pixel sizes are not enough: a box whose POSITION lands on a
+-- half pixel (under a text line of fractional height, say) loses a
+-- border edge to the client's rounding -- the card editor's ROLES row
+-- did (Alex, 2026-09-20). So every box snaps its own bottom-left to a
+-- whole pixel once it is shown, whoever laid it out.
+T.checkBoxes = {}
+function T.SnapBox(b)
+    if not b:IsShown() then return end
+    local l, bt = b:GetLeft(), b:GetBottom()
+    if not l or not bt then return end
+    local u = T.PixelUnit(b)
+    local dx = math.floor(l / u + 0.5) * u - l
+    local dy = math.floor(bt / u + 0.5) * u - bt
+    if math.abs(dx) < 0.001 and math.abs(dy) < 0.001 then return end
+    local point, rel, relPoint, x, y = b:GetPoint(1)
+    if not point then return end
+    b:SetPoint(point, rel, relPoint, (x or 0) + dx, (y or 0) + dy)
+end
+function T.SnapCheckBoxes()
+    for _, b in ipairs(T.checkBoxes) do T.SnapBox(b) end
+end
+
 --- The square check box (a filled square in the accent when on): the
 -- options pages' style, and the ability cards' (Alex: "the checkbox
 -- style, not the slider style").
@@ -496,9 +552,12 @@ function T.MakeCheckBox(parent, size)
     -- the same gap on every side and the border is 1px all round.
     local px = T.PixelUnit(b)
     local box = T.SnapPx(size or 18, px)
-    local inset = T.SnapPx(3, px)
+    -- Slab: a 3 px edge (2 px on a small box) drawn INSIDE the square, the
+    -- fill inset by twice the edge so a gap of the edge's width shows.
+    local edge = T.SnapPx((size or 18) >= 18 and 3 or 2, px)
+    local inset = 2 * edge
     b:SetSize(box, box)
-    b.bg = T.SolidTex(b, "BACKGROUND", 1, 1, 1, 0.06)
+    b.bg = T.SolidTex(b, "BACKGROUND", 1, 1, 1, 0.04)
     b.bg:SetAllPoints()
     b.fill = T.SolidTex(b, "ARTWORK", 1, 1, 1, 1)
     -- Sized and centred, not inset from the corners: two insets round
@@ -507,8 +566,8 @@ function T.MakeCheckBox(parent, size)
     b.fill:SetPoint("CENTER", 0, 0)
     b.fill:Hide()
     b.border = ns.CreateBorder(b)
-    b.border:Layout(b, px, 0)
-    b.border:SetColor(1, 1, 1, 0.25)
+    b.border:Layout(b, edge, -edge)
+    b.border:SetColor(1, 1, 1, 0.28)
     b.border:Show()
     b.text = b:CreateFontString(nil, "OVERLAY")
     b.checked = false
@@ -518,10 +577,10 @@ function T.MakeCheckBox(parent, size)
         if self.checked then
             self.fill:SetVertexColor(r, g, bb, self.enabledState and 1 or 0.4)
             self.fill:Show()
-            self.border:SetColor(r, g, bb, self.enabledState and 0.9 or 0.4)
+            self.border:SetColor(r, g, bb, self.enabledState and 1 or 0.4)
         else
             self.fill:Hide()
-            self.border:SetColor(1, 1, 1, self.enabledState and 0.25 or 0.12)
+            self.border:SetColor(1, 1, 1, self.enabledState and 0.28 or 0.12)
         end
     end
     function b:SetChecked(v) self.checked = v and true or false; self:Paint() end
@@ -536,6 +595,11 @@ function T.MakeCheckBox(parent, size)
         if self.enabledState and not self.checked then self.border:SetColor(1, 1, 1, 0.5) end
     end)
     b:SetScript("OnLeave", function(self) self:Paint() end)
+    -- Snap a frame later: at OnShow the layout may not be resolved yet.
+    b:HookScript("OnShow", function(self)
+        if C_Timer and C_Timer.After then C_Timer.After(0, function() T.SnapBox(self) end) else T.SnapBox(self) end
+    end)
+    table.insert(T.checkBoxes, b)
     b:Paint()
     T.Paint({ repaint = b })
     return b
@@ -559,9 +623,31 @@ local picker
 local function Hex(r, g, b)
     return string.format("%02X%02X%02X", math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5))
 end
+--- HSV -> RGB for the palette square.
+local function HSV(h, s, v)
+    local i = math.floor(h * 6) % 6
+    local f = h * 6 - math.floor(h * 6)
+    local p, q, u = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+    if i == 0 then return v, u, p elseif i == 1 then return q, v, p elseif i == 2 then return p, v, u
+    elseif i == 3 then return p, q, v elseif i == 4 then return u, p, v else return v, p, q end
+end
+
+-- The palette: 12 hues across, six rows from pastel to dark, a grey row.
+local PAL_COLS, PAL_ROWS, PAL_CELL, PAL_GAP = 12, 7, 16, 1
+local PAL_SV = { { 0.35, 1.0 }, { 0.7, 1.0 }, { 1.0, 1.0 }, { 1.0, 0.8 }, { 1.0, 0.6 }, { 1.0, 0.4 } }
+local function PaletteColor(row, col)
+    if row == PAL_ROWS then
+        local g = (col - 1) / (PAL_COLS - 1)
+        return g, g, g
+    end
+    local sv = PAL_SV[row]
+    return HSV((col - 1) / PAL_COLS, sv[1], sv[2])
+end
+
 local function BuildPicker()
     if picker then return picker end
-    local W, H = 300, 236
+    local palH = PAL_ROWS * (PAL_CELL + PAL_GAP)
+    local W, H = 300, 236 + palH + 10
     picker = CreateFrame("Frame", "SalusNovusColorPicker", UIParent)
     picker:SetSize(W, H)
     picker:SetPoint("CENTER", 0, 60)
@@ -607,7 +693,42 @@ local function BuildPicker()
         if picker.onChange then picker.onChange(r, g, b) end
     end
     picker.Push = Push
-    local prev
+
+    -- The square of every colour (Alex: "not just rgb sliders"): a cell
+    -- click sets the colour and the sliders / hex follow.
+    picker.grid = CreateFrame("Frame", nil, picker)
+    picker.grid:SetSize(PAL_COLS * (PAL_CELL + PAL_GAP) - PAL_GAP, palH - PAL_GAP)
+    picker.grid:SetPoint("TOPLEFT", picker.title, "BOTTOMLEFT", 0, -10)
+    picker.cells = {}
+    function picker.SetColor(r, g, b)
+        picker.v[1], picker.v[2], picker.v[3] = r, g, b
+        for i = 1, 3 do
+            local n = math.floor(picker.v[i] * 255 + 0.5)
+            picker.sliders[i]:SetValueQuiet(n)
+            picker.val[i]:SetText(tostring(n))
+        end
+        Push(false)
+    end
+    for row = 1, PAL_ROWS do
+        for col = 1, PAL_COLS do
+            local cell = CreateFrame("Button", nil, picker.grid)
+            cell:SetSize(PAL_CELL, PAL_CELL)
+            cell:SetPoint("TOPLEFT", picker.grid, "TOPLEFT", (col - 1) * (PAL_CELL + PAL_GAP), -(row - 1) * (PAL_CELL + PAL_GAP))
+            local r, g, b = PaletteColor(row, col)
+            cell.color = { r, g, b }
+            cell.fill = T.SolidTex(cell, "ARTWORK", r, g, b, 1)
+            cell.fill:SetAllPoints()
+            cell.hl = T.SolidTex(cell, "HIGHLIGHT", 1, 1, 1, 0.25)
+            cell.hl:SetAllPoints()
+            cell:SetScript("OnClick", function(self)
+                local c = self.color
+                picker.SetColor(c[1], c[2], c[3])
+            end)
+            picker.cells[#picker.cells + 1] = cell
+        end
+    end
+
+    local prev = picker.grid
     for i, name in ipairs({ "R", "G", "B" }) do
         local cap = T.MakeText(picker, 12, T.TEXT_MUTE)
         cap:SetText(name)
@@ -616,8 +737,8 @@ local function BuildPicker()
             picker.val[i]:SetText(tostring(v))
             Push(false)
         end)
-        if prev then cap:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -20)
-        else cap:SetPoint("TOPLEFT", picker.title, "BOTTOMLEFT", 0, -22) end
+        if prev == picker.grid then cap:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -14)
+        else cap:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -20) end
         s:SetPoint("LEFT", cap, "LEFT", 22, 0)
         local val = T.MakeText(picker, 12, T.TEXT)
         val:SetPoint("LEFT", s, "RIGHT", 10, 0)
@@ -690,27 +811,27 @@ T.ColorPicker = function() return BuildPicker() end
 function T.MakeCard(parent)
     local row = CreateFrame("Frame", nil, parent)
     row:EnableMouse(true)
-    row.bg = T.SolidTex(row, "BACKGROUND", 1, 1, 1, 0.035)
+    row.bg = T.SolidTex(row, "BACKGROUND", T.CARD[1], T.CARD[2], T.CARD[3], 1)
     row.bg:SetAllPoints()
-    row.hoverBg = T.SolidTex(row, "BACKGROUND", 1, 1, 1, 0.06, 1)
+    row.hoverBg = T.SolidTex(row, "BACKGROUND", 1, 1, 1, 0.05, 1)
     row.hoverBg:SetAllPoints()
     row.hoverBg:Hide()
     row.border = T.Border(row)
     row.border:Layout(row, 1, -1)
-    row.border:SetColor(1, 1, 1, 0.08)
+    row.border:SetColor(1, 1, 1, 0)
     row.border:Show()
     row.accent = T.SolidTex(row, "ARTWORK", 1, 1, 1, 1)
-    row.accent:SetWidth(3)
+    row.accent:SetWidth(T.RAIL_W)
     row.accent:SetPoint("TOPLEFT", 0, 0)
     row.accent:SetPoint("BOTTOMLEFT", 0, 0)
-    T.Paint({ tex = row.accent, a = 0.55 })
+    T.Paint({ tex = row.accent, a = 1 })
     row:SetScript("OnEnter", function(self)
         local r, g, b = T.Accent()
-        self.border:SetColor(r, g, b, 0.75)
+        self.border:SetColor(r, g, b, 0.6)
         self.hoverBg:Show()
     end)
     row:SetScript("OnLeave", function(self)
-        self.border:SetColor(1, 1, 1, 0.08)
+        self.border:SetColor(1, 1, 1, 0)
         self.hoverBg:Hide()
     end)
     return row
@@ -817,8 +938,7 @@ function ShellProto:Register(part)
 end
 function ShellProto:Repaint()
     for _, p in ipairs(self.accentParts) do T.RepaintPart(p) end
-    local r, g, b = T.Accent()
-    if self.border then self.border:SetColor(r, g, b, 0.35) end
+    if self.border then self.border:SetColor(T.EDGE[1], T.EDGE[2], T.EDGE[3], 1) end
 end
 
 function T.MakeShell(name, w, h, sidebarW, headerH, titleText)
@@ -871,38 +991,40 @@ function T.MakeShell(name, w, h, sidebarW, headerH, titleText)
     header:SetScript("OnDragStop", function() f:StopMovingOrSizing() end)
     shell.header = header
 
-    local accentLine = T.SolidTex(f, "ARTWORK", 1, 1, 1, 1)
-    accentLine:SetHeight(2)
-    accentLine:SetPoint("TOPLEFT", sidebarW + 1, -headerH)
-    accentLine:SetPoint("TOPRIGHT", 0, -headerH)
-    shell:Register({ tex = accentLine, gradient = true, a1 = 0.95, a2 = 0.05 })
-    local halo = T.SolidTex(f, "ARTWORK", 1, 1, 1, 1, -1)
-    halo:SetHeight(10)
-    halo:SetPoint("TOPLEFT", sidebarW + 1, -headerH + 2)
-    halo:SetPoint("TOPRIGHT", 0, -headerH + 2)
-    shell:Register({ tex = halo, gradient = true, a1 = 0.0, a2 = 0.16, orientation = "VERTICAL" })
+    -- Slab: no accent line under the header; a hairline only.
+    local headLine = T.SolidTex(f, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
+    headLine:SetHeight(1)
+    headLine:SetPoint("TOPLEFT", sidebarW + 1, -headerH)
+    headLine:SetPoint("TOPRIGHT", 0, -headerH)
     local sideLine = T.SolidTex(f, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
     sideLine:SetHeight(1)
     sideLine:SetPoint("TOPLEFT", 0, -headerH)
     sideLine:SetPoint("TOPRIGHT", side, "TOPRIGHT", 0, -headerH)
 
-    -- The brand: a capitals title (SALUS NOVUS) opens with a bigger
-    -- initial in the accent colour; any other title is plain. No mark
-    -- (Alex: "the pink square can go away").
-    -- Every WORD of a capitals title gets the big accent initial (S ALUS
-    -- N OVUS -- Alex); word pairs are pooled in shell.words. initial/title
-    -- remain the first pair's strings.
+    -- The brand, Slab style (Alex, 2026-09-20): a capitals title stacks
+    -- one word per line in the heavy display face, the first word white,
+    -- the second in the accent (SALUS / NOVUS). Word pairs stay pooled in
+    -- shell.words (initial + rest, both the same size and colour now);
+    -- initial/title remain the first pair's strings. No mark.
     shell.words = {}
+    local LINE_H = 26
     local function Pair(i)
         local w = shell.words[i]
         if w then return w end
-        w = { initial = T.MakeText(header, 26, T.TEXT), rest = T.MakeText(header, 18, T.TEXT) }
-        if i == 1 then w.initial:SetPoint("LEFT", 22, 0)
-        else w.initial:SetPoint("LEFT", shell.words[i - 1].rest, "RIGHT", 7, 1) end
-        w.rest:SetPoint("LEFT", w.initial, "RIGHT", 1, -1)
+        w = { initial = T.MakeText(header, LINE_H, T.TEXT), rest = T.MakeText(header, LINE_H, T.TEXT) }
+        T.SetDisplay(w.initial, LINE_H)
+        T.SetDisplay(w.rest, LINE_H)
+        w.initial:SetPoint("TOPLEFT", header, "TOPLEFT", 22, -6 - (i - 1) * (LINE_H + 2))
+        w.rest:SetPoint("LEFT", w.initial, "RIGHT", 0, 0)
         shell:Register({ repaint = { Repaint = function()
-            local r, g, b = T.Accent()
-            w.initial:SetTextColor(r, g, b, 1)
+            if i >= 2 then
+                local r, g, b = T.Accent()
+                w.initial:SetTextColor(r, g, b, 1)
+                w.rest:SetTextColor(r, g, b, 1)
+            else
+                w.initial:SetTextColor(1, 1, 1, 1)
+                w.rest:SetTextColor(1, 1, 1, 1)
+            end
         end } })
         shell.words[i] = w
         return w

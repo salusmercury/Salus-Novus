@@ -3,8 +3,8 @@ the logs say.
 
 MerkUI's Abilities.lua (retail) cut to what Salus Novus has a use for: a
 RENAME, a COLOUR the name carries in every anchor, the ROLES it shows for,
-and ROUTING to the anchors that are opt-outable (Ability Queue, Ability
-Preview) or opt-in (Messages). No instruction, no categories, no audio,
+and ROUTING to the anchors: on by default for the Ability Queue and
+Messages, off by default for the Ability Preview (Alex, 2026-09-20). No instruction, no categories, no audio,
 no aura sounds (Alex, 2026-09-19).
 
 Stored in ns.db.abilities keyed by tostring(spellID):
@@ -19,10 +19,11 @@ local _, ns = ...
 local A = {}
 ns.Abilities = A
 
--- Which anchors an ability goes to when it says nothing: opt-out for the
--- queue and the preview, opt-in for Messages (big text is for the casts
+-- Which anchors an ability goes to when it says nothing: the queue and
+-- Messages, not the preview (Alex, 2026-09-20; before that Messages was
+-- opt-in and the preview on -- big text was for the casts
 -- you pick -- Alex).
-A.ROUTE_DEFAULT = { queue = true, preview = true, messages = false, health = true }
+A.ROUTE_DEFAULT = { queue = true, preview = false, messages = true, health = true }
 A.ROLES = { "tank", "healer", "dps" }
 
 -- Keys are spell ids from OUR data files, never the client's secret ids;

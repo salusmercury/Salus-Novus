@@ -431,16 +431,17 @@ local function BuildForm()
     form.sound = MakeCheck(form, "Raid-warning sound when it lands")
     form.sound:SetPoint("TOPLEFT", 14, -258)
 
-    -- Save / Cancel sit bottom RIGHT, Cancel outermost (Alex); Remove,
-    -- shown only for an existing reminder, takes the bottom left.
-    form.cancel = T.MakeButton(form)
-    form.cancel:SetSize(80, 26)
-    form.cancel:SetPoint("BOTTOMRIGHT", -14, 12)
-    form.cancel:SetText("Cancel")
+    -- Cancel / Save sit bottom RIGHT, Save outermost (Alex, swapped
+    -- 2026-09-20); Remove, shown only for an existing reminder, takes the
+    -- bottom left.
     form.save = T.MakeButton(form)
     form.save:SetSize(90, 26)
-    form.save:SetPoint("RIGHT", form.cancel, "LEFT", -8, 0)
+    form.save:SetPoint("BOTTOMRIGHT", -14, 12)
     form.save:SetText("Save")
+    form.cancel = T.MakeButton(form)
+    form.cancel:SetSize(80, 26)
+    form.cancel:SetPoint("RIGHT", form.save, "LEFT", -8, 0)
+    form.cancel:SetText("Cancel")
     form.delete = T.MakeButton(form)
     form.delete:SetSize(90, 26)
     form.delete:SetPoint("BOTTOMLEFT", 14, 12)
@@ -962,6 +963,7 @@ RenderDesc = function(f)
             row.editor:SetPoint("RIGHT", row, "RIGHT", -12, 0)
             row.editor:Sync()
             row.editor:Show()
+            T.SnapCheckBoxes()      -- the editor's rows hang under fractional text
         else
             if row.editor:IsShown() then row.editor.name:ClearFocus() end   -- disarm a mid-edit box
             row.editor:Hide()
@@ -975,6 +977,7 @@ RenderDesc = function(f)
     for i = #lanes + 1, #win.descRows do win.descRows[i]:Hide() end
     win.descEmpty:Hide()   -- no wording for an empty boss (Alex)
     content:SetHeight(math.max(1, y))
+    T.SnapCheckBoxes()          -- rows hang under fractional text heights
 end
 V.RenderDesc = RenderDesc
 

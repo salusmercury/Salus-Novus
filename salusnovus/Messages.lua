@@ -2,7 +2,7 @@
 
 MerkUI's Messages anchor (Messages.lua) without BigWigs: one kind of line,
 fed by the hub's OnLand -- the moment a clustered cast reaches its time.
-Only abilities routed to Messages on their card show here (opt-in, Alex),
+Only abilities routed to Messages on their card show here (on by default since 2026-09-20, Alex),
 in the ability's own colour when it has one. Lines stack from the anchor,
 newest nearest it, and fade after `hold` seconds.
 ]]

@@ -424,7 +424,8 @@ def _():
     n = int(h.lua("return __n"))
     ok(n > 100, "expected the whole UI enrolled, got %d strings" % n)
     # spot checks across the UI
-    for expr in ("ns.Options.shell.title", "SalusNovusVisualizer.shell.title", "ns.Visualizer._lanes[2].name",
+    # (the shell titles are the DISPLAY face by design since the Slab look, not the body font)
+    for expr in ("ns.Visualizer._lanes[2].name",
                  "ns.Visualizer.form.text", "ns.Bars._bars[1].text", "SalusNovusReminderFrame.unlockText",
                  "ns.Options.launcher.label"):
         eq(str(h.lua("return %s.__font" % expr)), "Fonts\\MORPHEUS.TTF", "%s not re-fonted" % expr)
@@ -1950,10 +1951,9 @@ def _():
     ok(not h.lua("return ns.Queue._icons[2].label:IsShown()"), "labels = lead should name the lead only")
     h.lua("ns.db.queue.count = 2; ns.ApplyAll()")
     eq(queue_icons(h), 2, "count cap")
-    # a landed cast inside its hold: the edge sits at its 1px floor, never negative or over-wide
+    # a landed cast inside its hold keeps its icon, without error
     h.lua("W.advance(%f)" % (float(h.lua("return ns.Timers.Sorted()[1].at - GetTime()")) + 1.0))
-    w = float(h.lua("return ns.Queue._icons[1].edge:GetWidth()"))
-    ok(1 <= w <= float(h.lua("return ns.Queue._icons[1]:GetWidth()")), "edge width out of bounds after landing: %r" % w)
+    ok(h.lua("return ns.Queue._icons[1]:IsShown()"), "lead icon gone inside its hold")
     h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
     ok(not h.lua("return SalusNovusQueue:IsShown()"), "strip shown after the fight")
     # the floors: eight placeholders with a heavy fade and a tiny shrink
@@ -1964,14 +1964,13 @@ def _():
     eq(sizes, [24, 16, 16, 16, 16, 16, 16, 16], "shrink should floor at 16px: %r" % sizes)
 
 
-@test("the edge drains with the time left, seconds rewrite only when the integer changes, and the next cast takes the lead", "queue")
+@test("no drain bar on the icons (Alex); seconds rewrite only when the integer changes, and the next cast takes the lead", "queue")
 def _():
     h = fresh()
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
-    ok(h.lua("return ns.Queue._icons[1].edge:IsShown() and ns.Queue._icons[1].edgeBg:IsShown() and not ns.Queue._icons[1].cd:IsShown()"), "edge mode should show the edge")
+    ok(h.lua("return ns.Queue._icons[1].edge == nil and ns.Queue._icons[1].edgeBg == nil"), "the drain bar textures must not exist")
+    ok(not h.lua("return ns.Queue._icons[1].cd:IsShown()"), "nothing on the icon by default (no swipe either)")
     t1 = float(h.lua("return ns.Timers.Sorted()[1].at - ns.Timers.StartedAt()"))
-    w0 = float(h.lua("return ns.Queue._icons[1].edge:GetWidth()"))
-    ok(abs(w0 - 48) < 0.01, "edge should start full: %r" % w0)
     h.lua("""
         __writes = 0
         local t = ns.Queue._icons[1].timer
@@ -1979,9 +1978,6 @@ def _():
         t.SetText = function(self, s) __writes = __writes + 1 return orig(self, s) end
     """)
     h.lua("W.advance(2)")      # 10 hub ticks
-    w1 = float(h.lua("return ns.Queue._icons[1].edge:GetWidth()"))
-    # within one hub tick (0.2s) of the exact value
-    ok(abs(w1 - 48 * (t1 - 2) / t1) < 48 * 0.2 / t1 + 0.01, "edge should drain: %r vs %r" % (w1, 48 * (t1 - 2) / t1))
     writes = int(h.lua("return __writes"))
     ok(0 < writes <= 3, "seconds should rewrite about twice in 2s, got %d" % writes)
     # when the first record expires the second is the lead
@@ -1989,9 +1985,11 @@ def _():
     h.lua("W.advance(%f)" % (t1 + 2.6 - 2))
     eq(str(h.lua("return ns.Queue._icons[1].entry.bar.key")), key2, "next cast did not take the lead")
     h.lua("ns.db.queue.timeOnIcon = 'swipe'; ns.ApplyAll()")
-    ok(h.lua("return ns.Queue._icons[1].cd:IsShown() and not ns.Queue._icons[1].edge:IsShown()"), "swipe mode")
+    ok(h.lua("return ns.Queue._icons[1].cd:IsShown()"), "swipe mode")
     h.lua("ns.db.queue.timeOnIcon = 'none'; ns.ApplyAll()")
-    ok(not h.lua("return ns.Queue._icons[1].cd:IsShown()") and not h.lua("return ns.Queue._icons[1].edge:IsShown()"), "none mode")
+    ok(not h.lua("return ns.Queue._icons[1].cd:IsShown()"), "none mode")
+    h.lua("ns.db.queue.timeOnIcon = 'edge'; ns.ApplyAll()")   # an old stored value: no bar comes back
+    ok(not h.lua("return ns.Queue._icons[1].cd:IsShown()") and h.lua("return ns.Queue._icons[1].edge == nil"), "a stored 'edge' must draw nothing")
     h.lua("ns.db.queue.labels = 'all'; ns.ApplyAll()")
     ok(h.lua("return ns.Queue._icons[2].label:IsShown()"), "labels = all")
     h.lua("ns.db.queue.labels = 'none'; ns.ApplyAll()")
@@ -2088,7 +2086,7 @@ def _():
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings ~= nil"), "no module switch")
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings:GetChecked()"), "switch should start on")
     eq(int(h.lua("local n = 0 for _ in pairs(ns.Options.moduleSwitches) do n = n + 1 end return n")), 1, "Global must not have a switch")
-    ok(h.lua("return ns.Options.launcher ~= nil and ns.Options.launcher.label:GetText() == 'Boss Visualizer'"), "launcher row missing")
+    ok(h.lua("return ns.Options.launcher ~= nil and ns.Options.launcher.label:GetText() == 'BOSS VISUALIZER'"), "launcher row missing")   # nav labels are uppercase (Slab)
     ok(float(h.lua("return ns.Options.launcher:GetTop()")) < float(h.lua("return ns.Options.launcher:GetParent():GetTop()")) - 100, "launcher row not in the module list")
     h.lua("ns.Options.launcher:Click(); W.advance(0.1)")
     ok(h.lua("return SalusNovusVisualizer:IsShown() and not SalusNovusOptions:IsShown()"), "launcher row did not open the visualizer")
@@ -2424,11 +2422,16 @@ def _():
     ok(h.lua("return ns.Options.shell.words[2].initial:IsShown()"), "second initial hidden")
     ok(h.lua("return ns.Options.shell.initial:IsShown()"), "initial hidden")
     r, g, b = h.lua("return ns.GetThemeColor()")
+    # Slab: the first word is white, the SECOND word (both its parts) is the accent
     col = h.lua("return { ns.Options.shell.initial:GetTextColor() }")
-    ok(abs(float(col[1]) - r) < 0.01 and abs(float(col[2]) - g) < 0.01 and abs(float(col[3]) - b) < 0.01, "initial not in the accent: %r" % (list(col.values()),))
+    ok(abs(float(col[1]) - 1) < 0.01 and abs(float(col[2]) - 1) < 0.01 and abs(float(col[3]) - 1) < 0.01, "first word not white: %r" % (list(col.values()),))
+    col = h.lua("return { ns.Options.shell.words[2].initial:GetTextColor() }")
+    ok(abs(float(col[1]) - r) < 0.01 and abs(float(col[2]) - g) < 0.01 and abs(float(col[3]) - b) < 0.01, "second word not in the accent: %r" % (list(col.values()),))
+    col = h.lua("return { ns.Options.shell.words[2].rest:GetTextColor() }")
+    ok(abs(float(col[1]) - r) < 0.01, "second word's rest not in the accent")
     h.lua("ns.db.theme.customColor = { r = 0.1, g = 0.9, b = 0.2 }; ns.ApplyAll()")
-    col = h.lua("return { ns.Options.shell.initial:GetTextColor() }")
-    ok(abs(float(col[1]) - 0.1) < 0.01 and abs(float(col[2]) - 0.9) < 0.01, "initial did not follow an accent change")
+    col = h.lua("return { ns.Options.shell.words[2].initial:GetTextColor() }")
+    ok(abs(float(col[1]) - 0.1) < 0.01 and abs(float(col[2]) - 0.9) < 0.01, "second word did not follow an accent change")
     open_vis(h)
     ok(not h.lua("return SalusNovusVisualizer.shell.initial:IsShown()"), "the visualizer should have no initial")
     eq(str(h.lua("return SalusNovusVisualizer.shell.title:GetText()")), "Boss Visualizer", "visualizer title")
@@ -2489,20 +2492,20 @@ def _():
     h.lua("ns.Abilities.Set(11130, 'color', { r = 0.2, g = 0.4, b = 0.8 })")
     r, g, b = h.lua("return ns.Abilities.Color(11130)")
     ok(abs(r - 0.2) < 0.001 and abs(b - 0.8) < 0.001, "colour")
-    h.lua("ns.Abilities.SetRoute(11130, 'messages', true)")
-    ok(h.lua("return ns.Abilities.Routed(11130, 'messages')"), "route on")
+    h.lua("ns.Abilities.SetRoute(11130, 'preview', true)")
+    ok(h.lua("return ns.Abilities.Routed(11130, 'preview')"), "route on")
     # storing a default clears the entry; clearing every field drops the record
-    h.lua("ns.Abilities.SetRoute(11130, 'messages', false); ns.Abilities.Set(11130, 'rename', ''); ns.Abilities.Set(11130, 'color', nil)")
+    h.lua("ns.Abilities.SetRoute(11130, 'preview', false); ns.Abilities.Set(11130, 'rename', ''); ns.Abilities.Set(11130, 'color', nil)")
     eq(str(h.lua("return tostring(ns.db.abilities['11130'])")), "nil", "an emptied record must vanish")
     eq(str(h.lua("return tostring(ns.Abilities.Get(W.secretNumber(), true))")), "nil", "a secret key must be refused")
     h.lua("ns.Abilities.Set(21055, 'rename', 'Crush'); ns.Abilities.Reset(21055)")
     eq(str(h.lua("return tostring(ns.Abilities.Rename(21055))")), "nil", "Reset did not clear")
-    # defaults: queue and preview on, messages off
-    ok(h.lua("return ns.Abilities.Routed(22911, 'queue') and ns.Abilities.Routed(22911, 'preview') and not ns.Abilities.Routed(22911, 'messages')"), "route defaults")
+    # defaults (Alex 2026-09-20): queue and Messages on, the preview off
+    ok(h.lua("return ns.Abilities.Routed(22911, 'queue') and ns.Abilities.Routed(22911, 'messages') and not ns.Abilities.Routed(22911, 'preview')"), "route defaults")
     eq(h.errors(), [], "errors")
 
 
-@test("a rename and a colour reach the bars label, the queue label and edge, the lane and the card; the real name stays for lookups", "abilities")
+@test("a rename and a colour reach the bars label, the queue label, the lane and the card; the real name stays for lookups", "abilities")
 def _():
     h = fresh()
     h.lua("ns.Abilities.Set(11130, 'rename', 'KNOCK'); ns.Abilities.Set(11130, 'color', { r = 0.1, g = 0.9, b = 0.3 })")
@@ -2523,13 +2526,13 @@ def _():
         for i = 1, 8 do
             local f = ns.Queue._icons[i]
             if f:IsShown() and f.entry and f.entry.bar and f.entry.bar.spellID == 11130 then
-                return { text = f.label:GetText(), lc = { f.label:GetTextColor() }, ec = { f.edge:GetVertexColor() } }
+                return { text = f.label:GetText(), lc = { f.label:GetTextColor() } }
             end
         end
     """)
     ok(q is not None, "no queue icon for Knock Away")
     eq(str(q["text"]), "KNOCK", "queue label not renamed")
-    ok(abs(float(q["lc"][2]) - 0.9) < 0.01 and abs(float(q["ec"][2]) - 0.9) < 0.01, "queue label/edge not coloured")
+    ok(abs(float(q["lc"][2]) - 0.9) < 0.01, "queue label not coloured")
     # the fill colour is the bars' own, never the ability's
     open_vis(h)
     h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
@@ -2571,10 +2574,10 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("routing: unticking the queue drops the icon, Messages is opt-in, the preview follows its tick", "abilities")
+@test("routing: unticking the queue drops the icon; Messages is on and the preview off by default; each follows its tick", "abilities")
 def _():
     h = fresh()
-    h.lua("ns.Abilities.SetRoute(11130, 'queue', false); ns.Abilities.SetRoute(11130, 'preview', false)")
+    h.lua("ns.Abilities.SetRoute(11130, 'queue', false); ns.Abilities.SetRoute(11130, 'messages', false)")
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
     h.lua("W.advance(4)")
     ok(not h.lua("""
@@ -2585,11 +2588,14 @@ def _():
         for i = 1, 8 do local f = ns.Queue._icons[i] if f:IsShown() and f.entry and f.entry.bar and f.entry.bar.spellID == 21055 then return true end end
         return false
     """), "queue lost a routed ability")
-    ok(not any("Knock" in t for t in preview_lines(h)), "preview shows an unrouted ability: %r" % preview_lines(h))
-    h.lua("W.advance(3.5)")   # Knock Away landed at 7.3
-    eq(message_texts(h), [], "Messages showed an ability nobody opted in")
-    h.lua("ns.Abilities.SetRoute(21055, 'messages', true); W.advance(5)")   # Crush Armor lands at 12.2
-    eq(message_texts(h), ["Crush Armor"], "opted-in ability did not reach Messages")
+    ok(not any("Knock" in t for t in preview_lines(h)), "preview shows an ability by default: %r" % preview_lines(h))
+    h.lua("W.advance(3.5)")   # Knock Away landed at 7.3; Crush Armor (12.2) is inside the preview window
+    eq(message_texts(h), [], "Messages showed an ability whose Messages route was unticked")
+    ok(not any("Crush" in t for t in preview_lines(h)), "the preview is off by default: %r" % preview_lines(h))
+    h.lua("ns.Abilities.SetRoute(21055, 'preview', true); W.advance(0.3)")
+    ok(any("Crush" in t for t in preview_lines(h)), "ticked preview route did not show: %r" % preview_lines(h))
+    h.lua("W.advance(4.7)")   # Crush Armor lands at 12.2, routed to Messages by default
+    eq(message_texts(h), ["Crush Armor"], "an ability with the default routes did not reach Messages")
     eq(h.errors(), [], "errors")
 
 
@@ -2621,13 +2627,13 @@ def _():
     h.lua("%s.roles.tank:Click()" % ed)
     ok(not h.lua("return ns.Abilities.HasRole(11130, 'tank')"), "role toggle did not write")
     ok(not h.lua("return %s.roles.tank:GetChecked()" % ed), "role toggle not synced")
-    h.lua("%s.routes.messages:Click()" % ed)
-    ok(h.lua("return ns.Abilities.Routed(11130, 'messages')"), "route toggle did not write")
+    h.lua("%s.routes.preview:Click()" % ed)
+    ok(h.lua("return ns.Abilities.Routed(11130, 'preview')"), "route toggle did not write")
     h.lua("%s.routes.queue:Click()" % ed)
     ok(not h.lua("return ns.Abilities.Routed(11130, 'queue')"), "queue route did not write")
     h.lua("%s.reset:Click()" % ed)
     eq(str(h.lua("return tostring(ns.db.abilities['11130'])")), "nil", "Reset did not clear the record")
-    ok(h.lua("return %s.roles.tank:GetChecked() and %s.routes.queue:GetChecked() and not %s.routes.messages:GetChecked()" % (ed, ed, ed)), "controls not synced after Reset")
+    ok(h.lua("return %s.roles.tank:GetChecked() and %s.routes.queue:GetChecked() and %s.routes.messages:GetChecked() and not %s.routes.preview:GetChecked()" % (ed, ed, ed, ed)), "controls not synced after Reset")
     eq(h.errors(), [], "errors")
 
 
@@ -2636,6 +2642,7 @@ def _():
 @test("the preview counts a routed ability down inside its window, rewrites once a second, and leaves at landing with no NOW", "preview")
 def _():
     h = fresh()
+    h.lua("for _, id in ipairs({ 11130, 21055, 22911 }) do ns.Abilities.SetRoute(id, 'preview', true) end")   # off by default (Alex)
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
     h.lua("W.advance(2.0)")
     eq(preview_lines(h), [], "line before the window (Knock Away lands at 7.3, window 5)")
@@ -2666,6 +2673,7 @@ def _():
 @test("preview anchor: direction down re-pins by TOP, disabled/module-off hide it, unlock shows a sample, the page preview round-trips", "preview")
 def _():
     h = fresh()
+    h.lua("for _, id in ipairs({ 11130, 21055, 22911 }) do ns.Abilities.SetRoute(id, 'preview', true) end")   # off by default (Alex)
     h.lua("ns.db.preview.direction = 'down'; ns.ApplyAll()")
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
     h.lua("W.advance(3)")
@@ -2976,11 +2984,11 @@ def _():
     ok(changes <= 2, "OnChange fired %d times for %d records (want one for the clear and one for the intake)" % (changes, n))
 
 
-@test("a record with no spell id goes to the opt-out anchors but never to Messages", "bughunt")
+@test("a record with no spell id takes the defaults: queue and Messages yes, the preview no", "bughunt")
 def _():
     h = fresh()
-    ok(h.lua("return ns.Timers.RoutedTo({ key = 'x' }, 'queue') and ns.Timers.RoutedTo({ key = 'x' }, 'preview')"), "opt-out anchors")
-    ok(not h.lua("return ns.Timers.RoutedTo({ key = 'x' }, 'messages')"), "Messages is opt-in; no card can opt a spell-less record in")
+    ok(h.lua("return ns.Timers.RoutedTo({ key = 'x' }, 'queue') and ns.Timers.RoutedTo({ key = 'x' }, 'messages')"), "queue and Messages are on by default")
+    ok(not h.lua("return ns.Timers.RoutedTo({ key = 'x' }, 'preview')"), "the preview is off by default")
     ok(h.lua("return ns.Timers.RoutedTo({ key = 'f', fake = true }, 'messages')"), "fakes still go everywhere")
 
 
@@ -5331,7 +5339,7 @@ def _():
 @test("rename consistency: one renamed ability shows new name in all six anchors, visualizer cards, and reminders", "bughunt3")
 def _():
     h = fresh()
-    h.lua('ns.Abilities.Set(11130, "rename", "KNOCKAWAY_CUSTOM")')
+    h.lua('ns.Abilities.Set(11130, "rename", "KNOCKAWAY_CUSTOM"); ns.Abilities.SetRoute(11130, "preview", true)')
 
     # Bars anchor
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
@@ -5380,7 +5388,7 @@ def _():
 def _():
     h = fresh()
     # Set a custom color (red)
-    h.lua('ns.Abilities.Set(11130, "color", { r = 0.9, g = 0.1, b = 0.1 })')
+    h.lua('ns.Abilities.Set(11130, "color", { r = 0.9, g = 0.1, b = 0.1 }); ns.Abilities.SetRoute(11130, "preview", true)')
 
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
     h.lua("W.advance(4.5)")
@@ -5456,7 +5464,7 @@ def _():
     h.lua("""
         ns.Abilities.Set(11130, 'rename', 'CUSTOM_NAME')
         ns.Abilities.Set(11130, 'color', { r = 0.5, g = 0.5, b = 0.5 })
-        ns.Abilities.SetRoute(11130, 'messages', true)
+        ns.Abilities.SetRoute(11130, 'preview', true)
     """)
 
     # Verify it's set
@@ -5466,7 +5474,7 @@ def _():
     h.lua("""
         ns.Abilities.Set(11130, 'rename', '')
         ns.Abilities.Set(11130, 'color', nil)
-        ns.Abilities.SetRoute(11130, 'messages', false)
+        ns.Abilities.SetRoute(11130, 'preview', false)
     """)
 
     # Record should be gone
@@ -5483,10 +5491,11 @@ def _():
     ok("Knock Away" in queue, "default queue routing not working after cleared record")
 
     preview = get_preview_names(h)
-    ok(any("Knock Away" in line or "Knock" in line for line in preview), "default preview routing not working after cleared record")
+    ok(not any("Knock Away" in line or "Knock" in line for line in preview), "the preview is off by default after a cleared record")
 
+    h.lua("W.advance(3.2)")   # Knock Away lands at 7.3
     msgs = get_message_names(h)
-    ok("Knock Away" not in msgs, "default messages routing wrong after cleared record (should be opt-in)")
+    ok("Knock Away" in msgs, "Messages is on by default after a cleared record")
 
     eq(h.errors(), [], "errors in clear/default reset")
 
@@ -5627,16 +5636,16 @@ def _():
     for label, v in (("box", box), ("fill", fill), ("edge", edge)):
         n = v / unit
         ok(abs(n - round(n)) < 1e-6, "%s is %.3f px, not whole pixels" % (label, n))
-    ok(abs(edge / unit - 1) < 1e-6, "border edge is not exactly one pixel")
+    ok(abs(edge / unit - 2) < 1e-6, "border edge of a 16 px box is not exactly two pixels")
     gap = (box - fill) / 2 / unit
     ok(abs(gap - round(gap)) < 1e-6 and gap >= 1, "fill gap %.3f px is not whole on both sides" % gap)
     h2 = fresh()
     h2.lua("_G.__cb = ns.Theme.MakeCheckBox(UIParent, 16)")   # no physical size API: plain units
-    eq(tuple(h2.lua("return __cb:GetWidth(), __cb.fill:GetWidth()")), (16, 10), "without the API the old sizes must hold")
+    eq(tuple(h2.lua("return __cb:GetWidth(), __cb.fill:GetWidth()")), (16, 8), "without the API the plain sizes must hold (16 box, 2 edge, 2 gap)")
     eq(h.errors() + h2.errors(), [], "errors")
 
 
-@test("the reminder form's Save and Cancel sit bottom right, Cancel outermost; Remove bottom left", "visualizer")
+@test("the reminder form's Cancel and Save sit bottom right, Save outermost; Remove bottom left", "visualizer")
 def _():
     h = fresh()
     open_vis(h)
@@ -5644,10 +5653,10 @@ def _():
     h.lua("ns.Visualizer.OpenForm(5, 11130, 'Knock Away', nil)")
     pts = h.lua("""
         local f = ns.Visualizer.form
-        local cp, _, crp = f.cancel:GetPoint(1)
-        local sp, srel, srp = f.save:GetPoint(1)
+        local sp, _, srp = f.save:GetPoint(1)
+        local cp, crel, crp = f.cancel:GetPoint(1)
         local dp = f.delete:GetPoint(1)
-        return cp .. "/" .. tostring(crp) .. " " .. sp .. "/" .. tostring(srel == f.cancel) .. "/" .. tostring(srp) .. " " .. dp
+        return sp .. "/" .. tostring(srp) .. " " .. cp .. "/" .. tostring(crel == f.save) .. "/" .. tostring(crp) .. " " .. dp
     """)
     eq(str(pts), "BOTTOMRIGHT/BOTTOMRIGHT RIGHT/true/LEFT BOTTOMLEFT", "button anchors: %r" % pts)
 
@@ -6436,3 +6445,270 @@ def _():
         return table.concat(out, "; ")
     """))
     eq(misplaced, "", "marks off position: %s" % misplaced)
+
+
+# ------------------------------------------------------------------
+# 2026-09-20 Health Bars for council fights; the grid in the accent
+
+COUNCIL = """
+    local b = ns.BossByEncounter(3496)
+    b.npcs[#b.npcs + 1] = { id = 99001, name = "Second Thane", displayID = nil }
+    b.abilities[#b.abilities + 1] = { spellID = 99101, name = "Thane Wave", source = "Second Thane",
+        pulls = 2, casts = {}, health = { pct = 60, pulls = 2, samples = { 60.2, 59.7 } } }
+    b.abilities[#b.abilities + 1] = { spellID = 99102, name = "Thane Rage", source = "Second Thane",
+        pulls = 2, casts = {}, health = { pct = 25, pulls = 2, samples = { 25.1, 24.8 } } }
+"""
+
+
+def council(h, direction="down", gap=4):
+    h.lua(COUNCIL)
+    h.lua("ns.db.healthBars.direction = '%s'; ns.db.healthBars.spacing = %d; ns.ApplyAll()" % (direction, gap))
+    h.lua("__units['target'] = { name = 'Durgen Dirgehammer', hp = 1000, max = 2000 }")
+    h.lua("__units['focus'] = { name = 'Second Thane', hp = 300, max = 1200 }")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+
+
+@test("council: one bar per boss with health abilities, each following its own unit by name; the right bar fed by the right UNIT_HEALTH", "health")
+def _():
+    h = fresh()
+    council(h)
+    names = h.lua("local out = {} for i, r in ipairs(ns.HealthBars._rows) do if r:IsShown() then out[#out + 1] = r.name:GetText() end end return table.concat(out, '|')")
+    eq(str(names), "Durgen Dirgehammer|Second Thane", "rows")
+    units = h.lua("local out = {} for _, x in ipairs(ns.HealthBars.state.live) do out[#out + 1] = tostring(x.unit) end return table.concat(out, '|')")
+    eq(str(units), "target|focus", "each boss on its own unit")
+    v = h.lua("return { ns.HealthBars._rows[1].bar:GetValue(), ns.HealthBars._rows[2].bar:GetValue() }")
+    ok(abs(float(v[1]) - 1000) < 1 and abs(float(v[2]) - 300) < 1, "bars not fed per unit: %r" % v)
+    # only the second boss's health changes
+    h.lua("__units['focus'].hp = 150")
+    h.lua('W.fireEvent("UNIT_HEALTH", "focus")')
+    v = h.lua("return { ns.HealthBars._rows[1].bar:GetValue(), ns.HealthBars._rows[2].bar:GetValue() }")
+    ok(abs(float(v[1]) - 1000) < 1 and abs(float(v[2]) - 150) < 1, "UNIT_HEALTH went to the wrong bar: %r" % v)
+    # markers per row: Durgen's shout on row 1, the thane's two on row 2 (highest first)
+    m1 = h.lua("local out = {} for k = 1, 8 do local m = ns.HealthBars._rows[1].markers[k] if m:IsShown() then out[#out + 1] = m.label:GetText() end end return table.concat(out, '|')")
+    m2 = h.lua("local out = {} for k = 1, 8 do local m = ns.HealthBars._rows[2].markers[k] if m:IsShown() then out[#out + 1] = m.label:GetText() end end return table.concat(out, '|')")
+    eq(str(m1), "Intimidating Shout", "row 1 markers")
+    eq(str(m2), "Thane Wave|Thane Rage", "row 2 markers")
+    # with two units the health event is the plain one (no unit filter): still registered
+    ok(h.lua("return ns.HealthBars._events:IsEventRegistered('UNIT_HEALTH')"), "UNIT_HEALTH not registered for two units")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "bars survived the end")
+    eq(h.errors(), [], "errors")
+
+
+@test("council: the stack grows down or up with the gap; the frame is the stack's size", "health")
+def _():
+    h = fresh()
+    council(h, "down", 6)
+    r1t, r2t, r1b = h.lua("local a, b = ns.HealthBars._rows[1], ns.HealthBars._rows[2] return a:GetTop(), b:GetTop(), a:GetBottom()")
+    ok(float(r2t) < float(r1t), "down: row 2 must be under row 1")
+    ok(abs((float(r1b) - float(r2t)) - 6) < 0.01, "gap of 6 not kept: %r" % (float(r1b) - float(r2t)))
+    fh = float(h.lua("return SalusNovusHealthBars:GetHeight()"))
+    rh = float(h.lua("return ns.HealthBars._rows[1]:GetHeight()"))
+    ok(abs(fh - (2 * rh + 6)) < 0.01, "frame height %r should be 2 rows + gap" % fh)
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    h.lua("ns.db.healthBars.direction = 'up'; ns.ApplyAll()")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    r1t, r2t = h.lua("return ns.HealthBars._rows[1]:GetTop(), ns.HealthBars._rows[2]:GetTop()")
+    ok(float(r2t) > float(r1t), "up: row 2 must be above row 1")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("the boss's name goes above, inside, below or off; a stored showName=false reads as off", "health")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    def pos(v):
+        h.lua("ns.db.healthBars.namePos = '%s'; ns.ApplyAll()" % v)
+        return h.lua("local r = ns.HealthBars._rows[1] return { r.name:IsShown(), r.name:GetTop(), r.bar:GetTop(), r.bar:GetBottom(), r.name:GetBottom() }")
+    a = pos("above"); ok(a[1] and float(a[2]) > float(a[3]), "above: name should sit over the bar: %r" % a)
+    i = pos("inside"); ok(i[1] and float(i[2]) <= float(i[3]) + 0.01 and float(i[5]) >= float(i[4]) - 0.01, "inside: name inside the bar: %r" % i)
+    b = pos("below"); ok(b[1] and float(b[2]) <= float(b[4]) + 0.01, "below: name under the bar: %r" % b)
+    off = pos("off"); ok(not off[1], "off: name still shown")
+    ok(h.lua("return ns.HealthBars._rows[1].name:GetParent() == ns.HealthBars._rows[1].bar"), "the name must be the bar's own region, or the fill covers it when inside")
+    h.lua("ns.db.healthBars.namePos = nil; ns.db.healthBars.showName = true; ns.ApplyAll()")
+    ok(h.lua("local r = ns.HealthBars._rows[1] return r.name:IsShown() and r.name:GetTop() <= r.bar:GetTop() + 0.01"), "the default is the name inside the bar")
+    h.lua("ns.db.healthBars.namePos = nil; ns.db.healthBars.showName = false; ns.ApplyAll()")
+    ok(not h.lua("return ns.HealthBars._rows[1].name:IsShown()"), "legacy showName=false should read as off")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("ability icons hang under the markers when asked, and the row grows to make room", "health")
+def _():
+    h = fresh()
+    health_units(h)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    h0 = float(h.lua("return ns.HealthBars._rows[1]:GetHeight()"))
+    ok(not h.lua("return ns.HealthBars._markers[1].icon:IsShown()"), "icon shown without the option")
+    h.lua("ns.db.healthBars.showIcons = true; ns.ApplyAll()")
+    m = h.lua("local m = ns.HealthBars._markers[1] return { m.icon:IsShown(), m.icon:GetTop(), m:GetBottom(), m.icon:GetTexture() ~= nil }")
+    ok(m[1] and float(m[2]) <= float(m[3]) + 0.01 and m[4], "icon not hung under the marker: %r" % m)
+    ok(float(h.lua("return ns.HealthBars._rows[1]:GetHeight()")) > h0, "row did not grow for the icons")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("the alignment grid is the accent colour throughout, the centre lines stronger", "anchors")
+def _():
+    h = fresh()
+    h.lua("ns.db.theme.useClassColor = false; ns.db.theme.customColor = { r = 0.2, g = 0.4, b = 0.9 }; ns.ApplyAll()")
+    h.lua("ns.ShowAlignGrid(true)")
+    got = h.lua("""
+        local out = { strong = 0, faint = 0, other = 0 }
+        for _, t in ipairs(SalusNovusAlignGrid.lines) do
+            if t:IsShown() then
+                local r, g, b, a = t:GetVertexColor()
+                if math.abs(r - 0.2) < 0.01 and math.abs(g - 0.4) < 0.01 and math.abs(b - 0.9) < 0.01 then
+                    if a > 0.5 then out.strong = out.strong + 1 else out.faint = out.faint + 1 end
+                else
+                    out.other = out.other + 1
+                end
+            end
+        end
+        return out
+    """)
+    eq(int(got["other"]), 0, "a grid line is not in the accent")
+    eq(int(got["strong"]), 2, "two centre lines in the strong accent")
+    ok(int(got["faint"]) > 10, "the rest of the grid should be the faint accent")
+
+
+@test("the picker's palette square: a cell click sets the colour, the sliders and hex follow, and the caller hears it", "theme")
+def _():
+    h = fresh()
+    h.lua("""
+        __got = nil
+        ns.Theme.OpenColorPicker({ r = 1, g = 1, b = 1 }, function(r, g, b) __got = { r, g, b } end, function() end)
+    """)
+    n = int(h.lua("return #SalusNovusColorPicker.cells"))
+    eq(n, 84, "12 hues x 6 rows + a grey row")
+    ok(h.lua("return SalusNovusColorPicker.grid:GetBottom() > SalusNovusColorPicker.sliders[1]:GetTop()"), "the square must sit above the sliders")
+    # the pure red cell: row 3, column 1
+    h.lua("SalusNovusColorPicker.cells[2 * 12 + 1]:Click()")
+    got = h.lua("return __got")
+    ok(abs(float(got[1]) - 1) < 0.01 and float(got[2]) < 0.01 and float(got[3]) < 0.01, "red cell did not reach the caller: %r" % got)
+    eq(str(h.lua("return SalusNovusColorPicker.hex:GetText()")), "FF0000", "hex did not follow the cell")
+    eq(int(h.lua("return SalusNovusColorPicker.sliders[1]:GetValue()")), 255, "slider did not follow the cell")
+    # the last grey cell is white, the first is black
+    h.lua("SalusNovusColorPicker.cells[6 * 12 + 1]:Click()")
+    eq(str(h.lua("return SalusNovusColorPicker.hex:GetText()")), "000000", "first grey cell should be black")
+    h.lua("SalusNovusColorPicker.cells[7 * 12]:Click()")
+    eq(str(h.lua("return SalusNovusColorPicker.hex:GetText()")), "FFFFFF", "last grey cell should be white")
+    h.lua("SalusNovusColorPicker.okay:Click()")
+    eq(h.errors(), [], "errors")
+
+
+@test("a check box laid out on a half pixel snaps its own position to a whole pixel once shown", "theme")
+def _():
+    h = fresh()
+    h.lua("""
+        GetPhysicalScreenSize = function() return 1920, 1080 end
+        UIParent:SetScale(768 / 1080)                   -- 1 unit = 1 pixel
+        __holder = CreateFrame("Frame", nil, UIParent)
+        __holder:SetSize(200, 100)
+        __holder:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 100.4, 50.6)   -- a fractional parent
+        __box = ns.Theme.MakeLabelledCheckBox(__holder, "Tank", 16)
+        __box:SetPoint("TOPLEFT", __holder, "TOPLEFT", 10.3, -20.2)
+        __box:Hide(); __box:Show()      -- the show hook schedules the snap for the next frame
+        W.advance(0.05)
+    """)
+    l, b = h.lua("return __box:GetLeft(), __box:GetBottom()")
+    ok(abs(float(l) - round(float(l))) < 1e-6 and abs(float(b) - round(float(b))) < 1e-6, "box not on whole pixels: %r, %r" % (l, b))
+    lx = float(h.lua("return __box.label:GetLeft() - __box:GetRight()"))
+    ok(abs(lx - 8) < 1e-6, "label lost its 8 px gap: %r" % lx)
+    h.lua("ns.Theme.SnapBox(__box)")
+    l2 = h.lua("return __box:GetLeft()")
+    ok(abs(float(l2) - float(l)) < 1e-9, "a second snap moved the box")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- chat filter
+
+@test("a chat line containing 'asmon' in any case is dropped on every player chat event", "chat")
+def _():
+    h = fresh()
+    ok(bool(h.lua("return ns.ChatFilter.IsInstalled()")), "filter not installed at load")
+    events = [str(x) for x in h.lua("return ns.ChatFilter.EVENTS").values()]
+    ok(len(events) >= 15, "too few chat events covered: %r" % events)
+    for ev in events:
+        n = h.lua('return #(__chatFilters[%r] or {})' % ev)
+        eq(int(n), 1, "%s should carry exactly one filter" % ev)
+        got = h.lua('return (W.chat(%r, "did you see ASMONGOLD last night", "Bob"))' % ev)
+        ok(got is True, "%s: a line mentioning asmon got through" % ev)
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "xXasmonXx is here", "Bob"))') is True, "substring inside a word should match")
+    eq(h.errors(), [], "errors")
+
+
+@test("a chat line without the word passes through with its text and sender intact", "chat")
+def _():
+    h = fresh()
+    block, msg, author = h.lua('return W.chat("CHAT_MSG_SAY", "lfm deadmines need heals", "Bob")')
+    ok(block is False, "clean line was blocked")
+    eq(str(msg), "lfm deadmines need heals", "message text changed")
+    eq(str(author), "Bob", "author changed")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asm on the way", "Bob"))') is False, "'asm on' is not 'asmon'")
+    eq(h.errors(), [], "errors")
+
+
+@test("a sender whose name contains the word is dropped even when the line is clean", "chat")
+def _():
+    h = fresh()
+    ok(h.lua('return (W.chat("CHAT_MSG_CHANNEL", "hello", "Asmonfan"))') is True, "sender name not checked")
+    ok(h.lua('return (W.chat("CHAT_MSG_WHISPER", "hello", "Asmonfan-Realm"))') is True, "realm-qualified sender not checked")
+    eq(h.errors(), [], "errors")
+
+
+@test("the Settings toggle turns the filter off and back on without re-registering", "chat")
+def _():
+    h = fresh()
+    h.lua("ns.db.chatFilter.enabled = false; ns.ApplyAll()")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "still blocking while off")
+    eq(int(h.lua('return #__chatFilters["CHAT_MSG_SAY"]')), 1, "filter count changed on toggle")
+    h.lua("ns.db.chatFilter.enabled = true; ns.ApplyAll()")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is True, "not blocking after re-enable")
+    h.lua("ns.ChatFilter.Install()")
+    eq(int(h.lua('return #__chatFilters["CHAT_MSG_SAY"]')), 1, "a second Install stacked a duplicate filter")
+    eq(h.errors(), [], "errors")
+
+
+@test("a corrupt word list, a secret line and a non-string message never throw inside the filter", "chat")
+def _():
+    h = fresh()
+    h.lua('ns.db.chatFilter.words = { 7, "", false, "asmon" }')
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is True, "valid word lost among junk")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "clean", "Bob"))') is False, "junk entries matched something")
+    h.lua('ns.db.chatFilter.words = "asmon"')
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon", "Bob"))') is False, "a non-table list should block nothing, not throw")
+    h.lua('ns.db.chatFilter.words = { "asmon" }')
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", W.secretString("asmon"), "Bob"))') is False, "a secret line must pass through, not throw")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmongold stream", W.secretString("Bob")))') is True, "a secret sender must not hide a blocked line")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", nil, nil))') is False, "nil message threw or blocked")
+    eq(h.errors(), [], "errors")
+
+
+@test("the Settings page shows the chat toggle bound to the saved setting", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    found = h.lua("""
+        for _, c in ipairs(ns.Options.widgets) do
+            if c.__kind == "check" and c.__get and c.__set then
+                ns.db.chatFilter.enabled = false
+                local offv = c.__get()
+                ns.db.chatFilter.enabled = true
+                local onv = c.__get()
+                if offv == false and onv == true then
+                    c.__set(false)
+                    local r = ns.db.chatFilter.enabled
+                    c.__set(true)
+                    return r == false
+                end
+            end
+        end
+        return nil
+    """)
+    ok(found is True, "no check box on Settings reads and writes chatFilter.enabled")
+    eq(h.errors(), [], "errors")
+

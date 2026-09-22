@@ -117,6 +117,26 @@ class Harness:
             C_Spell.GetSpellDescription = C_Spell.GetSpellDescription or function(id) return __spellDesc and __spellDesc[id] or "" end
             C_Spell.IsSpellDataCached = C_Spell.IsSpellDataCached or function(id) return true end
             C_Spell.RequestLoadSpellData = C_Spell.RequestLoadSpellData or function() end
+            -- Chat filters are recorded (the shared mock's version is a
+            -- no-op) so a test can push a line through them:
+            -- W.chat(event, msg, author) returns true when a filter ate it.
+            __chatFilters = {}
+            ChatFrame_AddMessageEventFilter = function(event, fn)
+                __chatFilters[event] = __chatFilters[event] or {}
+                table.insert(__chatFilters[event], fn)
+            end
+            ChatFrame_RemoveMessageEventFilter = function(event, fn)
+                local list = __chatFilters[event] or {}
+                for i = #list, 1, -1 do if list[i] == fn then table.remove(list, i) end end
+            end
+            W.chat = function(event, msg, author)
+                for _, fn in ipairs(__chatFilters[event] or {}) do
+                    local block, m, a = fn(DEFAULT_CHAT_FRAME, event, msg, author)
+                    if block then return true end
+                    msg, author = m, a
+                end
+                return false, msg, author
+            end
         """)
         self.ns = self.L.eval("{}")
         loader = self.L.eval("""

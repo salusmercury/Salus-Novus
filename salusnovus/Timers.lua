@@ -141,8 +141,8 @@ end
 --- Does this record go to `anchor`? Fakes and placeholders always do.
 function T.RoutedTo(b, anchor)
     if not ns.Abilities or not b or b.fake then return true end
-    -- No spell id, no card to opt it in: Messages is opt-in, so it stays
-    -- out; the opt-out anchors still show it.
+    -- No spell id, no card to route it: the defaults apply (queue and
+    -- Messages yes, the preview no).
     if not b.spellID then return ns.Abilities.ROUTE_DEFAULT[anchor] ~= false end
     return ns.Abilities.Routed(b.spellID, anchor)
 end

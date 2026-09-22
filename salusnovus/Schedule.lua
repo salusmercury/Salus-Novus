@@ -121,10 +121,21 @@ end
 -- An ability cast at SEVERAL healths (VanCleef's add waves at 75% and
 -- 50%: the same summon, twice) carries `health.pcts`; it comes back as
 -- one entry per threshold so the anchor draws one marker each.
+--- Any NPC the boss's pulls listed: a council's second boss counts, and
+-- so does an add -- a health trigger needs two pulls to agree, so an
+-- add's threshold is as real as the boss's.
+function S.IsBossNpc(boss, source)
+    if not boss or not boss.npcs or #boss.npcs == 0 then return true end
+    for _, n in ipairs(boss.npcs) do
+        if n.name == source then return true end
+    end
+    return false
+end
+
 function S.HealthAbilities(boss)
     local out = {}
     for _, a in ipairs(boss and boss.abilities or {}) do
-        if a.health and type(a.health.pct) == "number" and S.IsBossSource(boss, a.source) then
+        if a.health and type(a.health.pct) == "number" and S.IsBossNpc(boss, a.source) then
             local pcts = a.health.pcts
             if type(pcts) == "table" and #pcts > 1 then
                 for _, p in ipairs(pcts) do
