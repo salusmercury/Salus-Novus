@@ -747,13 +747,27 @@ function methods:IsEnabled()
     if self.__enabled == nil then return true end
     return self.__enabled
 end
+-- The client clamps a StatusBar/Slider value to its range. A secret passes
+-- through untouched (the client draws it; Lua cannot compare it), and so
+-- does anything before a range is set.
+local function clampValue(self, v)
+    if type(v) ~= "number" or issecretvalue(v) then return v end
+    local lo, hi = self.__min, self.__max
+    if type(lo) ~= "number" or type(hi) ~= "number" or issecretvalue(lo) or issecretvalue(hi) then return v end
+    if v < lo then return lo elseif v > hi then return hi end
+    return v
+end
 function methods:SetValue(v)
+    v = clampValue(self, v)
     self.__value = v
     local h = self.__scripts.OnValueChanged
     if h then pcall(h, self, v) end
 end
 function methods:GetValue() return self.__value or 0 end
-function methods:SetMinMaxValues(a, b) self.__min, self.__max = a, b end
+function methods:SetMinMaxValues(a, b)
+    self.__min, self.__max = a, b
+    if self.__value ~= nil then self.__value = clampValue(self, self.__value) end
+end
 function methods:GetMinMaxValues() return self.__min or 0, self.__max or 0 end
 function methods:GetThumbTexture()
     self.__thumb = self.__thumb or makeFrame("Texture", nil, self)
@@ -761,6 +775,28 @@ function methods:GetThumbTexture()
 end
 function methods:GetChecked() return self.__checked and true or false end
 function methods:SetChecked(v) self.__checked = v and true or false end
+
+-- EditBox focus: one box holds it at a time. SetFocus on another box takes
+-- it (the old one gets OnEditFocusLost); ClearFocus only fires on the box
+-- that has it. Before this, HasFocus fell to the no-op stub and returned
+-- the frame -- always truthy -- and ClearFocus fired nothing.
+local focused
+local function fireFocus(box, k)
+    local h = box.__scripts[k]; if h then pcall(h, box) end
+end
+function methods:SetFocus()
+    if focused == self then return end
+    local old = focused
+    focused = self
+    if old then fireFocus(old, "OnEditFocusLost") end
+    fireFocus(self, "OnEditFocusGained")
+end
+function methods:ClearFocus()
+    if focused ~= self then return end
+    focused = nil
+    fireFocus(self, "OnEditFocusLost")
+end
+function methods:HasFocus() return focused == self end
 
 -- Fire a frame's registered handler for an event, the way the client does.
 function methods:__fire(event, ...)

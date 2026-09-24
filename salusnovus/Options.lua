@@ -26,7 +26,6 @@ local PANEL_W, PANEL_H = 1100, 700
 local SIDEBAR_W = 220
 local HEADER_H  = 66
 local STRIP_H   = 38
-local NAV_ROW_H = 40
 local ROW_H     = 36
 local HEAD_H    = 26
 local ROW_GAP   = 2
@@ -506,19 +505,15 @@ ExitUnlockMode = function(save)
     if panel then panel:Show() end      -- same page as before; OnShow resumes its preview
     SyncPreviews()
 end
-ns.ExitUnlockMode = function(save) return ExitUnlockMode(save) end
 O.ExitUnlockMode = ExitUnlockMode
 
 --------------------------------------------------------------------------------
 -- Controls
 --------------------------------------------------------------------------------
--- The square check box lives in Theme now (the ability cards use it too).
-local function MakeBlueSquare(parent, size) return T.MakeCheckBox(parent, size) end
-
 local function MakeCheckbox(page, label, anchor, get, set, enabledWhen)
     local row = MakeRow(page, anchor)
     row.label:SetText(label)
-    local cb = MakeBlueSquare(row, 18)
+    local cb = T.MakeCheckBox(row, 18)
     cb:SetPoint("RIGHT", row, "RIGHT", -12, 0)
     cb.text:Hide()
     row:SetControl(cb)
@@ -541,12 +536,6 @@ local function MakeCheckbox(page, label, anchor, get, set, enabledWhen)
     cb.__kind, cb.__get, cb.__set = "check", get, set
     Register(page, cb)
     return row
-end
-
--- No notes or tooltips (Alex): MakeNote is a pass-through so page bodies
--- keep their shape.
-local function MakeNote(page, anchor, text)
-    return anchor
 end
 
 local function MakeStepper(page, label, anchor, minV, maxV, get, set, fmt, enabledWhen)
@@ -729,9 +718,7 @@ local function ValueLabel(values, labels, v, preview)
 end
 O.ValueLabel = ValueLabel
 
-local OpenPickerList
-O.OpenPickerList = function(...) return OpenPickerList(...) end     -- the builder window uses it
-OpenPickerList = function(anchorBtn, values, labels, current, onPick)
+local function OpenPickerList(anchorBtn, values, labels, current, onPick)
     if pickerList and pickerList:IsShown() and pickerList.owner == anchorBtn then
         pickerList:Hide()
         return
@@ -840,6 +827,7 @@ OpenPickerList = function(anchorBtn, values, labels, current, onPick)
     C_Timer.After(0.25, Refont)
     C_Timer.After(1.5, Refont)
 end
+O.OpenPickerList = OpenPickerList     -- the builder window uses it
 
 -- A choice among values: a button strip for a few, a dropdown (the
 -- client's menu, or cycling when it is absent) for many. `preview =

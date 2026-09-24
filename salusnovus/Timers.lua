@@ -79,7 +79,6 @@ local function Fire(what, ...)
         end
     end
 end
-T._fireErrShown = fireErrShown     -- test seam
 
 -- Forward: ClearFakes (above the definition) and the ticker both call it
 -- (MerkUI landmine 10).

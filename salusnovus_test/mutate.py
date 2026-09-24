@@ -17,6 +17,9 @@ MUTATIONS = [
     ("SyncAnchorOrigin bails on a missing record (landmine 17)", "Core.lua",
      "    if not frame:GetLeft() then return end          -- not laid out yet\n    PinFromCentre(frame, want)",
      "    if not frame:GetLeft() then return end"),
+    ("a 0.4.5 chat filter switched off keeps the stock words (seeded back)", "Core.lua",
+     "    for k in pairs(ns.defaults.chatFilter.words) do out[k] = false end\n",
+     ""),
     ("a fresh anchor is pinned in absolute coordinates at login (stuck when the UI scale settles)", "Core.lua",
      "    frame:SetPoint(point, UIParent, \"CENTER\", dx / s, dy / s)",
      "    frame:SetPoint(point, UIParent, \"BOTTOMLEFT\", x / s, y / s)"),
@@ -344,6 +347,9 @@ MUTATIONS = [
     ("a second Unlock Frames overwrites the snapshot", "Options.lua",
      "    if ns.db.unlocked and unlockSnapshot then",
      "    if false then"),
+    ("Cancel restores every anchor from Bars's own snapshot, not its own key", "Options.lua",
+     "            SalusNovusDB[a.key] = unlockSnapshot[a.key]",
+     "            SalusNovusDB[a.key] = unlockSnapshot[\"barsPos\"]"),
     ("the module switch leaves Unlock Frames live until the next page change", "Options.lua",
      "                    if strip.unlock and strip.module == m.key then strip.unlock:SetEnabledState(ns.ModuleOn(m.key)) end",
      "                    -- (removed)"),
@@ -922,6 +928,8 @@ FILE_GROUPS = {
     "RouteEditor.lua": "editor,builder,routes,guide,lane05,h9lane03",
     "Builder.lua":     "builder,routes,lane09",
     "ChatFilter.lua":  "chat,lane06",
+    # From the 0.5.2 sweep: every group that caught a Core mutation (190 of 460 tests).
+    "Core.lua":        "anchors,bughunt,load,queue,bughunt5,bughunt4,chat,bughunt3",
     "Quests.lua":      "quests,h9lane03",
 }
 
@@ -936,6 +944,22 @@ def _suite(dst, groups):
     return p.returncode != 0, failing
 
 
+def _rm(path):
+    """copytree carries the source folders' read-only bit (the OneDrive
+    checkout's dirs are 0o555) and Windows will not remove a read-only
+    folder, so an ignore_errors rmtree left every copy's empty folders
+    behind. Clear the bit and retry the one that failed."""
+    import stat
+
+    def writable(fn, p, _):
+        os.chmod(p, stat.S_IWRITE | stat.S_IREAD | stat.S_IEXEC)
+        fn(p)
+    try:
+        shutil.rmtree(path, onerror=writable)
+    except OSError:
+        pass
+
+
 def run(label, fname, old, new):
     tmp = tempfile.mkdtemp(prefix="salusnovus_mut_")
     dst = os.path.join(tmp, "salusnovus")
@@ -944,7 +968,7 @@ def run(label, fname, old, new):
     src = io.open(path, encoding="utf-8").read()
     if src.count(old) != 1:
         print("  ??  %s -- mutation target found %d times" % (label, src.count(old)), flush=True)
-        shutil.rmtree(tmp, ignore_errors=True)
+        _rm(tmp)
         return False
     io.open(path, "w", encoding="utf-8").write(src.replace(old, new, 1))
     groups = FILE_GROUPS.get(fname)
@@ -958,7 +982,7 @@ def run(label, fname, old, new):
     else:
         STATS["targeted"] += 1
     print("  %s  %s  [%s]\n        -> %s" % ("RED " if red else "GREEN!", label, how, "; ".join(failing)[:300] or "no test noticed"), flush=True)
-    shutil.rmtree(tmp, ignore_errors=True)
+    _rm(tmp)
     return red
 
 

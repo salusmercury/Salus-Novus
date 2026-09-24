@@ -41,11 +41,6 @@ function T.SetDisplay(fs, size)
 end
 function T.Upper(s) return string.upper(tostring(s or "")) end
 
-T.PILL = {
-    boss = { 1.00, 0.81, 0.30 },
-    add  = { 0.45, 0.66, 1.00 },
-}
-
 function T.Accent() return ns.GetThemeColor() end
 
 --- Text drawn ON the accent (an active nav row, a picked segment): near
@@ -94,7 +89,6 @@ function T.Paint(part)
     table.insert(T.accentParts, part)
     T.RepaintPart(part)
 end
-T.Repaint = T.RepaintPart   -- older callers
 
 -- Repaint every registered part, but only when the colour actually changed
 -- (MerkUI repainted every page on every ApplyAll; ~21MB per slider drag).
@@ -1163,7 +1157,6 @@ function T.Confirm(text, yesLabel, onYes)
         f.catcher:SetScript("OnClick", function() f:Hide() end)
         f:Hide()
         confirm = f
-        T.confirm = f                                   -- test seam
     end
     confirm.text:SetText(text or "")
     confirm.yes:SetText(yesLabel or "OK")

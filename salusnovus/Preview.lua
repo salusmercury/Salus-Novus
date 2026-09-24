@@ -9,7 +9,7 @@ Alex). Every record comes from the hub; nothing is predicted beyond it.
 
 local _, ns = ...
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local MAX_LINES = 8
 
 local P = {}

@@ -23,7 +23,7 @@ local UI = {}
 ns.TrainerUI = UI
 local T = function() return ns.Trainer end
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local TAB_ICON = "Interface\\Icons\\INV_Misc_Book_09"
 local TAB_FRAME_ATLAS = "spellbook-Tab-Frame-Glow-C60"          -- Blizzard's selected-tab frame
 local TAB_GLOW_ATLAS = "spellbook-Tab-Frame-glow-gradient-C60"  -- and the glow under it

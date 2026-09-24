@@ -11,7 +11,7 @@ and their "xN" badge, specials, instructions, the caster line, the pulse.
 
 local _, ns = ...
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local QUESTION_ICON = 134400
 local MAX_ICONS = 8
 local MIN_ICON = 16
@@ -172,7 +172,7 @@ local function Refresh(placeholder)
     local opts = O() or {}
     local entries = VisibleEntries(placeholder)
     local now = GetTime()
-    local ar, ag, ab = ns.GetThemeColor()
+    local _, ag, ab = ns.GetThemeColor()
 
     -- Sizes: lead = size, each next one shrink% of the previous, floored.
     local size = opts.size or 48

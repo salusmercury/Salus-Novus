@@ -27,8 +27,7 @@ local _, ns = ...
 local E = {}
 ns.RouteEditor = E
 
-local function Num(v) return type(v) == "number" and not ns.IsSecret(v) end
-local function Str(v) return type(v) == "string" and not ns.IsSecret(v) and v or nil end
+local Num, Str = ns.Num, ns.Str
 
 -- ------------------------------------------------------------ log
 
@@ -42,11 +41,6 @@ local function Log(route, op)
     op.id = ("%d-%d"):format(time(), seq)
     op.t = time()
     list[#list + 1] = op
-end
-
-function E.Edits(route)
-    local l = type(SalusNovusDB) == "table" and SalusNovusDB.routeEdits and route and SalusNovusDB.routeEdits[route.slug]
-    return type(l) == "table" and l or {}
 end
 
 -- ------------------------------------------------------------ ops

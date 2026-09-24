@@ -1716,6 +1716,39 @@ def _():
     ok(not h.lua("return SalusNovusBars:IsMouseEnabled()"), "still draggable after cancel")
 
 
+@test("Cancel restores a pre-existing v=2 record exactly, not through the legacy (no-v) anchor branch", "options")
+def _():
+    # The position check above (GetLeft/GetTop right after Cancel) measures
+    # the frame back in its options-page PREVIEW, which renders at a fixed
+    # spot regardless of the real saved record -- it can't see this bug.
+    # Re-entering unlock mode pulls the frame back onto UIParent for real,
+    # which is the only place its on-screen position reflects the record.
+    h = fresh()
+    h.lua("ns.db.bars.direction = 'down'; ns.ApplyAll()")   # TOPLEFT origin: distinct from the legacy branch's implied relPoint
+    open_options(h)
+    h.lua("""
+        ns.Options.SelectPage('bars')
+        ns.Options.EnterUnlockMode()
+        SalusNovusBars:ClearAllPoints()
+        SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 200, 300)
+        ns.SaveAnchor(SalusNovusBars, "barsPos")
+        ns.Options.ExitUnlockMode(true)   -- a real v=2 record now exists
+        ns.Options.EnterUnlockMode()      -- pulls the frame back to UIParent
+        __x0, __y0 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()
+        SalusNovusBars:ClearAllPoints()
+        SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 900, 900)
+        ns.SaveAnchor(SalusNovusBars, "barsPos")   -- drag away from the v=2 spot
+    """)
+    h.lua("ns.Options.ExitUnlockMode(false)")   # Cancel: should restore the v=2 record exactly
+    ok(h.lua("return SalusNovusDB.barsPos.v == 2"), "the snapshot dropped the v=2 marker")
+    h.lua("ns.Options.EnterUnlockMode()")       # back on UIParent: the real, user-visible spot
+    x, y = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
+    x0, y0 = h.lua("return __x0, __y0")
+    ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01,
+       "Cancel restored through the legacy branch, not v=2: %r vs %r" % ((x, y), (x0, y0)))
+    eq(h.errors(), [], "errors")
+
+
 @test("unlock: Save keeps the new record and reopens the same page; a pull during unlock force-exits", "options")
 def _():
     h = fresh()
@@ -2403,6 +2436,141 @@ def _():
     ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01, "Cancel restored the dragged position: %r vs %r" % ((x, y), (x0, y0)))
 
 
+@test("a second Unlock Frames does not retake the snapshot: Cancel restores the real pre-drag spot on UIParent", "bughunt")
+def _():
+    # The check above reads GetLeft/GetTop right after Cancel, while the
+    # frame is back in the options-page PREVIEW -- that renders at a fixed
+    # spot no matter what the underlying record says, so it cannot tell a
+    # correct restore from a wrong one. Re-entering unlock mode pulls the
+    # frame back onto UIParent, where its position really does depend on
+    # SalusNovusDB.barsPos.
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.db.unlocked = false; ns.ApplyAll()")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars'); ns.Options.EnterUnlockMode()")
+    x0, y0 = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
+    h.lua("""
+        SalusNovusBars:ClearAllPoints()
+        SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 700)
+        ns.SaveAnchor(SalusNovusBars, "barsPos")
+        ns.ToggleOptions()            -- reopened mid-drag
+        ns.Options.EnterUnlockMode()  -- and Unlock Frames pressed again
+    """)
+    h.lua("ns.Options.ExitUnlockMode(false)")
+    h.lua("ns.Options.EnterUnlockMode()")   # back on UIParent: the real, user-visible spot
+    x, y = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
+    ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01,
+       "a second Enter took a fresh (already-dragged) snapshot: %r vs %r" % ((x, y), (x0, y0)))
+    eq(h.errors(), [], "errors")
+
+
+def _cancel_restores_v2(h, page, frame_name, key):
+    """Same protocol as the Bars fix (commit 531a974): the position check
+    right after Cancel would read the frame in the options-page PREVIEW,
+    which draws at a fixed spot no matter what SalusNovusDB says. Re-enter
+    unlock mode to pull the frame back onto UIParent before measuring."""
+    open_options(h)
+    h.lua("""
+        ns.Options.SelectPage('%s')
+        ns.Options.EnterUnlockMode()
+        %s:ClearAllPoints()
+        %s:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 200, 300)
+        ns.SaveAnchor(%s, "%s")
+        ns.Options.ExitUnlockMode(true)   -- a real v=2 record now exists
+        ns.Options.EnterUnlockMode()      -- pulls the frame back to UIParent
+        __x0, __y0 = %s:GetLeft(), %s:GetTop()
+        %s:ClearAllPoints()
+        %s:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 900, 900)
+        ns.SaveAnchor(%s, "%s")   -- drag away from the v=2 spot
+    """ % (page, frame_name, frame_name, frame_name, key, frame_name, frame_name,
+           frame_name, frame_name, frame_name, key))
+    h.lua("ns.Options.ExitUnlockMode(false)")   # Cancel: should restore the v=2 record exactly
+    h.lua("ns.Options.EnterUnlockMode()")       # back on UIParent: the real, user-visible spot
+    x, y = h.lua("return %s:GetLeft(), %s:GetTop()" % (frame_name, frame_name))
+    x0, y0 = h.lua("return __x0, __y0")
+    ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01,
+       "%s Cancel did not restore its own v=2 record: %r vs %r" % (key, (x, y), (x0, y0)))
+    eq(h.errors(), [], "errors")
+
+
+@test("Queue: Cancel restores its own v=2 record, not another anchor's snapshot", "options")
+def _():
+    h = fresh()
+    _cancel_restores_v2(h, "queue", "SalusNovusQueue", "queuePos")
+
+
+@test("Ability Preview: Cancel restores its own v=2 record, not another anchor's snapshot", "options")
+def _():
+    h = fresh()
+    _cancel_restores_v2(h, "preview", "SalusNovusPreview", "previewPos")
+
+
+@test("Messages: Cancel restores its own v=2 record, not another anchor's snapshot", "options")
+def _():
+    h = fresh()
+    _cancel_restores_v2(h, "messages", "SalusNovusMessages", "messagesPos")
+
+
+@test("Health Bars: Cancel restores its own v=2 record, not another anchor's snapshot", "options")
+def _():
+    h = fresh()
+    _cancel_restores_v2(h, "health", "SalusNovusHealthBars", "healthPos")
+
+
+@test("Reminders: Cancel restores its own v=2 record, not another anchor's snapshot", "options")
+def _():
+    h = fresh()
+    _cancel_restores_v2(h, "reminders", "SalusNovusReminderFrame", "remindersPos")
+
+
+@test("Guide/Arrow/Builder: Cancel restores each frame's own v=2 record, not another anchor's snapshot", "options")
+def _():
+    # These three have no options-page preview stage (they live on UIParent
+    # the whole time, dragged directly in unlock mode), so no re-entering is
+    # needed to measure -- but they still go through the SAME generic
+    # ExitUnlockMode loop over ns.AnchorPositions as every previewed anchor.
+    h = fresh()
+    h.lua("""
+        ns.db.guide.enabled = true
+        ns.db.guide.arrow = true
+        ns.db.modules.leveling = true
+        ns.ApplyAll()
+        ns.Guide.Build(); ns.Arrow.Build(); ns.Builder.Build()
+    """)
+    open_options(h)
+    h.lua("ns.Options.EnterUnlockMode()")
+    for frame_name, key, dx, dy in (
+        ("SalusNovusGuide", "guidePos", 200, 300),
+        ("SalusNovusArrow", "arrowPos", 210, 310),
+        ("SalusNovusBuilder", "builderPos", 220, 320),
+    ):
+        h.lua("""
+            %s:ClearAllPoints()
+            %s:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", %d, %d)
+            ns.SaveAnchor(%s, "%s")
+        """ % (frame_name, frame_name, dx, dy, frame_name, key))
+    h.lua("ns.Options.ExitUnlockMode(true)")   # a real v=2 record now exists for all three
+    h.lua("ns.Options.EnterUnlockMode()")
+    x0 = h.lua("return { g = { SalusNovusGuide:GetLeft(), SalusNovusGuide:GetTop() }, "
+               "a = { SalusNovusArrow:GetLeft(), SalusNovusArrow:GetTop() }, "
+               "b = { SalusNovusBuilder:GetLeft(), SalusNovusBuilder:GetTop() } }")
+    h.lua("""
+        SalusNovusGuide:ClearAllPoints() SalusNovusGuide:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 900, 900)
+        ns.SaveAnchor(SalusNovusGuide, "guidePos")
+        SalusNovusArrow:ClearAllPoints() SalusNovusArrow:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 910, 910)
+        ns.SaveAnchor(SalusNovusArrow, "arrowPos")
+        SalusNovusBuilder:ClearAllPoints() SalusNovusBuilder:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 920, 920)
+        ns.SaveAnchor(SalusNovusBuilder, "builderPos")
+    """)
+    h.lua("ns.Options.ExitUnlockMode(false)")   # Cancel
+    for frame_name, tag in (("SalusNovusGuide", "g"), ("SalusNovusArrow", "a"), ("SalusNovusBuilder", "b")):
+        x, y = h.lua("return %s:GetLeft(), %s:GetTop()" % (frame_name, frame_name))
+        gx, gy = x0[tag][1], x0[tag][2]
+        ok(abs(x - float(gx)) < 0.01 and abs(y - float(gy)) < 0.01,
+           "%s Cancel did not restore its own record: %r vs %r" % (frame_name, (x, y), (gx, gy)))
+    eq(h.errors(), [], "errors")
+
+
 @test("a /reload while unlocked comes back locked; /sn by hand never brings the panel back on its own", "bughunt")
 def _():
     h = fresh()
@@ -2836,6 +3004,23 @@ def _():
     h.lua("ns.Theme.OpenColorPicker({ r = 0.2, g = 0.2, b = 0.2 }, function() end, function() __cancelled = true end); SalusNovusColorPicker.cancel:Click()")
     ok(h.lua("return __cancelled"), "Cancel did not call back")
     ok(h.lua("for _, n in ipairs(UISpecialFrames) do if n == 'SalusNovusColorPicker' then return true end end return false"), "picker not ESC-closable")
+    eq(h.errors(), [], "errors")
+
+
+@test("typing a hex and pressing Enter commits the colour (Enter drops focus; focus lost reads the box)", "polish")
+def _():
+    h = fresh()
+    h.lua("""
+        __got = {}
+        ns.Theme.OpenColorPicker({ r = 1, g = 0.5, b = 0 }, function(r, g, b) __got = { r, g, b } end, function() end)
+        local hex = SalusNovusColorPicker.hex
+        hex:SetFocus()
+        hex:SetText('102030')
+        hex:GetScript('OnEnterPressed')(hex)
+    """)
+    ok(not h.lua("return SalusNovusColorPicker.hex:HasFocus()"), "Enter left the box focused")
+    got = h.lua("return __got")
+    ok(abs(float(got[1]) - 16 / 255) < 0.01 and abs(float(got[3]) - 48 / 255) < 0.01, "Enter did not commit the hex: %r" % (list(got.values()),))
     eq(h.errors(), [], "errors")
 
 
@@ -6660,6 +6845,21 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("a 0.4.5 save with the chat filter switched off comes up with no blocked words, and stays so across a reload", "chat")
+def _():
+    save = 'SalusNovusDB = { options = { chatFilter = { enabled = false, words = { "asmon", "gdkp" } } } }'
+    h = Harness()
+    h.login(save)
+    eq([str(x) for x in h.lua("return ns.ChatFilter.List()").values()], [], "words left after the migration")
+    ok(h.lua('return (W.chat("CHAT_MSG_SAY", "asmon and trump sell gdkp", "Bob"))') is False, "a line was still blocked")
+    eq(h.lua("return ns.db.chatFilter.enabled"), None, "the dead flag was kept")
+    ok(h.lua('return ns.ChatFilter.AddWord("gdkp")') == "gdkp", "a word can be added back")
+    h2 = Harness()
+    h2.login('SalusNovusDB = { options = { chatFilter = { words = { asmon = false, olympus = false, trump = false, republican = false, democrat = false, gdkp = true } } } }')
+    eq([str(x) for x in h2.lua("return ns.ChatFilter.List()").values()], ["gdkp"], "stock words seeded back on the next load")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
 @test("a chat line without a blocked word passes through with its text and sender intact", "chat")
 def _():
     h = fresh()
@@ -7113,6 +7313,39 @@ def _():
     h.lua("__quests = {}; W.fireEvent('QUEST_LOG_UPDATE')")
     eq(str(h.lua("return __btnAll:GetParent().label:GetText()")), "All quests (0)", "the count should follow the log while the page is up")
     ok(not h.lua("return __btnAll.enabledState"), "zero quests should grey All")
+    eq(h.errors(), [], "errors")
+
+
+@test("a greyed Abandon button's own OnClick refuses even when invoked directly, not just via a disabled Click()", "quests")
+def _():
+    # __btnAll:Click() alone can't tell this mutation from working code: the
+    # mock (like the real client) already refuses a click on a button whose
+    # SetEnabled(false) was called, so the "if not self.enabledState" guard
+    # inside OnClick never runs in that path either way. This suite invokes
+    # OnClick directly elsewhere (tests.py:1333 etc.) for exactly this
+    # reason: it is the only way to isolate the handler's OWN guard from the
+    # widget-level one.
+    h = fresh()
+    h.lua("__quests = {}")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('quests')")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.quests and w.__kind == "button" then
+                if w:GetParent().label:GetText():find("^All") then __btnAll = w end
+            end
+        end
+    """)
+    ok(not h.lua("return __btnAll.enabledState"), "All should be greyed out with an empty log")
+    # The log refills without a QUEST_LOG_UPDATE refresh: count() now sees
+    # quests, but the widget is still visibly greyed (stale enabledState).
+    h.lua(QUEST_LOG)
+    eq(int(h.lua("return #ns.Quests.List()")), 5, "the log itself already has quests again")
+    ok(not h.lua("return __btnAll.enabledState"), "the button is still showing greyed before any refresh")
+    h.lua("__btnAll:GetScript('OnClick')(__btnAll)")
+    ok(not h.lua("return SalusNovusConfirm and SalusNovusConfirm:IsShown()"),
+       "a visibly greyed button must not open the confirmation even when OnClick fires directly")
+    eq(ids(h, "ns.Quests.List()"), [101, 102, 201, 202, 401], "nothing should have been abandoned")
     eq(h.errors(), [], "errors")
 
 
@@ -8414,6 +8647,21 @@ def _():
     h.lua("ns.Builder.Show()")
     ok(not h.lua("return SalusNovusBuilder.questBtn.enabledState"), "questBtn should be disabled with no quests")
     h.lua("SalusNovusBuilder.questBtn:Click()")  # Try to click disabled button - should be safe
+    eq(h.errors(), [], "errors")
+
+
+@test("the builder's quest button opens the Options picker list with the log's quests (its call is guarded, so a missing export would fail silently)", "builder")
+def _():
+    h = fresh()
+    h.lua(MAP_STUBS)
+    h.lua("ns.Routes = {}; __quests = { { questID = 555, title = 'Extra', level = 2 }, { questID = 556, title = 'More', level = 3 } }; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 4 end")
+    ok(h.lua("return type(ns.Options.OpenPickerList) == 'function'"), "Options.OpenPickerList is not exported")
+    h.lua("ns.Builder.Show()")
+    h.lua("SalusNovusBuilder.questBtn:Click()")
+    ok(h.lua("return SalusNovusPickerList and SalusNovusPickerList:IsShown()"), "picker list did not open from the builder")
+    eq(str(h.lua("return SalusNovusPickerList.rows[2].text:GetText()")), "More", "second row is the second quest")
+    h.lua("SalusNovusPickerList.rows[2]:Click()")
+    eq(int(h.lua("return SalusNovusBuilder.quest")), 556, "pick did not land on the builder")
     eq(h.errors(), [], "errors")
 
 

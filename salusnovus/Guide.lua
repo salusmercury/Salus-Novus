@@ -25,7 +25,7 @@ local _, ns = ...
 local G = {}
 ns.Guide = G
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 
 local function O() return ns.db and ns.db.guide end
 local function Enabled()
@@ -34,8 +34,7 @@ local function Enabled()
 end
 G.Enabled = Enabled
 
-local function Num(v) return type(v) == "number" and not ns.IsSecret(v) end
-local function Str(v) return type(v) == "string" and not ns.IsSecret(v) and v or nil end
+local Num, Str = ns.Num, ns.Str
 
 local function QL() return rawget(_G, "C_QuestLog") end
 

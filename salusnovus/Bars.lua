@@ -13,7 +13,7 @@ LibSharedMedia textures, ability routing, instructions, specials.
 
 local _, ns = ...
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local MAX_BARS = 8
 
 local B = {}

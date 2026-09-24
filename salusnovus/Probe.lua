@@ -43,7 +43,7 @@ local function Call(out, label, fn, ...)
     return unpack(res, 2)
 end
 
-local function Num(v) return type(v) == "number" and not ns.IsSecret(v) end
+local Num = ns.Num
 
 --- Returns the report lines; the slash command prints them.
 function P.Waypoint(keep)

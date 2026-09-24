@@ -21,7 +21,7 @@ local _, ns = ...
 local B = {}
 ns.Builder = B
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local W, PAD = 324, 8
 
 local frame
@@ -208,7 +208,6 @@ function B.Toggle()
     if frame:IsShown() then frame:Hide() else frame:Show() B.Refresh() end
 end
 function B.Show() Build() frame:Show() B.Refresh() end
-function B.IsShown() return frame ~= nil and frame:IsShown() end
 
 ns.On("QUEST_LOG_UPDATE", function() B.Refresh() end)
 ns.On("QUEST_ACCEPTED", function() B.Refresh() end)

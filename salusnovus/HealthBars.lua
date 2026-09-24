@@ -26,7 +26,7 @@ engage list -- never on a timer. Outside a fight nothing is registered.
 
 local _, ns = ...
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 local QUESTION_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local MAX_MARKERS = 8
 local MAX_ROWS = 5

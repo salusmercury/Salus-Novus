@@ -28,6 +28,11 @@ function ns.IsSecret(v)
     return res and true or false
 end
 
+--- Plain (non-secret) number / string, or nil. Shared by the leveling
+-- modules and the probe.
+function ns.Num(v) return type(v) == "number" and not ns.IsSecret(v) end
+function ns.Str(v) return type(v) == "string" and not ns.IsSecret(v) and v or nil end
+
 --- A string that is safe to concatenate. nil -> "", secret -> a marker.
 function ns.S(v)
     if v == nil then return "" end
@@ -161,9 +166,27 @@ local function CopyDefaults(src, dst, top)
 end
 ns.CopyDefaults = CopyDefaults
 
+--- Before 0.4.6 the chat filter had its own check box (chatFilter.enabled);
+-- now it follows the Quality of Life switch and nothing reads the flag. A
+-- save with it off gets every word removed instead, the stock ones as
+-- FALSE so CopyDefaults does not seed them back, and loses the flag.
+local function MigrateChatFilterOff(o)
+    local cf = o.chatFilter
+    if type(cf) ~= "table" or cf.enabled ~= false then return end
+    local words = type(cf.words) == "table" and cf.words or {}
+    local out = {}
+    for k, v in pairs(words) do
+        if type(k) == "string" then out[k] = false
+        elseif type(v) == "string" then out[v:lower()] = false end
+    end
+    for k in pairs(ns.defaults.chatFilter.words) do out[k] = false end
+    cf.words, cf.enabled = out, nil
+end
+
 function ns.InitDB()
     if type(SalusNovusDB) ~= "table" then SalusNovusDB = {} end
     if type(SalusNovusDB.options) ~= "table" then SalusNovusDB.options = {} end
+    MigrateChatFilterOff(SalusNovusDB.options)
     CopyDefaults(ns.defaults, SalusNovusDB.options, true)
     ns.db = SalusNovusDB.options
 end
@@ -648,5 +671,4 @@ local function Relayout()
 end
 ns.On("UI_SCALE_CHANGED", Relayout)
 ns.On("DISPLAY_SIZE_CHANGED", Relayout)
-ns.RelayoutAnchors = Relayout                   -- test seam
 

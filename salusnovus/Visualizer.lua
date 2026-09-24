@@ -38,7 +38,6 @@ local function Fight()
     if not state.enc then return nil end
     return (ns.BossByEncounter(state.enc))
 end
-V.Fight = Fight
 
 -- The window reopens where you left it.
 local function Remember()
@@ -527,10 +526,7 @@ local function BuildForm()
         form.picker:Show()
     end)
 
-    function form.UpdateAtNote()
-        form.atNote:SetText("m:ss from pull")
-    end
-    form.at:HookScript("OnTextChanged", form.UpdateAtNote)
+    form.atNote:SetText("m:ss from pull")
 
     form.cancel:SetScript("OnClick", function() form:Hide() end)
     form.save:SetScript("OnClick", function()
@@ -639,7 +635,6 @@ local function OpenForm(t, spellId, abilityName, existing)
     form.LayoutTrigger()
     form.picker:Hide()
     form.swatch:Paint()
-    form.UpdateAtNote()
     form:Show()
     form.text:SetFocus()
     form.text:HighlightText()
@@ -979,7 +974,6 @@ RenderDesc = function(f)
     content:SetHeight(math.max(1, y))
     T.SnapCheckBoxes()          -- rows hang under fractional text heights
 end
-V.RenderDesc = RenderDesc
 
 local function Build()
     if win then return win end

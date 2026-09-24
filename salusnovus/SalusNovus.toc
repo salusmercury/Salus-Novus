@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Salus Novus
 ## Notes: Boss visualizer, bars and reminders for WoW Forever, built from our own combat logs. /sn
-## Version: 0.5.1
+## Version: 0.5.2
 ## Author: Alex
 ## SavedVariables: SalusNovusDB
 

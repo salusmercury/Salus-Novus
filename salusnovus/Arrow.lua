@@ -33,7 +33,7 @@ local function Enabled()
 end
 A.Enabled = Enabled
 
-local function Num(v) return type(v) == "number" and not ns.IsSecret(v) end
+local Num = ns.Num
 
 local function Vec(x, y)
     if CreateVector2D then return CreateVector2D(x, y) end
@@ -81,8 +81,6 @@ end
 -- ------------------------------------------------------------ frame
 
 local frame
-local last = { rot = nil, dist = nil }
-A.last = last                                        -- test seam
 
 local function SavePosition() ns.SaveAnchor(frame, "arrowPos") end
 local function RestorePosition()
@@ -180,14 +178,12 @@ function A.Tick()
         else
             frame.arrow:Hide()
             frame.text:SetText(step and "?" or "")
-            last.rot, last.dist = nil, nil
             return
         end
     end
     local rot = bearing - Facing()
     frame.arrow:Show()
     frame.arrow:SetRotation(rot)
-    last.rot, last.dist = rot, dist
     frame.text:SetText(("%d yd"):format(dist + 0.5))
     if step and step.k == "go" and dist <= ns.Guide.ARRIVE then
         local st = ns.Guide.state

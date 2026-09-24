@@ -22,8 +22,7 @@ local _, ns = ...
 local T = {}
 ns.Trainer = T
 
-local function Num(v) return type(v) == "number" and not ns.IsSecret(v) end
-local function Str(v) return type(v) == "string" and not ns.IsSecret(v) and v or nil end
+local Num, Str = ns.Num, ns.Str
 
 local function O() return ns.db and ns.db.trainer end
 local function Enabled()

@@ -9,7 +9,7 @@ newest nearest it, and fade after `hold` seconds.
 
 local _, ns = ...
 
-local SOLID = "Interface\\Buttons\\WHITE8x8"
+local SOLID = ns.Theme.SOLID
 
 local M = {}
 ns.Messages = M
