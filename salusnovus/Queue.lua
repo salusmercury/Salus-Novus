@@ -116,7 +116,7 @@ local function Build()
     frame.unlockLabel:SetText("Ability Queue  \194\183  drag to move")
     frame.unlockLabel:Hide()
 
-    ns.RegisterMovable(frame, "queuePos", Origin)
+    ns.RegisterMovable(frame, "queuePos", Origin, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

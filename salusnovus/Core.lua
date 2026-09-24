@@ -239,9 +239,10 @@ end
 -- Movable frames register here so one toggle can lock/unlock them all.
 local movables = {}
 ns.movables = movables            -- SnapMovable aligns against the other anchors
-function ns.RegisterMovable(frame, saveKey, origin)
+function ns.RegisterMovable(frame, saveKey, origin, restore)
     movables[frame] = saveKey or true
     frame.__origin = origin       -- function -> the growth-origin point
+    frame.__restore = restore     -- function -> the module's RestorePosition (re-layout after a scale change)
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
     frame:RegisterForDrag("LeftButton")
@@ -280,23 +281,53 @@ function ns.SaveAnchor(frame, key)
     local x, y, s = OriginXY(frame, point)
     if not x then return end
     SalusNovusDB[key] = { point = point, x = x, y = y, v = 2 }
+    frame.__pin = nil                               -- the record rules from here
     -- Re-anchor from the record just written: a drag leaves the frame pinned
     -- wherever the drag put it, and SnapMovable pins by CENTER.
     frame:ClearAllPoints()
     frame:SetPoint(point, UIParent, "BOTTOMLEFT", x / s, y / s)
 end
 
+--- Re-pin `frame` by `point` where it stands, as an offset from UIParent's
+-- CENTRE, writing nothing. At login the client still runs at UI scale 1
+-- (UIParent 1365.33x768); the user's scale settles a moment later and
+-- UIParent grows to, say, 1920x1080. A pin measured in ABSOLUTE UIParent
+-- coordinates at that moment stays put and the frame ends up low and to
+-- the left (Alex's Reminders anchor, 2026-09-23: exactly the small
+-- screen's centre, in the big screen). A centre-relative pin rides along.
+-- The pin is remembered on the frame (frame.__pin) for the session so a
+-- later RestoreAnchor without a record (growth, preview, scale change)
+-- keeps the growth origin where it was instead of re-deriving it from the
+-- default corner (a down-growing stack would otherwise grow upwards).
+local function PinFromCentre(frame, point)
+    if frame:GetParent() ~= UIParent then return false end   -- on an options preview stage: not a screen spot
+    local x, y, s = OriginXY(frame, point)
+    if not x then return false end
+    local sw, sh = UIParent:GetWidth(), UIParent:GetHeight()
+    local dx, dy = x - sw / 2, y - sh / 2                -- UIParent units, unscaled
+    frame.__pin = { point = point, dx = dx, dy = dy }
+    frame:ClearAllPoints()
+    frame:SetPoint(point, UIParent, "CENTER", dx / s, dy / s)
+    return true
+end
+
 --- Call from a module's layout AFTER the frame has its final size. Keeps the
 -- frame where it is and re-pins it by the right corner. NO RECORD IS NOT
--- "NOTHING TO DO" -- a fresh install must be re-pinned too (landmine 17).
+-- "NOTHING TO DO" -- a fresh install must be re-pinned too (landmine 17),
+-- but relative to the screen centre and WITHOUT writing a record: only the
+-- user's own save (the drag mode) writes one. A user record pinned by the
+-- wrong point is rewritten by the right one.
 function ns.SyncAnchorOrigin(frame, key)
     local rec = SalusNovusDB and SalusNovusDB[key]
-    if rec and rec.v == 2 then
-        local want = (frame.__origin and frame.__origin()) or "CENTER"
-        if rec.point == want then return end
+    local want = (frame.__origin and frame.__origin()) or "CENTER"
+    if type(rec) == "table" then                    -- the user's record (v2, or legacy): rewrite by the right point
+        if rec.v == 2 and rec.point == want then return end
+        if not frame:GetLeft() then return end      -- not laid out yet
+        ns.SaveAnchor(frame, key)
+        return
     end
     if not frame:GetLeft() then return end          -- not laid out yet
-    ns.SaveAnchor(frame, key)
+    PinFromCentre(frame, want)
 end
 
 --- Re-anchor from the saved record, or the default point + offset. Call
@@ -320,9 +351,15 @@ function ns.RestoreAnchor(frame, key, defaultPoint, dx, dy, relPoint)
         SalusNovusDB[key] = nil
         p = nil
     end
+    local want = frame.__origin and frame.__origin()
+    local pin = frame.__pin
     if p and p.v == 2 and p.point and p.x and p.y then
         local s = ScaleRatio(frame)
         frame:SetPoint(p.point, UIParent, "BOTTOMLEFT", p.x / s, p.y / s)
+    elseif not p and pin and (not want or pin.point == want) then
+        -- this session's centre-relative pin (no record): the growth origin stays put
+        local s = ScaleRatio(frame)
+        frame:SetPoint(pin.point, UIParent, "CENTER", pin.dx / s, pin.dy / s)
     elseif p and p.point then
         frame:SetPoint(p.point, UIParent, p.relPoint or p.point, p.x or 0, p.y or 0)
     else
@@ -330,14 +367,7 @@ function ns.RestoreAnchor(frame, key, defaultPoint, dx, dy, relPoint)
         -- units, so divide by the scale like every other path here.
         local s0 = ScaleRatio(frame)
         frame:SetPoint(defaultPoint, UIParent, relPoint or defaultPoint, (dx or 0) / s0, (dy or 0) / s0)
-        local want = frame.__origin and frame.__origin()
-        if want and want ~= defaultPoint then
-            local x, y, s = OriginXY(frame, want)
-            if x then
-                frame:ClearAllPoints()
-                frame:SetPoint(want, UIParent, "BOTTOMLEFT", x / s, y / s)
-            end
-        end
+        if want and want ~= defaultPoint then PinFromCentre(frame, want) end     -- never an absolute pin at login
     end
 end
 
@@ -361,6 +391,8 @@ local function GridOpts()
     return g.grid ~= false, size, g.snap ~= false, snapR
 end
 
+function ns.AlignGrid() return gridFrame end          -- the probe reads the frame itself, not a global name
+
 function ns.ShowAlignGrid(show)
     local on, size = GridOpts()
     if not show or not on then
@@ -378,6 +410,14 @@ function ns.ShowAlignGrid(show)
     local w, h = UIParent:GetWidth(), UIParent:GetHeight()
     local cx, cy = w / 2, h / 2
     local ar, ag, ab = ns.GetThemeColor()
+    -- Whole pixels (Alex, 2026-09-23: the grid "not all squares"). A 1-unit
+    -- line CENTRED on its coordinate spans half of two pixel rows at half
+    -- the alpha each and shows or vanishes by rounding (measured: lines at
+    -- 27.5..28.5). Each line is one pixel thick and anchored by its edge on
+    -- a pixel boundary; the centre lines two pixels.
+    local pu = (ns.Theme and ns.Theme.PixelUnit and ns.Theme.PixelUnit(gridFrame)) or 1
+    if not pu or pu <= 0 then pu = 1 end
+    local function Px(v) return math.floor(v / pu + 0.5) * pu end
     local n = 0
     local function Line(vertical, pos, center)
         n = n + 1
@@ -388,14 +428,16 @@ function ns.ShowAlignGrid(show)
             gridFrame.lines[n] = t
         end
         t:ClearAllPoints()
+        local thick = (center and 2 or 1) * pu
+        local edge = Px(pos) - (center and pu or 0)          -- the centre line straddles its coordinate by a pixel each side
         if vertical then
-            t:SetWidth(center and 2 or 1)
-            t:SetPoint("TOP", UIParent, "TOPLEFT", pos, 0)
-            t:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", pos, 0)
+            t:SetWidth(thick)
+            t:SetPoint("TOPLEFT", UIParent, "TOPLEFT", edge, 0)
+            t:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", edge, 0)
         else
-            t:SetHeight(center and 2 or 1)
-            t:SetPoint("LEFT", UIParent, "BOTTOMLEFT", 0, pos)
-            t:SetPoint("RIGHT", UIParent, "BOTTOMRIGHT", 0, pos)
+            t:SetHeight(thick)
+            t:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, edge)
+            t:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, edge)
         end
         -- The accent throughout (Alex): the centre lines strong, the rest faint.
         if center then t:SetVertexColor(ar, ag, ab, 0.7) else t:SetVertexColor(ar, ag, ab, 0.18) end
@@ -581,3 +623,30 @@ ns.Commands.resetpos = function()
     ns.ApplyAll()
     ns.Print("every anchor position reset to its default.")
 end
+
+-- ---------------------------------------------------------- scale settling
+-- The client applies the user's UI scale a moment after login. A frame's
+-- reported position lags a layout pass behind that change while UIParent's
+-- size updates at once, so an anchor laid out inside that window is pinned
+-- from mixed measurements (Alex's Reminders, 2026-09-23: BOTTOM -> CENTER
+-- (-277, -97), and -277 is half of 1920 - 1365). The client says when the
+-- scale or the display changed: forget every session pin and lay every
+-- anchor out again from clean numbers. Debounced: the events come in
+-- bursts.
+local relayoutPending
+local function Relayout()
+    if relayoutPending then return end
+    relayoutPending = true
+    C_Timer.After(0.1, function()
+        relayoutPending = nil
+        for f in pairs(ns.movables or {}) do
+            f.__pin = nil
+            if f.__restore then pcall(f.__restore) end
+        end
+        if ns.db then ns.ApplyAll() end
+    end)
+end
+ns.On("UI_SCALE_CHANGED", Relayout)
+ns.On("DISPLAY_SIZE_CHANGED", Relayout)
+ns.RelayoutAnchors = Relayout                   -- test seam
+

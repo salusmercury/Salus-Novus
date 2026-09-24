@@ -135,11 +135,12 @@ def _():
     h.lua("ns.db.unlocked = true; ns.ApplyAll()")
     pt = str(h.lua("local p = SalusNovusBars:GetPoint() return p"))
     eq(pt, "TOPLEFT", "should be pinned by TOPLEFT (grows down)")
-    # A fresh install IS re-pinned and recorded on first layout (MerkUI
-    # landmine 17); the record must describe where the frame actually is.
-    eq(str(h.lua("return SalusNovusDB.barsPos.point")), "TOPLEFT", "record point")
-    dx, dy = h.lua("return SalusNovusDB.barsPos.x - SalusNovusBars:GetLeft(), SalusNovusDB.barsPos.y - SalusNovusBars:GetTop()")
-    ok(abs(dx) < 0.01 and abs(dy) < 0.01, "record disagrees with the frame: %r" % ((dx, dy),))
+    # A fresh install IS re-pinned on first layout (MerkUI landmine 17), but
+    # relative to the screen centre and WITHOUT a record: only the user's own
+    # save writes one (a login-time absolute record put Alex's Reminders at
+    # the small pre-scale screen's centre, 2026-09-23).
+    ok(h.lua("return SalusNovusDB.barsPos == nil"), "no record without a user save")
+    ok(str(h.lua("local _, rel, rp = SalusNovusBars:GetPoint() return rp")) == "CENTER", "pinned from the centre")
     # Growing the stack must not move the top-left corner.
     l0, t0 = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
     h.lua("ns.db.bars.max = 8; ns.ApplyAll()")
@@ -197,13 +198,14 @@ def _():
     h.login('SalusNovusDB = { barsPos = 7 }')
     eq(h.errors(), [], "errors on a junk record")
     eq(str(h.lua("return tostring(SalusNovusDB.barsPos)")), "nil", "junk record kept")
-    # Then, on first layout, replaced by a real v2 record at the default spot.
+    # Then the first layout uses the default spot and writes nothing (only a
+    # user save writes a record): same place as a fresh install.
     h.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    eq(int(h.lua("return SalusNovusDB.barsPos.v")), 2, "junk record not replaced")
+    ok(h.lua("return SalusNovusDB.barsPos == nil"), "no record replaces the junk")
     h2 = fresh()
     h2.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    x1, y1 = h.lua("return SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y")
-    x2, y2 = h2.lua("return SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y")
+    x1, y1 = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
+    x2, y2 = h2.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
     ok(abs(x1 - x2) < 0.01 and abs(y1 - y2) < 0.01, "junk record did not fall back to the default position")
 
 
@@ -1684,13 +1686,13 @@ def _():
 @test("unlock: Enter hides the panel, shows the bar and grid, unlocks both anchors; Cancel restores the snapshot incl. v=2", "options")
 def _():
     h = fresh()
-    # A real record first (a preview never writes one: SaveAnchor refuses
-    # off UIParent), then the window.
+    # The frame is laid out first (a fresh install writes NO record: only the
+    # user's save does), then the window.
     h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.db.unlocked = false; ns.ApplyAll()")
     open_options(h)
     h.lua("""
         ns.Options.SelectPage('bars')
-        __x0, __y0 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+        __x0, __y0 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()
         ns.Options.EnterUnlockMode()
     """)
     ok(not h.lua("return SalusNovusOptions:IsShown()"), "panel still shown in unlock mode")
@@ -1704,9 +1706,10 @@ def _():
     """)
     h.lua("ns.Options.ExitUnlockMode(false)")
     ok(not h.lua("return ns.db.unlocked") and not h.lua("return SalusNovusUnlockBar:IsShown()") and not h.lua("return SalusNovusAlignGrid:IsShown()"), "cancel did not lock")
-    x, y, v = h.lua("return SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y, SalusNovusDB.barsPos.v")
+    x, y = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
     x0, y0 = h.lua("return __x0, __y0")
-    ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01 and int(v) == 2, "snapshot not restored: %r vs %r" % ((x, y, v), (x0, y0)))
+    ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01, "snapshot not restored: %r vs %r" % ((x, y), (x0, y0)))
+    ok(h.lua("return SalusNovusDB.barsPos == nil"), "the snapshot (no record) is back: the drag's record is gone")
     ok(h.lua("return SalusNovusOptions:IsShown()"), "panel did not come back")
     eq(str(h.lua("return ns.Options.ActivePage()")), "bars", "not the same page")
     ok(h.lua("return SalusNovusBars:GetParent() ~= UIParent"), "preview did not resume after cancel")
@@ -2385,7 +2388,7 @@ def _():
     h = fresh()
     h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.db.unlocked = false; ns.ApplyAll()")
     open_options(h)
-    h.lua("ns.Options.SelectPage('bars'); __x0, __y0 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y; ns.Options.EnterUnlockMode()")
+    h.lua("ns.Options.SelectPage('bars'); __x0, __y0 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop(); ns.Options.EnterUnlockMode()")
     h.lua("""
         SalusNovusBars:ClearAllPoints()
         SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 700)
@@ -2395,7 +2398,7 @@ def _():
     """)
     ok(not h.lua("return SalusNovusOptions:IsShown()") and h.lua("return SalusNovusUnlockBar:IsShown()"), "second Enter did not hand back the unlock bar")
     h.lua("ns.Options.ExitUnlockMode(false)")
-    x, y = h.lua("return SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y")
+    x, y = h.lua("return SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()")
     x0, y0 = h.lua("return __x0, __y0")
     ok(abs(x - x0) < 0.01 and abs(y - y0) < 0.01, "Cancel restored the dragged position: %r vs %r" % ((x, y), (x0, y0)))
 
@@ -4205,8 +4208,9 @@ def _():
     eq(h.errors(), [], "errors with NaN position")
     h.lua("ns.db.unlocked = true; ns.ApplyAll()")
     ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown")
-    # The NaN record is dropped and replaced with a valid v2 record on the next layout
-    eq(int(h.lua("return SalusNovusDB.barsPos.v")), 2, "NaN record not replaced with v2")
+    # The NaN record is dropped; nothing replaces it (only a user save writes a record)
+    ok(h.lua("return SalusNovusDB.barsPos == nil"), "NaN record kept or replaced")
+    ok(h.lua("local l = SalusNovusBars:GetLeft() return l == l and l > 0 and l < UIParent:GetWidth()"), "bars at a real spot on screen")
 
 
 @test("position record with absurd coordinate (>20000) is discarded", "bughunt3")
@@ -4217,9 +4221,10 @@ def _():
     h.lua("ns.db.unlocked = true; ns.ApplyAll()")
     # Should fall back to default position
     ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown")
-    # The absurd record is dropped and replaced with a valid v2 record on the next layout
-    x = float(h.lua("return SalusNovusDB.barsPos.x"))
-    ok(abs(x) < 20000, "absurd coordinate not replaced: %r" % x)
+    # The absurd record is dropped; nothing replaces it, and the frame sits at the default
+    ok(h.lua("return SalusNovusDB.barsPos == nil"), "absurd record kept or replaced")
+    x = float(h.lua("return SalusNovusBars:GetLeft()"))
+    ok(0 < x < 20000, "absurd coordinate still in effect: %r" % x)
 
 
 @test("reminders.hidden set to a scalar instead of table is converted to table", "bughunt3")
@@ -4310,14 +4315,14 @@ def _():
     open_options(h)
     h.lua("""
         ns.Options.SelectPage('bars')
-        __x0, __y0 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+        __x0, __y0 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()
         -- First unlock
         ns.Options.EnterUnlockMode()
         SalusNovusBars:ClearAllPoints()
         SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 100, 700)
         ns.SaveAnchor(SalusNovusBars, "barsPos")
         ns.Options.ExitUnlockMode(false)
-        __x1, __y1 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+        __x1, __y1 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()
     """)
     x0, y0 = h.lua("return __x0, __y0")
     x1, y1 = h.lua("return __x1, __y1")
@@ -4329,7 +4334,7 @@ def _():
         SalusNovusBars:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 200, 600)
         ns.SaveAnchor(SalusNovusBars, "barsPos")
         ns.Options.ExitUnlockMode(false)
-        __x2, __y2 = SalusNovusDB.barsPos.x, SalusNovusDB.barsPos.y
+        __x2, __y2 = SalusNovusBars:GetLeft(), SalusNovusBars:GetTop()
     """)
     x2, y2 = h.lua("return __x2, __y2")
     ok(abs(x2 - x0) < 0.01 and abs(y2 - y0) < 0.01, "second cancel did not revert")
@@ -10393,5 +10398,78 @@ def _():
     h.lua("__spellbook = { { name = 'Flame Shock', sub = 'Rank 9' }, { name = 'Lightning Bolt', sub = 'Rank 9' }, { name = 'Frostbrand Weapon', sub = 'Rank 9' }, { name = 'Reincarnation', sub = '' } }; ns.Trainer.Refresh()")
     st = h.lua("local r = ns.TrainerUI.Rows()[%d] return { shown = r:IsShown(), entry = r.entry ~= nil, hot = r.hot, wash = r.hover:IsShown(), tip = __tooltip.shown }" % n)
     ok(not st["shown"] and not st["entry"] and not st["hot"] and not st["wash"] and not st["tip"], "the ghost row is clean: %r" % dict(st))
+    eq(h.errors(), [], "errors")
+
+
+@test("a fresh anchor rides along when the UI scale settles after login: UIParent grows from 1365x768 to 1920x1080 and the frame keeps its place from the centre, with no record written", "anchors")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    before = h.lua("local f = SalusNovusReminderFrame local cx = f:GetLeft() + f:GetWidth() / 2 return { dx = cx - UIParent:GetWidth() / 2, dy = f:GetBottom() - UIParent:GetHeight() / 2, rec = SalusNovusDB.remindersPos ~= nil }")
+    ok(abs(float(before["dx"])) < 0.01 and abs(float(before["dy"]) - 42) < 0.01 and not before["rec"], "at login: centred, 42 up, no record: %r" % dict(before))
+    # the client applies the user's UI scale a moment after login
+    h.lua("UIParent.__w, UIParent.__h = 1920, 1080; UIParent.__rect = { left = 0, bottom = 0, width = 1920, height = 1080 }; ns.ApplyAll()")
+    after = h.lua("local f = SalusNovusReminderFrame local cx = f:GetLeft() + f:GetWidth() / 2 return { cx = cx, b = f:GetBottom(), rec = SalusNovusDB.remindersPos ~= nil }")
+    ok(abs(float(after["cx"]) - 960) < 0.01 and abs(float(after["b"]) - 582) < 0.01 and not after["rec"], "after the scale settles: still centred and 42 up (960, 582), not stuck at the small screen's (682, 426): %r" % dict(after))
+    # the same for the Bars anchor (a growth-origin re-pin, TOPLEFT when growing down)
+    h.lua("ns.db.bars.direction = 'down'; ns.ApplyAll()")
+    b = h.lua("return { l = SalusNovusBars:GetLeft(), t = SalusNovusBars:GetTop(), rec = SalusNovusDB.barsPos ~= nil }")
+    ok(abs(float(b["l"]) - (960 + 314)) < 0.01 and not b["rec"], "bars keep their centre-relative default too: %r" % dict(b))
+    eq(h.errors(), [], "errors")
+
+
+@test("when the client reports the UI scale or display changed, every session pin is forgotten and all anchors are laid out again from clean numbers", "anchors")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    # a pin made from mixed measurements (the frame's stale rect against the grown UIParent)
+    h.lua("""
+        local f = SalusNovusReminderFrame
+        f.__pin = { point = "BOTTOM", dx = -277.3, dy = -97 }
+        f:ClearAllPoints(); f:SetPoint("BOTTOM", UIParent, "CENTER", -277.3, -97)
+        __applies = 0
+        local orig = ns.ApplyAll
+        ns.ApplyAll = function() __applies = __applies + 1 return orig() end
+        W.fireEvent("UI_SCALE_CHANGED"); W.fireEvent("UI_SCALE_CHANGED"); W.fireEvent("DISPLAY_SIZE_CHANGED")
+    """)
+    eq(int(h.lua("return __applies")), 0, "debounced: nothing yet")
+    h.lua("W.advance(0.2)")
+    eq(int(h.lua("return __applies")), 1, "one re-layout for the burst")
+    st = h.lua("local f = SalusNovusReminderFrame local p, rel, rp, x, y = f:GetPoint(1) return { p = p, rp = rp, x = x, y = y, pin = f.__pin ~= nil, cx = f:GetLeft() + f:GetWidth() / 2 - UIParent:GetWidth() / 2, b = f:GetBottom() - UIParent:GetHeight() / 2 }")
+    ok(str(st["p"]) == "BOTTOM" and str(st["rp"]) == "CENTER" and abs(float(st["x"])) < 0.01 and abs(float(st["y"]) - 42) < 0.01, "back on the default from the centre: %r" % dict(st))
+    ok(abs(float(st["cx"])) < 0.01 and abs(float(st["b"]) - 42) < 0.01, "and drawn there: %r" % dict(st))
+    eq(h.errors(), [], "errors")
+
+
+@test("the alignment grid draws whole-pixel lines anchored by their edge on pixel boundaries, so every line renders and the cells are equal", "anchors")
+def _():
+    h = fresh()
+    # a screen whose centre is not on a pixel and a pixel unit of 1
+    h.lua("UIParent.__w, UIParent.__h = 1920, 1079.9999; UIParent.__rect = { left = 0, bottom = 0, width = 1920, height = 1079.9999 }")
+    h.lua("ns.ShowAlignGrid(true)")
+    lines = h.lua("""
+        local gf = ns.AlignGrid()
+        local out = {}
+        for _, t in ipairs(gf.lines) do
+            if t:IsShown() then
+                local p, _, rp, x, y = t:GetPoint(1)
+                out[#out + 1] = { p = p, x = x, y = y, w = t:GetWidth(), h = t:GetHeight() }
+            end
+        end
+        return out
+    """)
+    rows = [dict(v) for v in lines.values()]
+    ok(len(rows) >= 90, "enough lines drawn (%d)" % len(rows))
+    bad = [r for r in rows if str(r["p"]) not in ("TOPLEFT", "BOTTOMLEFT")]
+    eq(bad, [], "every line is anchored by an edge, never centred on its coordinate")
+    frac = [r for r in rows if abs(float(r["x"]) - round(float(r["x"]))) > 1e-6 or abs(float(r["y"]) - round(float(r["y"]))) > 1e-6]
+    eq(frac, [], "every edge lands on a whole pixel: %r" % frac[:3])
+    thick = sorted(set(round(float(r["w"]) if str(r["p"]) == "TOPLEFT" else float(r["h"]), 3) for r in rows))
+    eq(thick, [1.0, 2.0], "one pixel thick, the centre lines two: %r" % thick)
+    # equal spacing between neighbouring vertical lines
+    # (the two-pixel centre line's edge sits one pixel left of its coordinate)
+    xs = sorted(float(r["x"]) + (1.0 if float(r["w"]) == 2.0 else 0.0) for r in rows if str(r["p"]) == "TOPLEFT")
+    gaps = sorted(set(round(b - a) for a, b in zip(xs, xs[1:])))
+    eq(gaps, [32], "even 32px columns everywhere, the centre included")
     eq(h.errors(), [], "errors")
 

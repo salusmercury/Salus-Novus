@@ -146,7 +146,7 @@ local function Build()
     frame.unlockLabel:SetText("Health Bars  \194\183  drag to move")
     frame.unlockLabel:Hide()
 
-    ns.RegisterMovable(frame, "healthPos", Origin)
+    ns.RegisterMovable(frame, "healthPos", Origin, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

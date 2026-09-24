@@ -140,7 +140,7 @@ local function Build()
     frame.text:SetPoint("TOP", frame.arrow, "BOTTOM", 0, -2)
     frame.text:SetText("")
 
-    ns.RegisterMovable(frame, "arrowPos", function() return "TOP" end)
+    ns.RegisterMovable(frame, "arrowPos", function() return "TOP" end, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

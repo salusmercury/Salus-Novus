@@ -115,7 +115,7 @@ local function Build()
     frame.label:SetTextColor(0.60, 0.58, 0.66, 1)
     frame.label:Hide()
 
-    ns.RegisterMovable(frame, "barsPos", Origin)
+    ns.RegisterMovable(frame, "barsPos", Origin, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

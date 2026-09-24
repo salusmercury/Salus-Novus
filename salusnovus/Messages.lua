@@ -64,7 +64,7 @@ local function Build()
     frame.unlockText:SetText("Sample message")
     frame.unlockText:Hide()
 
-    ns.RegisterMovable(frame, "messagesPos", Origin)
+    ns.RegisterMovable(frame, "messagesPos", Origin, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

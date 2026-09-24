@@ -81,7 +81,7 @@ local function Build()
     frame.unlockLabel:SetText("Ability Preview  \194\183  drag to move")
     frame.unlockLabel:Hide()
 
-    ns.RegisterMovable(frame, "previewPos", Origin)
+    ns.RegisterMovable(frame, "previewPos", Origin, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

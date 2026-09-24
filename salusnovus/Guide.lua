@@ -368,7 +368,7 @@ local function Build()
         end
     end)
 
-    ns.RegisterMovable(frame, "guidePos", function() return "TOPRIGHT" end)
+    ns.RegisterMovable(frame, "guidePos", function() return "TOPRIGHT" end, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
         if ns.db and ns.db.unlocked then self:StartMoving() end
     end)

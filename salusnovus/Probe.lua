@@ -253,9 +253,53 @@ ns.Commands.probe = function(rest)
         if not cap then ns.Print("probe: nothing captured (" .. tostring(why) .. "); open a class trainer first") end
     elseif what == "trainer" then
         for _, line in ipairs(P.Trainer()) do ns.Print(line) end
+    elseif what == "anchors" then
+        -- where every anchor frame really is, and what put it there
+        local S = ns.S
+        local function Num(v) return type(v) == "number" and string.format("%.1f", v) or S(v) end
+        local okP, pw, ph = pcall(GetPhysicalScreenSize)
+        ns.Print(("UIParent %s x %s  effScale %s  scale %s  physical %s x %s  uiScale cvar %s"):format(
+            Num(UIParent:GetWidth()), Num(UIParent:GetHeight()), Num(UIParent:GetEffectiveScale()), Num(UIParent:GetScale()),
+            S(okP and pw), S(okP and ph), S(select(2, pcall(GetCVar, "uiScale")))))
+        for f, key in pairs(ns.movables or {}) do
+            local p, rel, rp, x, y = f:GetPoint(1)
+            local rec = type(key) == "string" and SalusNovusDB and SalusNovusDB[key]
+            local pin = f.__pin
+            ns.Print(("%s [%s] parent=%s shown=%s scale=%s eff=%s  L=%s B=%s W=%s H=%s  point %s -> %s.%s (%s, %s)  rec=%s  pin=%s  origin=%s"):format(
+                S(f:GetName()), S(key), S(f:GetParent() and f:GetParent():GetName()), S(f:IsShown()), Num(f:GetScale()), Num(f:GetEffectiveScale()),
+                Num(f:GetLeft()), Num(f:GetBottom()), Num(f:GetWidth()), Num(f:GetHeight()),
+                S(p), S(rel and rel.GetName and rel:GetName()), S(rp), Num(x), Num(y),
+                rec and (S(rec.point) .. " " .. Num(rec.x) .. "," .. Num(rec.y) .. " v" .. S(rec.v)) or "nil",
+                pin and (S(pin.point) .. " " .. Num(pin.dx) .. "," .. Num(pin.dy)) or "nil",
+                S(f.__origin and f.__origin())))
+        end
+    elseif what == "grid" then
+        -- the alignment grid as drawn: options, line count, the first lines' places and sizes
+        local S = ns.S
+        local g = ns.db and ns.db.anchorsGlobal or {}
+        local gf = (ns.AlignGrid and ns.AlignGrid()) or rawget(_G, "SalusNovusAlignGrid")
+        ns.Print(("unlocked=%s  grid frame via Core=%s  via global=%s"):format(S(ns.db and ns.db.unlocked), ns.AlignGrid and ns.AlignGrid() and "yes" or "no", rawget(_G, "SalusNovusAlignGrid") and "yes" or "no"))
+        ns.Print(("grid opts: grid=%s size=%s snap=%s range=%s scale=%s | UIParent %s x %s eff %s | frame %s shown=%s scale=%s eff=%s W=%s H=%s"):format(
+            S(g.grid), S(g.gridSize), S(g.snap), S(g.snapRange), S(g.scale), S(UIParent:GetWidth()), S(UIParent:GetHeight()), S(UIParent:GetEffectiveScale()),
+            gf and "yes" or "NONE", S(gf and gf:IsShown()), S(gf and gf:GetScale()), S(gf and gf:GetEffectiveScale()), S(gf and gf:GetWidth()), S(gf and gf:GetHeight())))
+        if not gf then return end
+        local shown, vert, horz = 0, {}, {}
+        for _, t in ipairs(gf.lines or {}) do
+            if t:IsShown() then
+                shown = shown + 1
+                local p, _, rp, x, y = t:GetPoint(1)
+                if p == "TOP" then vert[#vert + 1] = ("%s@%s w%s"):format(S(x), S(t:GetLeft()), S(t:GetWidth()))
+                else horz[#horz + 1] = ("%s@%s h%s"):format(S(y), S(t:GetBottom()), S(t:GetHeight())) end
+            end
+        end
+        table.sort(vert, function(a, b) return tonumber(a:match("^(%-?[%d%.]+)")) < tonumber(b:match("^(%-?[%d%.]+)")) end)
+        table.sort(horz, function(a, b) return tonumber(a:match("^(%-?[%d%.]+)")) < tonumber(b:match("^(%-?[%d%.]+)")) end)
+        ns.Print(("grid: %d lines shown (%d vertical, %d horizontal)"):format(shown, #vert, #horz))
+        ns.Print("vertical (offset@left w): " .. table.concat(vert, "  ", 1, math.min(8, #vert)))
+        ns.Print("horizontal (offset@bottom h): " .. table.concat(horz, "  ", 1, math.min(8, #horz)))
     elseif what == "spellbook" then
         for _, line in ipairs(P.Spellbook()) do ns.Print(line) end
     else
-        ns.Print("probes: /sn probe waypoint [keep]  |  /sn probe nav  |  /sn probe trainer [capture]  |  /sn probe spellbook")
+        ns.Print("probes: /sn probe waypoint [keep]  |  /sn probe nav  |  /sn probe trainer [capture]  |  /sn probe spellbook  |  /sn probe anchors  |  /sn probe grid")
     end
 end
