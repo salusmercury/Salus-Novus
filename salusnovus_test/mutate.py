@@ -643,13 +643,282 @@ MUTATIONS = [
     ("Quality of Life off leaves the picked font active", "Fonts.lua",
      "    if ns.ModuleOn and not ns.ModuleOn(\"qol\") then path = nil end\n",
      ""),
+    ("abandon skips SetAbandonQuest (the client's arming call)", "Quests.lua",
+     "                ql.SetSelectedQuest(q.questID)\n                ql.SetAbandonQuest()\n                ql.AbandonQuest()",
+     "                ql.SetSelectedQuest(q.questID)\n                ql.AbandonQuest()"),
+    ("abandon ignores CanAbandonQuest", "Quests.lua",
+     "    if not ql.CanAbandonQuest then return true end\n    local ok, r = pcall(ql.CanAbandonQuest, id)\n    return not (ok and r == false)",
+     "    return true"),
+    ("low-level abandons every quest", "Quests.lua",
+     "        if q.trivial then out[#out + 1] = q end",
+     "        out[#out + 1] = q"),
+    ("abandon all ignores the module switch", "Quests.lua",
+     "function Q.AbandonAll()\n    if not Enabled() then return 0 end\n",
+     "function Q.AbandonAll()\n"),
+    ("the Abandon button skips the confirmation", "Options.lua",
+     "            T.Confirm(question(n), \"Abandon\", function()\n                act()\n                RefreshAll()\n            end)",
+     "            act()\n            RefreshAll()"),
+    ("the confirmation's Cancel also runs the action", "Theme.lua",
+     "        f.no:SetScript(\"OnClick\", function() f:Hide() end)",
+     "        f.no:SetScript(\"OnClick\", function() local fn = f.onYes f:Hide() if fn then fn() end end)"),
+    ("a greyed Abandon button still opens the dialog", "Options.lua",
+     "            if not self.enabledState then return end\n            local n = count()",
+     "            local n = count()"),
+    ("the guide ignores faction when picking a route", "Guide.lua",
+     "        if not faction or not r.faction or r.faction == faction then",
+     "        if true then"),
+    ("an accept step is never done while the quest is merely in the log", "Guide.lua",
+     "    if k == \"accept\" then return OnQuest(step.q) or Flagged(step.q) end",
+     "    if k == \"accept\" then return Flagged(step.q) end"),
+    ("a do step ignores the finished objective", "Guide.lua",
+     "    if k == \"do\" then return Flagged(step.q) or ReadyForTurnIn(step.q) or (OnQuest(step.q) and ObjectiveDone(step.q, step.o)) end",
+     "    if k == \"do\" then return Flagged(step.q) or ReadyForTurnIn(step.q) end"),
+    ("an uncheckable step never passes on a later checkable one", "Guide.lua",
+     "            done = sk[i] or i < lastDone\n",
+     "            done = sk[i]\n"),
+    ("the distance is computed across maps", "Guide.lua",
+     "    if map ~= step.m or not x then return nil end",
+     "    if not x then return nil end"),
+    ("the arrow forgets the player's facing", "Arrow.lua",
+     "    local rot = bearing - Facing()",
+     "    local rot = bearing"),
+    ("the arrow's bearing swaps north and west", "Arrow.lua",
+     "        return math.atan2(dW, dN), math.sqrt(dN * dN + dW * dW)",
+     "        return math.atan2(dN, dW), math.sqrt(dN * dN + dW * dW)"),
+    ("the map-space fallback crosses maps", "Arrow.lua",
+     "    if map ~= step.m or not (C_Map and C_Map.GetMapWorldSize) then return nil end",
+     "    if not (C_Map and C_Map.GetMapWorldSize) then return nil end"),
+    ("the arrow ignores its own setting", "Arrow.lua",
+     "    return o and o.enabled ~= false and o.arrow ~= false and ns.ModuleOn(\"leveling\") and true or false",
+     "    return o and o.enabled ~= false and ns.ModuleOn(\"leveling\") and true or false"),
+    ("the arrow stays up with no current step", "Arrow.lua",
+     "    if unlocked or (Enabled() and Step()) then",
+     "    if unlocked or Enabled() then"),
+    ("the editor forgets to log an edit", "RouteEditor.lua",
+     "    Log(route, { op = \"del\", at = i })\n",
+     ""),
+    ("the editor inserts after the current step instead of before", "RouteEditor.lua",
+     "    local at = (ns.Guide.CurrentIndex(route) or (#route.steps + 1)) - 1",
+     "    local at = ns.Guide.CurrentIndex(route) or #route.steps"),
+    ("skips do not follow a delete", "Guide.lua",
+     "            if i == at then j = nil elseif i > at then j = i - 1 end",
+     "            j = i"),
+    ("the Steps tab does not mark the current step", "Options.lua",
+     "            if i == cur then\n                local r, g, b = T.Accent()\n                ln.text:SetTextColor(r, g, b, 1)\n            elseif cur and i < cur then",
+     "            if cur and i < cur then"),
+    ("the builder inserts before the current step instead of appending", "RouteEditor.lua",
+     "    if not E.Insert(route, #route.steps, step) then return nil end\n    return #route.steps",
+     "    return E.InsertHere(route, kind, questID, text)"),
+    ("EnsureRoute never logs the new route", "RouteEditor.lua",
+     "    Log(route, { op = \"new\", name = route.name, faction = faction, race = race, class = class, map = route.map, level = level })\n",
+     ""),
+    ("a go step never arrives", "Arrow.lua",
+     "    if step and step.k == \"go\" and dist <= ns.Guide.ARRIVE then",
+     "    if false then"),
+    ("a do step shows its stored text even while the quest is in the log", "Guide.lua",
+     "        local live = OnQuest(step.q) and LiveObjective(step.q, step.o)\n        if live then return \"Complete objective: \" .. live end\n",
+     ""),
+    ("the builder's do step always points at objective 1", "RouteEditor.lua",
+     "                    if type(ob) == \"table\" and ob.finished ~= true then s.o = i break end",
+     "                    if type(ob) == \"table\" then s.o = i break end"),
+    ("Move forgets to log", "RouteEditor.lua",
+     "    Log(route, { op = \"mv\", at = i, to = j })\n",
+     ""),
+    ("skips do not follow a move", "Guide.lua",
+     "        if op == \"mv\" then\n            if i == at then\n                j = to\n            else",
+     "        if false then\n            if i == at then\n                j = to\n            else"),
+    ("a drop ignores the row's own removal when computing the landing index", "Options.lua",
+     "                if to > d.from then to = to - 1 end\n",
+     ""),
+    ("an insert ignores Above/Below", "Options.lua",
+     "                local after = (place == \"above\") and (sel - 1) or sel",
+     "                local after = sel"),
+    ("DeleteRoute forgets to log the drop", "RouteEditor.lua",
+     "    Log(route, { op = \"drop\" })\n",
+     ""),
+    ("NewRoute does not select the new route", "RouteEditor.lua",
+     "    if ns.db and ns.db.guide then ns.db.guide.route = slug end     -- follow it now\n",
+     ""),
+    ("best match ignores the level band", "Guide.lua",
+     "            if type(lv) == \"table\" and Num(lv[1]) and Num(lv[2]) and level >= lv[1] and level <= lv[2] then score = score + 1 end\n",
+     ""),
+    ("Delete route skips the confirmation", "Options.lua",
+     "        T.Confirm((\"Delete the route \\\"%s\\\" and its %d step%s?\"):format(r.name or r.slug, #r.steps, #r.steps == 1 and \"\" or \"s\"), \"Delete\", function()\n            E.DeleteRoute(r)\n            if O.stepsList then O.stepsList:Select(nil) end\n            RefreshAll()\n        end)",
+     "        E.DeleteRoute(r)\n        RefreshAll()"),
+    ("the header rule is not tinted with the accent", "Options.lua",
+     "    T.Paint({ tex = card.rule, a = 1 })\n",
+     ""),
+    ("the header title stays white", "Options.lua",
+     "    T.Paint({ repaint = { Repaint = function() local r, g, b = T.Accent() fs:SetTextColor(r, g, b, 1) end } })\n",
+     ""),
+    ("the header band is hidden again", "Options.lua",
+     "    card.head:Show()\n    card.rule = card:CreateTexture(nil, \"ARTWORK\")",
+     "    card.head:Hide()\n    card.rule = card:CreateTexture(nil, \"ARTWORK\")"),
+    ("the trainer capture leaves the window's filter changed", "Trainer.lua",
+     "    for f, v in pairs(before) do pcall(SetTrainerServiceTypeFilter, f, v) end\n",
+     ""),
+    ("the trainer capture drops a false filter value", "Trainer.lua",
+     "                before[f] = v and true or false                 -- a false must be put back too",
+     "                before[f] = v or nil"),
+    ("a higher known rank does not cover the lower ranks", "Trainer.lua",
+     "    return have >= r\nend\n\n--- A prerequisite",
+     "    return have == r\nend\n\n--- A prerequisite"),
+    ("an unmet prerequisite still counts as learnable", "Trainer.lua",
+     "            if levelOk and #d.missing == 0 then",
+     "            if levelOk then"),
+    ("a profession trainer is captured as the class catalogue", "Trainer.lua",
+     "        if ok and trade then return nil, \"tradeskill trainer\" end\n",
+     ""),
+    ("derived ranks ignore the level order", "Trainer.lua",
+     "            table.sort(rest, function(x, y)\n                local lx, ly = x.level or 0, y.level or 0\n                if lx ~= ly then return lx < ly end\n                return (x.cost or 0) < (y.cost or 0)\n            end)",
+     ""),
+    ("derived ranks ignore the prerequisite text", "Trainer.lua",
+     "                    if rname == name and rk then got = tonumber(rk) + 1 end",
+     ""),
+    ("the spellbook's rank is never asked of the spell itself", "Trainer.lua",
+     "                    if not r and sb.GetSpellBookItemInfo then",
+     "                    if false then"),
+    ("the tab row may end up under the list (icons cut off)", "TrainerUI.lua",
+     "    if host.tabs and host.tabs.GetFrameLevel and host.tabs:GetFrameLevel() <= lvl then host.tabs:SetFrameLevel(lvl + 1) end\n",
+     ""),
+    ("the list is levelled only at build, not when shown", "TrainerUI.lua",
+     "    Layer()\n    content:Show()",
+     "    content:Show()"),
+    ("a live capture never borrows the shipped ids", "Trainer.lua",
+     "    T.BorrowIds(cap)\n",
+     ""),
+    ("an empty group still shows its header", "TrainerUI.lua",
+     "        if #list > 0 then\n            used = used + 1\n            local r = Row(used)\n            ShowHead(r, title)",
+     "        if true then\n            used = used + 1\n            local r = Row(used)\n            ShowHead(r, title)"),
+    ("Blizzard's selected tab keeps its gold frame under ours", "TrainerUI.lua",
+     "    content:Show()\n    DimTheirs()",
+     "    content:Show()"),
+    ("their gold frame never comes back", "TrainerUI.lua",
+     "        for _, tex in ipairs(dimmed) do tex:Show() end\n",
+     ""),
+    ("their tab click restores the old selection too (double gold)", "TrainerUI.lua",
+     "    UndimTheirs(clicked == nil or clicked == dimmedTab)",
+     "    UndimTheirs(true)"),
+    ("clicking the dimmed tab back forgets its frame", "TrainerUI.lua",
+     "    UndimTheirs(clicked == nil or clicked == dimmedTab)",
+     "    UndimTheirs(clicked == nil)"),
+    ("the active tab never shows Blizzard's frame", "TrainerUI.lua",
+     "        self.frame:SetShown(self.active)\n        self.glowTex:SetShown(self.active)",
+     "        self.frame:SetShown(false)\n        self.glowTex:SetShown(false)"),
+    ("the tab sits 6px after the last, not 1", "TrainerUI.lua",
+     "tab:SetPoint(\"LEFT\", last, \"RIGHT\", 1, 0)",
+     "tab:SetPoint(\"LEFT\", last, \"RIGHT\", 6, 0)"),
+    ("leaving a row keeps its pop", "TrainerUI.lua",
+     "        r.hover:Hide()\n        r.edge:Hide()\n        r.name:SetTextColor(Th.TEXT[1], Th.TEXT[2], Th.TEXT[3], 1)",
+     "        r.name:SetTextColor(Th.TEXT[1], Th.TEXT[2], Th.TEXT[3], 1)"),
+    ("the tooltip never uses the spell id", "TrainerUI.lua",
+     "        pcall(tt.SetSpellByID, tt, e.spell)",
+     "        tt:AddLine(e.name, 1, 1, 1)"),
+    ("the spell id is never read from the link", "Trainer.lua",
+     "                    if id then e.spell = id end",
+     ""),
+    ("clicking our tab again toggles it off", "TrainerUI.lua",
+     "    tab:SetScript(\"OnClick\", function() if not (content and content:IsShown()) then ShowOurs() end end)",
+     "    tab:SetScript(\"OnClick\", function() if content and content:IsShown() then ShowTheirs() else ShowOurs() end end)"),
+    ("the tab is placed once at build and never when the book shows", "TrainerUI.lua",
+     "            PlaceTab()\n            C_Timer.After(0, PlaceTab)",
+     ""),
+    ("the tab re-places on show only while unplaced (sits on a later tab)", "TrainerUI.lua",
+     "            PlaceTab()\n            C_Timer.After(0, PlaceTab)",
+     "            if not tab.placed then PlaceTab() end"),
+    ("a refresh never re-places the tab", "TrainerUI.lua",
+     "ns.Trainer.Refresh = function() UI.Refresh() if tab then PlaceTab() tab:Update() end end",
+     "ns.Trainer.Refresh = function() UI.Refresh() if tab then tab:Update() end end"),
+    ("the tab search counts our own tab (anchors to itself on re-place)", "TrainerUI.lua",
+     "        if k ~= tab and k.IsShown and k:IsShown() and k.GetObjectType",
+     "        if k.IsShown and k:IsShown() and k.GetObjectType"),
+    ("late-made Blizzard tabs are never hooked", "TrainerUI.lua",
+     "            if k ~= tab and not hooked[k] and k.HookScript",
+     "            if false and k ~= tab and not hooked[k] and k.HookScript"),
+    ("the spellbook list stays 1px wide (icons only in game)", "TrainerUI.lua",
+     "    local function FitList() content.list:SetWidth(math.max(1, content.scroll:GetWidth() or 0)) end",
+     "    local function FitList() end"),
+    ("an unreadable filter is still forced on", "Trainer.lua",
+     "                pcall(SetTrainerServiceTypeFilter, f, true)     -- only what can be put back is touched\n            end",
+     "            end\n            pcall(SetTrainerServiceTypeFilter, f, true)"),
+    ("ghost rows keep their stale entry", "TrainerUI.lua",
+     "    for i = used + 1, #rows do Reset(rows[i]) rows[i]:Hide() end",
+     "    for i = used + 1, #rows do rows[i]:Hide() end"),
+    ("the list hides with a row tooltip left up", "TrainerUI.lua",
+     "        for _, r in ipairs(rows) do DropTip(r) end\n",
+     ""),
+    ("the probe reads the trainer but saves nothing", "Probe.lua",
+     "        local cap, why = ns.Trainer.Capture(true)",
+     "        local cap, why = ns.Trainer.ReadTrainer()"),
+    ("a level-up no longer refreshes the spellbook tab", "Trainer.lua",
+     "    if T.Refresh then T.Refresh() end\nend)",
+     "end)"),
+    ("our tab never hides the spellbook page", "TrainerUI.lua",
+     "    if host.page and host.page:IsShown() then host.page:Hide() hidPage = true end\n",
+     ""),
+    ("a Blizzard tab does not put the page back", "TrainerUI.lua",
+     "                k:HookScript(\"OnClick\", function(self) ShowTheirs(self) end)\n",
+     ""),
+    ("their disabled selected tab stays dead under ours", "TrainerUI.lua",
+     "        dimmedTab:Enable()\n        dimmedWasDisabled = true",
+     "        dimmedWasDisabled = true"),
+    ("the re-enabled tab is never disabled again", "TrainerUI.lua",
+     "        if dimmedWasDisabled and dimmedTab and dimmedTab.Disable then dimmedTab:Disable() end\n",
+     ""),
+    ("the tab ignores its switch", "TrainerUI.lua",
+     "        tab:SetShown(on)\n",
+     ""),
+    ("a plain window title hangs off the empty initial again (pokes above the band)", "Theme.lua",
+     "            self.title:ClearAllPoints()\n            self.title:SetPoint(\"TOPLEFT\", header, \"TOPLEFT\", 22, -6)\n",
+     ""),
     ("section titles go back to the left", "Options.lua",
-     "    fs:SetJustifyH(\"CENTER\")\n    fs:SetWidth(COL_W)",
-     "    fs:SetJustifyH(\"LEFT\")\n    fs:SetWidth(COL_W)"),
+     "    fs:SetJustifyH(\"CENTER\")\n    local wide = column == \"wide\"",
+     "    fs:SetJustifyH(\"LEFT\")\n    local wide = column == \"wide\""),
     ("a secret chat line reaches :lower()", "ChatFilter.lua",
      "    if type(text) ~= \"string\" or ns.IsSecret(text) then return false end",
      "    if type(text) ~= \"string\" then return false end"),
 ]
+
+
+# Which test groups can catch a break in each file. A mutation runs only
+# those (seconds, not minutes); a survivor is then re-checked against the
+# FULL suite before it is called a survivor, so the map can be incomplete
+# without a wrong answer -- an incomplete map only costs time. A file not
+# listed runs the full suite.
+FILE_GROUPS = {
+    "Theme.lua":       "theme,options,fonts,font,chat,bughunt,quests,lane09,h9lane03",
+    "Options.lua":     "options,chat,quests,routes,editor,sidebar,modules,theme,fonts,font,guide,trainer,lane05,lane08,h9lane03,h9lane02,bughunt,bughunt3",
+    "Timers.lua":      "hub,bars,queue,health,reminders,data,abilities,bughunt,bughunt3,bughunt4,bughunt5,bughunt6",
+    "Reminders.lua":   "reminders,visualizer,bughunt,bughunt3,bughunt4,bughunt5,bughunt6",
+    "HealthBars.lua":  "health,anchors,bughunt3",
+    "Visualizer.lua":  "visualizer,abilities,theme,polish,bughunt,bughunt3",
+    "Queue.lua":       "queue,anchors,bughunt,bughunt3",
+    "Fonts.lua":       "fonts,font,theme,chat,bughunt",
+    "Bars.lua":        "bars,anchors,bughunt,bughunt3",
+    "Messages.lua":    "anchors,bughunt,bughunt3",
+    "Preview.lua":     "anchors,bughunt,bughunt3",
+    "Abilities.lua":   "abilities,visualizer,bughunt3",
+    "Schedule.lua":    "data,health,hub,bughunt3",
+    "Trainer.lua":     "trainer,route",
+    "Probe.lua":       "trainer,guide,arrow",
+    "TrainerUI.lua":   "trainer",
+    "Guide.lua":       "guide,builder,editor,routes,arrow,lane05,lane10,h9lane01,h9lane02,h9lane04",
+    "Arrow.lua":       "arrow,builder,guide,h9lane02",
+    "RouteEditor.lua": "editor,builder,routes,guide,lane05,h9lane03",
+    "Builder.lua":     "builder,routes,lane09",
+    "ChatFilter.lua":  "chat,lane06",
+    "Quests.lua":      "quests,h9lane03",
+}
+
+STATS = { "targeted": 0, "fallback": 0 }
+
+
+def _suite(dst, groups):
+    env = dict(os.environ, MERCURY_PATH=dst)
+    cmd = [sys.executable, os.path.join(HERE, "runner.py")] + ([groups] if groups else [])
+    p = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=900)
+    failing = [l.strip() for l in p.stdout.splitlines() if l.strip().startswith(("FAIL", "ERROR"))]
+    return p.returncode != 0, failing
 
 
 def run(label, fname, old, new):
@@ -659,28 +928,63 @@ def run(label, fname, old, new):
     path = os.path.join(dst, fname)
     src = io.open(path, encoding="utf-8").read()
     if src.count(old) != 1:
-        print("  ??  %s -- mutation target found %d times" % (label, src.count(old)))
+        print("  ??  %s -- mutation target found %d times" % (label, src.count(old)), flush=True)
         shutil.rmtree(tmp, ignore_errors=True)
         return False
     io.open(path, "w", encoding="utf-8").write(src.replace(old, new, 1))
-    env = dict(os.environ, MERCURY_PATH=dst)
-    p = subprocess.run([sys.executable, os.path.join(HERE, "runner.py")],
-                       env=env, capture_output=True, text=True, timeout=300)
-    red = p.returncode != 0
-    failing = [l.strip() for l in p.stdout.splitlines() if l.strip().startswith(("FAIL", "ERROR"))]
-    print("  %s  %s\n        -> %s" % ("RED " if red else "GREEN!", label, "; ".join(failing)[:300] or "no test noticed"))
+    groups = FILE_GROUPS.get(fname)
+    red, failing = _suite(dst, groups)
+    how = "targeted" if groups else "full"
+    if not red and groups:
+        # the targeted groups missed it: only the full suite may call it a survivor
+        red, failing = _suite(dst, None)
+        how = "fallback"
+        STATS["fallback"] += 1
+    else:
+        STATS["targeted"] += 1
+    print("  %s  %s  [%s]\n        -> %s" % ("RED " if red else "GREEN!", label, how, "; ".join(failing)[:300] or "no test noticed"), flush=True)
     shutil.rmtree(tmp, ignore_errors=True)
     return red
 
 
-# Each mutation is a full suite run (~4-5 s); serially that is ten minutes
-# for 140 of them. Runs are independent (own temp copy each), so a pool of
-# workers brings it to two or three. Output order follows the table.
-WORKERS = max(1, min(8, (os.cpu_count() or 2) - 1))
+def changed_files():
+    """salusnovus/*.lua touched since the last commit (staged or not)."""
+    try:
+        out = subprocess.run(["git", "diff", "--name-only", "HEAD", "--", "salusnovus"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return []
+    return sorted({os.path.basename(l.strip()) for l in out.splitlines() if l.strip().endswith(".lua")})
+
+
+# A mutation now costs the seconds its target groups take (the full suite
+# only for a survivor or an unmapped file). Four workers keep the machine
+# usable; --workers N overrides.
+#
+#   python mutate.py                 # every mutation
+#   python mutate.py --changed       # only files touched since the last commit
+#   python mutate.py --files Guide.lua Arrow.lua
+WORKERS = 4
 
 if __name__ == "__main__":
     from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        results = list(pool.map(lambda m: run(*m), MUTATIONS))
-    print("\n%d/%d mutations caught" % (sum(results), len(results)))
+    args = sys.argv[1:]
+    workers = WORKERS
+    if "--workers" in args:
+        workers = int(args[args.index("--workers") + 1])
+    files = None
+    if "--changed" in args:
+        files = changed_files()
+        print("changed since HEAD: %s" % (", ".join(files) or "nothing"), flush=True)
+    elif "--files" in args:
+        files = [a for a in args[args.index("--files") + 1:] if not a.startswith("--")]
+    todo = [m for m in MUTATIONS if files is None or m[1] in files]
+    if not todo:
+        print("no mutations to run", flush=True)
+        sys.exit(0)
+    print("%d mutation(s), %d worker(s)" % (len(todo), workers), flush=True)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        results = list(pool.map(lambda m: run(*m), todo))
+    print("\n%d/%d mutations caught  (targeted %d, full-suite fallback %d)" % (
+        sum(results), len(results), STATS["targeted"], STATS["fallback"]), flush=True)
     sys.exit(0 if all(results) else 1)

@@ -116,11 +116,17 @@ ns.defaults = {
     -- false (open). A module switch writes it; a click on the heading
     -- overrides it; both stick (Alex, 2026-09-21).
     sidebar = { collapsed = {} },
+    -- Leveling guide: which route ("auto" = best match for the character),
+    -- the client's waypoint pin on the current step, how many next steps.
+    guide = { enabled = true, route = "auto", showNext = 2, size = 14, arrow = true, arrowSize = 48 },
+    -- Trainer catalogue (Quality of Life > Trainer): the captured list is
+    -- SalusNovusDB.trainers[class] at the top level; these are the switches.
+    trainer = { enabled = true },
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing
     -- of that module renders or arms in a fight; its pages stay listed.
-    modules = { bossWarnings = true, qol = true },
+    modules = { bossWarnings = true, qol = true, leveling = true },
 }
 
 function ns.ModuleOn(key)

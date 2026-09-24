@@ -94,9 +94,10 @@ end
 --------------------------------------------------------------------------------
 local function SavePosition() ns.SaveAnchor(frame, "remindersPos") end
 local function RestorePosition()
-    -- Alex's layout (read from his saved positions, 2026-09-19)
-    -- Alex's layout (2026-09-20): centred, a little above the character.
-    if frame then ns.RestoreAnchor(frame, "remindersPos", "BOTTOM", 0, 35, "CENTER") end
+    -- Alex's layout (2026-09-23, read from his saved positions): centred,
+    -- a little above the character. The other anchors' saved spots matched
+    -- their defaults exactly; this one sat 7px higher.
+    if frame then ns.RestoreAnchor(frame, "remindersPos", "BOTTOM", 0, 42, "CENTER") end
 end
 ns.RemindersRestorePosition = RestorePosition
 table.insert(ns.AnchorPositions, { key = "remindersPos", restore = "RemindersRestorePosition" })

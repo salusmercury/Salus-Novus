@@ -60,7 +60,7 @@ function C.List()
     local out = {}
     for k, v in pairs(set) do
         if type(k) == "string" and v == true and k ~= "" then
-            out[#out + 1] = k
+            out[#out + 1] = k:lower()
         elseif type(k) == "number" and type(v) == "string" and v ~= "" then
             out[#out + 1] = v:lower()
         end

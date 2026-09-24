@@ -57,6 +57,7 @@ class Harness:
                 -- Button:Click() runs the OnClick handler (hooks included);
                 -- the blanket noop made every pressed button a silent no-op.
                 local function Click(self, button)
+                    if self.IsEnabled and not self:IsEnabled() then return end     -- the client ignores clicks on a disabled button
                     local h = self.__scripts and self.__scripts.OnClick
                     if h then h(self, button or "LeftButton") end
                 end
@@ -75,6 +76,13 @@ class Harness:
                 end
                 local function SetTextColor(self, r, g, b, a) rawset(self, "__tc", { r, g, b, a == nil and 1 or a }) end
                 -- Justification is recorded: "the title is centred" is a real check.
+                local function EnableKeyboard(self, on) rawset(self, "__keyboard", on and true or false) end
+                local function IsKeyboardEnabled(self) return rawget(self, "__keyboard") or false end
+                local function SetPropagateKeyboardInput(self, on) rawset(self, "__propagate", on and true or false) end
+                local function GetPropagateKeyboardInput(self) return rawget(self, "__propagate") or false end
+                local function SetRotation(self, r) rawset(self, "__rotation", r) end
+                local function GetRotation(self) return rawget(self, "__rotation") or 0 end
+                local function SetAtlas(self, a) rawset(self, "__atlas", a) end
                 local function SetJustifyH(self, j) rawset(self, "__justifyH", j) end
                 local function GetJustifyH(self) return rawget(self, "__justifyH") or "LEFT" end
                 local function GetTextColor(self)
@@ -92,6 +100,13 @@ class Harness:
                     if k == "SetVertexColor" then return SetVertexColor end
                     if k == "GetVertexColor" then return GetVertexColor end
                     if k == "SetTextColor" then return SetTextColor end
+                    if k == "EnableKeyboard" then return EnableKeyboard end
+                    if k == "IsKeyboardEnabled" then return IsKeyboardEnabled end
+                    if k == "SetPropagateKeyboardInput" then return SetPropagateKeyboardInput end
+                    if k == "GetPropagateKeyboardInput" then return GetPropagateKeyboardInput end
+                    if k == "SetRotation" then return SetRotation end
+                    if k == "GetRotation" then return GetRotation end
+                    if k == "SetAtlas" then return SetAtlas end
                     if k == "SetJustifyH" then return SetJustifyH end
                     if k == "GetJustifyH" then return GetJustifyH end
                     if k == "GetTextColor" then return GetTextColor end
@@ -133,6 +148,163 @@ class Harness:
             ChatFrame_RemoveMessageEventFilter = function(event, fn)
                 local list = __chatFilters[event] or {}
                 for i = #list, 1, -1 do if list[i] == fn then table.remove(list, i) end end
+            end
+            UnitRace = UnitRace or function() return "Dwarf", "Dwarf" end
+            UnitFactionGroup = UnitFactionGroup or function() return "Alliance", "Alliance" end
+            GetZoneText = GetZoneText or function() return __zone or "Dun Morogh" end
+            GetBindLocation = GetBindLocation or function() return __bind or "Kharanos" end
+            -- Objectives for the recorder's diff: __objectives[questID] = { { text=, finished= }, ... }
+            __objectives = {}
+            -- A class trainer for Trainer.lua: __trainer rows
+            -- { name=, rank=, cat=, level=, cost=, skill=, icon=, req={...} } (cat "header" rows skipped);
+            -- __trainerFilter holds the three filter flags; __tradeskillTrainer flips the kind.
+            __trainer, __trainerFilter, __tradeskillTrainer = {}, { available = true, unavailable = false, used = false }, false
+            GetNumTrainerServices = function() return #__trainer end
+            -- __trainerShape = "forever" (name, category, expanded: no rank) or "classic" (name, rank, category)
+            __trainerShape = "forever"
+            GetTrainerServiceInfo = function(i)
+                local r = __trainer[i] if not r then return nil end
+                if __trainerShape == "classic" then return r.name, r.rank or "", r.cat or "available", false end
+                -- measured on Forever: name, category, icon, level, rank (nil when rankless)
+                local rank = r.rank
+                if rank == "" then rank = nil end
+                return r.name, r.cat or "available", r.icon or 0, r.level or 0, rank
+            end
+            GetTrainerServiceLevelReq = function(i) local r = __trainer[i] return r and r.level end
+            GetTrainerServiceCost = function(i) local r = __trainer[i] return r and r.cost end
+            GetTrainerServiceSkillLine = function(i) local r = __trainer[i] return r and r.skill end
+            GetTrainerServiceIcon = function(i) local r = __trainer[i] return r and r.icon end
+            GetTrainerServiceItemLink = function(i) local r = __trainer[i] return r and r.link end
+            -- GameTooltip records what a hover put in it: __tooltip = { owner=, spell=, lines={}, shown= }
+            __tooltip = { lines = {} }
+            GameTooltip.SetOwner = function(self, owner, anchor) __tooltip = { owner = owner, anchor = anchor, lines = {} } end
+            GameTooltip.GetOwner = function(self) return __tooltip.owner end
+            GameTooltip.SetSpellByID = function(self, id) __tooltip.spell = id end
+            GameTooltip.AddLine = function(self, text) __tooltip.lines[#__tooltip.lines + 1] = tostring(text) end
+            GameTooltip.Show = function(self) __tooltip.shown = true end
+            GameTooltip.Hide = function(self) __tooltip.shown = false __tooltip.owner = nil end
+            GetTrainerServiceNumAbilityReq = function(i) local r = __trainer[i] return r and r.req and #r.req or 0 end
+            GetTrainerServiceAbilityReq = function(i, j) local r = __trainer[i] return r and r.req and r.req[j], false end
+            GetTrainerServiceTypeFilter = function(f) return __trainerFilter[f] end
+            SetTrainerServiceTypeFilter = function(f, v)
+                __trainerFilter[f] = v and true or false
+                __trainerUpdates = (__trainerUpdates or 0) + 1
+                if __trainerOpen then W.fireEvent("TRAINER_UPDATE") end          -- the client fires this on a filter change
+            end
+            IsTradeskillTrainer = function() return __tradeskillTrainer end
+            -- A retail-shaped spellbook frame for the tab: W.spellbookFrame() makes
+            -- PlayerSpellsFrame.SpellBookFrame with CategoryTabSystem (three tab
+            -- buttons) and PagedSpellsFrame, and fires the on-demand ADDON_LOADED.
+            -- W.spellbookFrame("reload") mimics a /reload: the frame exists
+            -- but is hidden and its tab buttons only appear on the first show,
+            -- as a tab pool does.
+            W.spellbookFrame = function(mode)
+                local psf = CreateFrame("Frame", "PlayerSpellsFrame", UIParent)
+                psf:SetSize(700, 520); psf:SetPoint("CENTER")
+                local sbf = CreateFrame("Frame", nil, psf); sbf:SetAllPoints(); psf.SpellBookFrame = sbf
+                local tabs = CreateFrame("Frame", nil, sbf); tabs:SetSize(200, 40); tabs:SetPoint("TOPLEFT", 20, -10); sbf.CategoryTabSystem = tabs
+                tabs.buttons = {}
+                local function makeTabs()
+                    for i = 1, 3 do
+                        local b = CreateFrame("Button", nil, tabs); b:SetSize(40, 40)
+                        b:SetPoint("LEFT", tabs, "LEFT", (i - 1) * 46, 0)
+                        -- the selected-tab pieces, as measured on Forever; tab 1 starts selected
+                        b.SquareBackgroundActive = b:CreateTexture(nil, "ARTWORK")
+                        b.SquareBackgroundActiveGlow = b:CreateTexture(nil, "ARTWORK")
+                        b.SquareBackgroundActive:SetShown(i == 1)
+                        b.SquareBackgroundActiveGlow:SetShown(i == 1)
+                        b:SetEnabled(i ~= 1)                       -- the tab system disables the selected tab
+                        tabs.selected = tabs.selected or 1
+                        b.index = i
+                        b:SetScript("OnClick", function(self)
+                            if tabs.selected == self.index then return end     -- re-selecting the selected tab is a no-op
+                            tabs.selected = self.index
+                            for _, o in ipairs(tabs.buttons) do
+                                o.SquareBackgroundActive:SetShown(o == self)
+                                o.SquareBackgroundActiveGlow:SetShown(o == self)
+                                o:SetEnabled(o ~= self)
+                            end
+                        end)
+                        tabs.buttons[i] = b
+                    end
+                end
+                if mode == "reload" then
+                    psf:Hide()
+                    psf:SetScript("OnShow", function() if not tabs.buttons[1] then makeTabs() end end)
+                elseif mode == "lazy" then
+                    -- one tab at first, one more on every later show (a level 1 warrior gained
+                    -- its second category after the first show and our tab sat on top of it)
+                    psf:Hide()
+                    psf:SetScript("OnShow", function()
+                        local i = #tabs.buttons + 1
+                        if i > 3 then return end
+                        local b = CreateFrame("Button", nil, tabs); b:SetSize(40, 40)
+                        b:SetPoint("LEFT", tabs, "LEFT", (i - 1) * 46, 0)
+                        b.SquareBackgroundActive = b:CreateTexture(nil, "ARTWORK")
+                        b.SquareBackgroundActiveGlow = b:CreateTexture(nil, "ARTWORK")
+                        b.SquareBackgroundActive:SetShown(i == 1)
+                        b.SquareBackgroundActiveGlow:SetShown(i == 1)
+                        tabs.buttons[i] = b
+                    end)
+                else
+                    makeTabs()
+                end
+                local page = CreateFrame("Frame", nil, sbf); page:SetPoint("TOPLEFT", 20, -60); page:SetPoint("BOTTOMRIGHT", -20, 20); sbf.PagedSpellsFrame = page
+                W.fireEvent("ADDON_LOADED", "Blizzard_PlayerSpells")
+                return psf
+            end
+            -- A spellbook: __spellbook = { { name=, sub= "Rank 2" }, ... } in one skill line.
+            __spellbook = {}
+            Enum = Enum or {}
+            Enum.SpellBookSpellBank = Enum.SpellBookSpellBank or { Player = 0, Pet = 1 }
+            C_SpellBook = C_SpellBook or {}
+            C_SpellBook.GetNumSpellBookSkillLines = function() return 1 end
+            C_SpellBook.GetSpellBookSkillLineInfo = function(i) return { name = "General", itemIndexOffset = 0, numSpellBookItems = #__spellbook } end
+            C_SpellBook.GetSpellBookItemName = function(slot, bank) local s = __spellbook[slot] if not s then return nil end return s.name, (__bookNoSubtext and "" or (s.sub or "")) end
+            C_SpellBook.GetSpellBookItemInfo = function(slot, bank) local s = __spellbook[slot] if not s then return nil end return { spellID = s.id or (100000 + slot), name = s.name } end
+            C_Spell = C_Spell or {}
+            C_Spell.GetSpellSubtext = function(id) for _, s in ipairs(__spellbook) do if (s.id or 0) == id then return s.sub or "" end end return nil end
+            -- A quest log for the Quests page: __quests rows
+            -- { questID=, title=, level=, isHeader=, isHidden=, task=, trivial=, canAbandon= }.
+            -- The client's three-call abandon is modelled strictly: AbandonQuest
+            -- without SetAbandonQuest on the selected quest throws, and an
+            -- abandoned quest LEAVES the list (indices shift, as in the client).
+            __quests, __abandoned = {}, {}
+            local qSelected, qArmed
+            local function qFind(id) for i, q in ipairs(__quests) do if q.questID == id then return q, i end end end
+            C_QuestLog = C_QuestLog or {}
+            C_QuestLog.GetNumQuestLogEntries = function() return #__quests end
+            C_QuestLog.GetInfo = function(i)
+                local q = __quests[i]
+                if not q then return nil end
+                if q.throws then error("GetInfo blew up") end
+                return { questID = q.questID, title = q.title, level = q.level, isHeader = q.isHeader or false, isHidden = q.isHidden or false }
+            end
+            C_QuestLog.GetQuestObjectives = function(id)
+                local out = {}
+                for i, ob in ipairs(__objectives[id] or {}) do out[i] = { text = ob.text, finished = ob.finished == true, type = "monster" } end
+                return out
+            end
+            -- Guide: __completed[questID] = true for flagged-complete quests; a
+            -- __quests row may carry ready = true (all objectives done) and title.
+            __completed = {}
+            C_QuestLog.IsQuestFlaggedCompleted = function(id) return __completed[id] == true end
+            C_QuestLog.IsOnQuest = function(id) return qFind(id) ~= nil end
+            C_QuestLog.ReadyForTurnIn = function(id) local q = qFind(id) return q ~= nil and q.ready == true end
+            C_QuestLog.GetTitleForQuestID = function(id) local q = qFind(id) return (q and q.title) or (__titles and __titles[id]) or nil end
+            C_QuestLog.RequestLoadQuestByID = function() end
+            C_QuestLog.IsQuestTrivial = function(id) local q = qFind(id) return q ~= nil and q.trivial == true end
+            C_QuestLog.IsQuestTask = function(id) local q = qFind(id) return q ~= nil and q.task == true end
+            C_QuestLog.CanAbandonQuest = function(id) local q = qFind(id) return q ~= nil and q.canAbandon ~= false end
+            C_QuestLog.SetSelectedQuest = function(id) qSelected = id end
+            C_QuestLog.GetSelectedQuest = function() return qSelected end
+            C_QuestLog.SetAbandonQuest = function() qArmed = qSelected end
+            C_QuestLog.AbandonQuest = function()
+                if qArmed == nil or qArmed ~= qSelected then error("AbandonQuest without SetAbandonQuest on the selected quest") end
+                local q, i = qFind(qSelected)
+                if q then table.remove(__quests, i); __abandoned[#__abandoned + 1] = qSelected end
+                qArmed = nil
+                W.fireEvent("QUEST_LOG_UPDATE")
             end
             W.chat = function(event, msg, author)
                 for _, fn in ipairs(__chatFilters[event] or {}) do
@@ -216,8 +388,9 @@ def eq(got, want, msg):
 
 def run(selected=None, verbose=False):
     groups = {}
+    wanted = set(selected.split(",")) if selected else None      # "a,b,c" runs several groups
     for group, name, fn in TESTS:
-        if selected and group != selected:
+        if wanted and group not in wanted:
             continue
         groups.setdefault(group, []).append((name, fn))
     passed = failed = 0

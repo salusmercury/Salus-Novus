@@ -322,7 +322,7 @@ local function naturalW(f)
 end
 local function naturalH(f)
     if f.__type == "FontString" and (f.__h or 0) == 0 then
-        return (f.__text and 12) or 0
+        return (f.__text and f.__text ~= "" and 12) or 0        -- "" has no height, as in the client
     end
     return f.__h or 0
 end

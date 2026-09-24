@@ -1038,12 +1038,19 @@ function T.MakeShell(name, w, h, sidebarW, headerH, titleText)
             for word in text:gmatch("%u+") do
                 n = n + 1
                 local w = Pair(n)
+                w.rest:ClearAllPoints()
+                w.rest:SetPoint("LEFT", w.initial, "RIGHT", 0, 0)
                 w.initial:SetText(word:sub(1, 1)); w.initial:Show()
                 w.rest:SetText(word:sub(2)); w.rest:Show()
             end
         else
             n = 1
             self.initial:SetText(""); self.initial:Hide()
+            -- Anchor to the header itself: the empty initial has no height,
+            -- and a title hung off its right edge centred on the band's top
+            -- and poked above it (Boss Visualizer, 2026-09-23).
+            self.title:ClearAllPoints()
+            self.title:SetPoint("TOPLEFT", header, "TOPLEFT", 22, -6)
             self.title:SetText(text); self.title:Show()
         end
         for i = n + 1, #self.words do self.words[i].initial:Hide(); self.words[i].rest:Hide() end
@@ -1089,3 +1096,79 @@ function T.MakeShell(name, w, h, sidebarW, headerH, titleText)
     shell:Repaint()
     return shell
 end
+
+-- --------------------------------------------------------------- confirm
+
+--- A yes/no dialog: text, the yes button's label, what a yes does.
+-- One frame, reused; Cancel, Escape and a click outside all decline.
+local confirm
+function T.Confirm(text, yesLabel, onYes)
+    if not confirm then
+        local f = CreateFrame("Frame", "SalusNovusConfirm", UIParent)
+        f:SetSize(400, 140)
+        f:SetPoint("CENTER")
+        f:SetFrameStrata("FULLSCREEN_DIALOG")
+        f:SetFrameLevel(200)
+        f:SetToplevel(true)
+        f:EnableMouse(true)
+        f:SetClampedToScreen(true)
+        f.bg = T.SolidTex(f, "BACKGROUND", T.BG[1], T.BG[2], T.BG[3], 0.985)
+        f.bg:SetAllPoints()
+        f.border = T.Border(f)
+        f.border:Layout(f, 1, 0)
+        f.border:SetColor(T.EDGE[1], T.EDGE[2], T.EDGE[3], 1)
+        f.border:Show()
+        f.rail = T.SolidTex(f, "ARTWORK", 1, 1, 1, 1)
+        f.rail:SetWidth(T.RAIL_W)
+        f.rail:SetPoint("TOPLEFT", 0, 0)
+        f.rail:SetPoint("BOTTOMLEFT", 0, 0)
+        T.Paint({ tex = f.rail, a = 1 })
+        f.text = T.MakeText(f, 15, T.TEXT)
+        f.text:SetPoint("TOPLEFT", 24, -24)
+        f.text:SetPoint("RIGHT", f, "RIGHT", -20, 0)
+        f.text:SetJustifyH("LEFT")
+        f.text:SetWordWrap(true)
+        f.yes = T.MakeButton(f)
+        f.yes:SetSize(120, 28)
+        f.yes:SetPoint("BOTTOMRIGHT", -16, 14)
+        f.yes:SetPrimary(true)
+        f.no = T.MakeButton(f)
+        f.no:SetSize(100, 28)
+        f.no:SetPoint("RIGHT", f.yes, "LEFT", -8, 0)
+        f.no:SetText("Cancel")
+        f.no:SetScript("OnClick", function() f:Hide() end)
+        f.yes:SetScript("OnClick", function()
+            local fn = f.onYes
+            f:Hide()
+            if fn then fn() end
+        end)
+        f:SetScript("OnHide", function(self) self.onYes = nil end)
+        -- Escape closes the dialog; every other key passes through to the
+        -- game (OnKeyDown never fires without EnableKeyboard, and a frame
+        -- that keeps the keyboard eats movement). SetPropagateKeyboardInput
+        -- is protected in combat on this client: pcall'd.
+        f:EnableKeyboard(true)
+        f:SetScript("OnKeyDown", function(self, key)
+            if key == "ESCAPE" then
+                pcall(self.SetPropagateKeyboardInput, self, false)
+                self:Hide()
+            else
+                pcall(self.SetPropagateKeyboardInput, self, true)
+            end
+        end)
+        f.catcher = CreateFrame("Button", nil, f)
+        f.catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+        f.catcher:SetFrameLevel(f:GetFrameLevel() - 1)
+        f.catcher:SetAllPoints(UIParent)
+        f.catcher:SetScript("OnClick", function() f:Hide() end)
+        f:Hide()
+        confirm = f
+        T.confirm = f                                   -- test seam
+    end
+    confirm.text:SetText(text or "")
+    confirm.yes:SetText(yesLabel or "OK")
+    confirm.onYes = onYes
+    confirm:Show()
+    return confirm
+end
+

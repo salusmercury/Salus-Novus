@@ -37,6 +37,10 @@ local PAGE_PAD  = 10
 local COL_GAP   = 16
 local COL_W     = math.floor((CONTENT_W - PAGE_PAD * 2 - COL_GAP) / 2)
 local COL_LEFT  = { PAGE_PAD, PAGE_PAD + COL_W + COL_GAP }
+local WIDE_W    = CONTENT_W - PAGE_PAD * 2            -- a card spanning both columns
+-- The header rule: a lens, thick in the middle, tapering to nothing at the
+-- ends (make_taper_texture.py), tinted with the accent.
+local HEAD_RULE_TEX = "Interface\\AddOns\\SalusNovus\\Textures\\taper.tga"
 
 -- The sidebar is organised by MODULE: a heading with a master switch, and
 -- the module's groups under it. Global is a heading with no switch. A
@@ -44,6 +48,7 @@ local COL_LEFT  = { PAGE_PAD, PAGE_PAD + COL_W + COL_GAP }
 local MODULES = {
     { key = "bossWarnings", label = "Boss Warnings" },
     { key = "qol",          label = "Quality of Life" },
+    { key = "leveling",     label = "Leveling" },
 }
 local MODULE_BY_SECTION = {}
 for _, m in ipairs(MODULES) do MODULE_BY_SECTION[m.label] = m end
@@ -54,6 +59,10 @@ local GROUPS = {
     { section = "Boss Warnings", module = "bossWarnings", key = "visualizer", label = "Boss Visualizer", launch = true },
     { section = "Quality of Life", module = "qol",       key = "chat",       label = "Chat",            pages = { "chat" } },
     { section = "Quality of Life", module = "qol",       key = "font",       label = "Font",            pages = { "font" } },
+    { section = "Quality of Life", module = "qol",       key = "quests",     label = "Quests",          pages = { "quests" } },
+    { section = "Quality of Life", module = "qol",       key = "trainer",    label = "Trainer",         pages = { "trainer" } },
+    { section = "Leveling",        module = "leveling",  key = "guide",      label = "Settings",        pages = { "guide" } },
+    { section = "Leveling",        module = "leveling",  key = "routes",     label = "Routes",          pages = { "routes" } },
 }
 local PAGE_GROUP, PAGE_MODULE = {}, {}
 for _, g in ipairs(GROUPS) do
@@ -78,7 +87,7 @@ end
 local function SetSectionCollapsed(section, on)
     if not ns.db then return end
     ns.db.sidebar = ns.db.sidebar or {}
-    ns.db.sidebar.collapsed = ns.db.sidebar.collapsed or {}
+    if type(ns.db.sidebar.collapsed) ~= "table" then ns.db.sidebar.collapsed = {} end   -- junk from a hand-edited file (hunt 8, lane 8)
     ns.db.sidebar.collapsed[SectionKey(section)] = on and true or false
 end
 
@@ -107,7 +116,7 @@ local function MeasureSidebar()
 end
 MeasureSidebar()
 
-local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings", chat = "Chat", font = "Font" }
+local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings", chat = "Chat", font = "Font", quests = "Quests", trainer = "Trainer", guide = "Settings", routes = "Routes" }
 
 local panel
 local shell
@@ -195,9 +204,11 @@ O.RefreshAll = RefreshAll
 --------------------------------------------------------------------------------
 local function MakeRow(page, anchor, height)
     local col = (anchor and anchor.__col) or 1
+    local wide = anchor and anchor.__wide or false
     local row = CreateFrame("Frame", nil, page)
     row:SetHeight(height or ROW_H)
-    row:SetWidth(COL_W)
+    row:SetWidth(wide and WIDE_W or COL_W)
+    row.__wide = wide
     local gap = (anchor and anchor.__loose) and LOOSE_GAP or ROW_GAP
     row:SetPoint("TOP", anchor, "BOTTOM", 0, -gap)
     row:SetPoint("LEFT", page, "LEFT", COL_LEFT[col], 0)
@@ -250,9 +261,12 @@ local function MakeSection(page, anchor, text, column)
     text = T.Upper(text)
     -- Centred over the card (Alex, 2026-09-21: a global rule for cards).
     fs:SetJustifyH("CENTER")
-    fs:SetWidth(COL_W)
+    local wide = column == "wide"
+    fs:SetWidth(wide and WIDE_W or COL_W)
     local col = (column == 2) and 2 or ((anchor and anchor.__col) or 1)
+    if wide then col = 1 end
     fs.__col = col
+    fs.__wide = wide
     fs:SetText(text)
     fs.__loose = true
     -- Centred on the card's head band by geometry, from the SAME anchor
@@ -272,14 +286,14 @@ local function MakeSection(page, anchor, text, column)
     page.__sectionTitles = page.__sectionTitles or {}
     page.__sectionTitles[col] = fs                       -- test seam
     local card = CreateFrame("Frame", nil, page)
-    card:SetFrameLevel(page:GetFrameLevel())
+    card:SetFrameLevel(math.max(0, page:GetFrameLevel() - 1))   -- titles (on the page) draw over the band
     if column == 2 then
         card:SetPoint("TOP", page, "TOP", 0, -23)
     else
         card:SetPoint("TOP", anchor, "BOTTOM", 0, -20)
     end
     card:SetPoint("LEFT", page, "LEFT", COL_LEFT[col], 0)
-    card:SetWidth(COL_W)
+    card:SetWidth(wide and WIDE_W or COL_W)
     card:SetHeight(40)
     -- Slab: a solid card a step lighter than the window, a 6 px accent
     -- rail down the left, no hairline, no head band.
@@ -294,12 +308,21 @@ local function MakeSection(page, anchor, text, column)
     card.accent:SetPoint("TOPLEFT", 0, 0)
     card.accent:SetPoint("BOTTOMLEFT", 0, 0)
     T.Paint({ tex = card.accent, a = 1 })
-    card.head = T.SolidTex(card, "BACKGROUND", 1, 1, 1, 1, 1)
+    -- Header band (Alex, 2026-09-22: candidate E + C's rule): the title
+    -- sits on the sidebar colour in the accent, over a tapered accent rule.
+    card.head = T.SolidTex(card, "BACKGROUND", T.SIDEBAR[1], T.SIDEBAR[2], T.SIDEBAR[3], 1, 1)
     card.head:SetHeight(HEAD_H)
     card.head:SetPoint("TOPLEFT", card, "TOPLEFT", T.RAIL_W, 0)
     card.head:SetPoint("TOPRIGHT", card, "TOPRIGHT", 0, 0)
-    card.head:SetVertexColor(1, 1, 1, 0)
-    card.head:Hide()
+    card.head:Show()
+    card.rule = card:CreateTexture(nil, "ARTWORK")
+    card.rule:SetTexture(HEAD_RULE_TEX)
+    card.rule:SetHeight(4)
+    card.rule:SetPoint("TOPLEFT", card, "TOPLEFT", T.RAIL_W + 6, -HEAD_H + 2)
+    card.rule:SetPoint("TOPRIGHT", card, "TOPRIGHT", -6, -HEAD_H + 2)
+    T.Paint({ tex = card.rule, a = 1 })
+    T.Paint({ repaint = { Repaint = function() local r, g, b = T.Accent() fs:SetTextColor(r, g, b, 1) end } })
+    fs:SetDrawLayer("OVERLAY")
 
     page.__card = page.__card or {}
     page.__card[col] = card
@@ -706,7 +729,9 @@ local function ValueLabel(values, labels, v, preview)
 end
 O.ValueLabel = ValueLabel
 
-local function OpenPickerList(anchorBtn, values, labels, current, onPick)
+local OpenPickerList
+O.OpenPickerList = function(...) return OpenPickerList(...) end     -- the builder window uses it
+OpenPickerList = function(anchorBtn, values, labels, current, onPick)
     if pickerList and pickerList:IsShown() and pickerList.owner == anchorBtn then
         pickerList:Hide()
         return
@@ -1454,6 +1479,478 @@ PAGE_BODY.font = function()
         function(v) ns.db.font.wholeUI = v end)
 end
 
+-- Quests (Quality of Life): abandon all, or the low-level ones, each
+-- behind a confirmation that names the count.
+PAGE_BODY.quests = function()
+    local pg = pages.quests.__content
+    local t = MakeTitle(pg, "Quests")
+    local sAb = MakeSection(pg, t, "ABANDON")
+    local function ButtonRow(anchor, label, count, question, act)
+        local row = MakeRow(pg, anchor)
+        local btn = T.MakeButton(row)
+        btn:SetSize(110, 24)
+        btn:SetPoint("RIGHT", row, "RIGHT", -12, 0)
+        btn:SetText("Abandon")
+        row:SetControl(btn)
+        btn.Update = function(self)
+            local n = count()
+            self.__count = n
+            row.label:SetText(("%s (%d)"):format(label, n))
+        end
+        btn.EnabledWhen = function() return count() > 0 end
+        local base = btn.SetEnabledState
+        btn.SetEnabledState = function(self, e)
+            base(self, e)
+            row:SetLabelEnabled(e)
+        end
+        btn:SetScript("OnClick", function(self)
+            if not self.enabledState then return end
+            local n = count()
+            if n == 0 then return end
+            T.Confirm(question(n), "Abandon", function()
+                act()
+                RefreshAll()
+            end)
+        end)
+        btn.__kind = "button"
+        Register(pg, btn)
+        return row
+    end
+    local rAll = ButtonRow(sAb, "All quests",
+        function() return #ns.Quests.List() end,
+        function(n) return ("Abandon all %d quest%s in your log?"):format(n, n == 1 and "" or "s") end,
+        ns.Quests.AbandonAll)
+    ButtonRow(rAll, "Low-level quests",
+        function() return #ns.Quests.LowLevel() end,
+        function(n) return ("Abandon %d low-level quest%s?"):format(n, n == 1 and "" or "s") end,
+        ns.Quests.AbandonLowLevel)
+end
+-- The counts follow the log while the page is up.
+ns.On("QUEST_LOG_UPDATE", function()
+    if activePage == "quests" and panel and panel:IsShown() then Refresh() end
+end)
+
+-- Guide (Leveling): which route, the pin, how much of what is next.
+PAGE_BODY.guide = function()
+    local pg = pages.guide.__content
+    local t = MakeTitle(pg, "Guide")
+    local sRoute = MakeSection(pg, t, "ROUTE")
+    local gOn = MakeCheckbox(pg, "Follow a leveling route", sRoute,
+        function() return ns.db.guide.enabled ~= false end,
+        function(v) ns.db.guide.enabled = v end)
+    local values, labels = { "auto" }, { auto = "Best match" }
+    local function RefreshRoutes()
+        for i = #values, 2, -1 do values[i] = nil end
+        for k in pairs(labels) do if k ~= "auto" then labels[k] = nil end end
+        for _, r in ipairs(ns.Routes or {}) do
+            values[#values + 1] = r.slug
+            labels[r.slug] = r.name or r.slug
+        end
+    end
+    RefreshRoutes()
+    O.refreshRouteChoices = RefreshRoutes                     -- routes come and go in a session
+    local gRoute = MakeDropdown(pg, "Route:", gOn, values, labels,
+        function() RefreshRoutes() return ns.db.guide.route or "auto" end,
+        function(v) ns.db.guide.route = v end,
+        function() return ns.db.guide.enabled ~= false end, "list")
+    local gArrow = MakeCheckbox(pg, "Direction arrow", gRoute,
+        function() return ns.db.guide.arrow ~= false end,
+        function(v) ns.db.guide.arrow = v end,
+        function() return ns.db.guide.enabled ~= false end)
+    MakeStepper(pg, "Arrow size:", gArrow, 24, 96,
+        function() return ns.db.guide.arrowSize or 48 end,
+        function(v) ns.db.guide.arrowSize = v end,
+        function(v) return v .. " px" end,
+        function() return ns.db.guide.enabled ~= false and ns.db.guide.arrow ~= false end)
+    local sLook = MakeSection(pg, nil, "TEXT", 2)
+    local gNext = MakeStepper(pg, "Next steps shown:", sLook, 0, 4,
+        function() return ns.db.guide.showNext or 2 end,
+        function(v) ns.db.guide.showNext = v end,
+        function(v) return tostring(v) end,
+        function() return ns.db.guide.enabled ~= false end)
+    MakeStepper(pg, "Step size:", gNext, 10, 24,
+        function() return ns.db.guide.size or 14 end,
+        function(v) ns.db.guide.size = v end,
+        function(v) return v .. " pt" end,
+        function() return ns.db.guide.enabled ~= false end)
+end
+
+-- Routes (Leveling): the route's steps, editable. Every edit goes
+-- live and into the edit log the PC build applies (RouteEditor.lua).
+local STEP_H = 24
+PAGE_BODY.routes = function()
+    local pg = pages.routes.__content
+    local t = MakeTitle(pg, "Routes")
+    local E = ns.RouteEditor
+    local sBuild = MakeSection(pg, t, "BUILDER")
+    local bwRow = MakeRow(pg, sBuild)
+    bwRow.label:SetText("")
+    local openB = T.MakeButton(bwRow)
+    openB:SetSize(120, 24)
+    openB:SetPoint("CENTER", bwRow, "CENTER", T.RAIL_W / 2, 0)      -- centred in the card (Alex)
+    openB:SetText("Open builder")
+    openB:SetScript("OnClick", function(self) if self.enabledState then ns.Builder.Show() end end)
+    openB.__kind = "button"
+    Register(pg, openB)
+    O.stepsOpenBuilder = openB
+
+    local sRoutes = MakeSection(pg, bwRow, "ROUTES")
+    local nRow = MakeRow(pg, sRoutes)
+    nRow.label:SetText("New route:")
+    local newB = T.MakeButton(nRow)
+    newB:SetSize(96, 24)
+    newB:SetPoint("RIGHT", nRow, "RIGHT", -12, 0)
+    newB:SetText("Create")
+    local nameBox = T.MakeEditBox(nRow, 170)
+    nameBox:SetPoint("RIGHT", newB, "LEFT", -8, 0)
+    nRow:SetControl(nameBox)
+    local function Create()
+        E.NewRoute(nameBox:GetText())
+        nameBox:SetText("")
+        nameBox:ClearFocus()
+        if O.stepsList then O.stepsList:Select(nil) end
+        RefreshAll()
+    end
+    newB:SetScript("OnClick", function(self) if self.enabledState then Create() end end)
+    nameBox:SetScript("OnEnterPressed", Create)
+    nameBox.SetEnabledState = function(self, e) self:SetEnabled(e and true or false); self:SetAlpha(e and 1 or 0.45); nRow:SetLabelEnabled(e); newB:SetEnabledState(e) end
+    nameBox.__kind = "edit"
+    Register(pg, nameBox)
+    O.stepsNewName, O.stepsNewButton = nameBox, newB
+    -- Which route to follow: a picker over every route (Alex, 2026-09-22:
+    -- a new route hid the others until it was deleted).
+    local fRow = MakeRow(pg, nRow)
+    fRow.label:SetText("Following:")
+    local fValues, fLabels = {}, {}
+    local function RefreshFollow()
+        for i = #fValues, 1, -1 do fValues[i] = nil end
+        for k in pairs(fLabels) do fLabels[k] = nil end
+        fValues[1] = "auto"; fLabels.auto = "Best match"
+        for _, r in ipairs(ns.Routes or {}) do
+            fValues[#fValues + 1] = r.slug
+            fLabels[r.slug] = ("%s  \194\183  %d"):format(r.name or r.slug, #r.steps)
+        end
+    end
+    local fBtn = T.MakeHeaderButton(fRow, 260, function(self)
+        RefreshFollow()
+        OpenPickerList(self, fValues, fLabels, ns.db.guide.route or "auto", function(v)
+            ns.db.guide.route = v
+            if O.stepsList then O.stepsList:Select(nil) end
+            ns.ApplyAll()
+            RefreshAll()
+        end)
+    end)
+    fBtn:SetHeight(26)
+    fBtn:SetPoint("RIGHT", fRow, "RIGHT", -12, 0)
+    fRow:SetControl(fBtn)
+    fBtn.Update = function(self)
+        RefreshFollow()
+        local r = ns.Guide.PickRoute()
+        local want = ns.db.guide.route or "auto"
+        if want ~= "auto" and not fLabels[want] then ns.db.guide.route = "auto" want = "auto" end
+        if r then
+            self.text:SetText(("%s  \194\183  %d step%s%s"):format(r.name or r.slug, #r.steps, #r.steps == 1 and "" or "s", want == "auto" and "  (best match)" or ""))
+        else
+            self.text:SetText("No route for this character")
+        end
+    end
+    fBtn.EnabledWhen = function() return #(ns.Routes or {}) > 0 end
+    fBtn.SetEnabledState = function(self, e)
+        self:SetEnabled(e)
+        local c = e and T.TEXT or T.TEXT_MUTE
+        self.text:SetTextColor(c[1], c[2], c[3], 1)
+        fRow:SetLabelEnabled(e)
+    end
+    fBtn.__kind, fBtn.__values = "choice", fValues
+    Register(pg, fBtn)
+    O.stepsFollow = fBtn                                     -- test seam
+
+    local dRow = MakeRow(pg, fRow)
+    dRow.label:SetText("")
+    local delB = T.MakeButton(dRow)
+    delB:SetSize(120, 24)
+    delB:SetPoint("RIGHT", dRow, "RIGHT", -12, 0)
+    delB:SetText("Delete route")
+    delB.Update = function(self) end
+    delB.EnabledWhen = function() return ns.Guide.PickRoute() ~= nil end
+    local dBase = delB.SetEnabledState
+    delB.SetEnabledState = function(self, e) dBase(self, e) dRow:SetLabelEnabled(e) end
+    delB:SetScript("OnClick", function(self)
+        if not self.enabledState then return end
+        local r = ns.Guide.PickRoute()
+        if not r then return end
+        T.Confirm(("Delete the route \"%s\" and its %d step%s?"):format(r.name or r.slug, #r.steps, #r.steps == 1 and "" or "s"), "Delete", function()
+            E.DeleteRoute(r)
+            if O.stepsList then O.stepsList:Select(nil) end
+            RefreshAll()
+        end)
+    end)
+    delB.__kind = "button"
+    Register(pg, delB)
+    O.stepsDeleteRoute = delB
+
+    -- Add: a quest from the log + a kind, or a note, placed above or below
+    -- the SELECTED row (click a row), or before the current step when
+    -- nothing is selected.
+    local sAdd = MakeSection(pg, nil, "ADD", 2)
+    local place = "below"
+    local pRow = MakeDropdown(pg, "Place:", sAdd, { "above", "below" }, { above = "Above selected", below = "Below selected" },
+        function() return place end, function(v) place = v end)
+    O.stepsPlace = function(v) if v then place = v end return place end      -- test seam
+    local qRow = MakeRow(pg, pRow)
+    qRow.label:SetText("Quest:")
+    local qValues, qLabels, qChosen = {}, {}, nil
+    local function RefreshQuests()
+        for k in pairs(qLabels) do qLabels[k] = nil end
+        for i = #qValues, 1, -1 do qValues[i] = nil end
+        local still = false
+        for _, q in ipairs(E.LogQuests()) do
+            qValues[#qValues + 1] = q.questID
+            qLabels[q.questID] = q.title
+            if q.questID == qChosen then still = true end
+        end
+        if not still then qChosen = qValues[1] end
+    end
+    local qBtn = T.MakeHeaderButton(qRow, 200, function(self)
+        RefreshQuests()
+        OpenPickerList(self, qValues, qLabels, qChosen, function(v)
+            qChosen = v
+            self.text:SetText(qLabels[v] or tostring(v))
+        end)
+    end)
+    qBtn:SetHeight(26)
+    qBtn:SetPoint("RIGHT", qRow, "RIGHT", -12, 0)
+    qRow:SetControl(qBtn)
+    qBtn.Update = function(self)
+        RefreshQuests()
+        self.text:SetText(qChosen and (qLabels[qChosen] or tostring(qChosen)) or "(no quests in the log)")
+    end
+    qBtn.EnabledWhen = function() return #E.LogQuests() > 0 end
+    qBtn.SetEnabledState = function(self, e)
+        self:SetEnabled(e)
+        local c = e and T.TEXT or T.TEXT_MUTE
+        self.text:SetTextColor(c[1], c[2], c[3], 1)
+        qRow:SetLabelEnabled(e)
+    end
+    qBtn.__kind = "choice"
+    Register(pg, qBtn)
+    O.stepsQuest = function() return qChosen end            -- test seam
+    O.stepsQuestButton = qBtn
+
+    local tRow = MakeRow(pg, qRow)
+    tRow.label:SetText("Text:")
+    local tBox = T.MakeEditBox(tRow, 300)
+    tBox:SetPoint("RIGHT", tRow, "RIGHT", -12, 0)
+    tRow:SetControl(tBox)
+    tBox.SetEnabledState = function(self, e) self:SetEnabled(e and true or false); self:SetAlpha(e and 1 or 0.45); tRow:SetLabelEnabled(e) end
+    tBox.__kind = "edit"
+    Register(pg, tBox)
+    O.stepsText = tBox
+
+    local bRow = MakeRow(pg, tRow)
+    bRow.label:SetText("")
+    local prev
+    local addButtons = {}
+    for _, spec in ipairs({ { "Accept", "accept" }, { "Objective", "do" }, { "Turn in", "turnin" }, { "Note", "note" } }) do
+        local b = T.MakeButton(bRow)
+        b:SetSize(86, 24)
+        b:SetText(spec[1])
+        if prev then b:SetPoint("RIGHT", prev, "LEFT", -6, 0) else b:SetPoint("RIGHT", bRow, "RIGHT", -12, 0) end
+        b.kind = spec[2]
+        b:SetScript("OnClick", function(self)
+            if not self.enabledState then return end
+            local route = ns.Guide.PickRoute()
+            local at
+            local sel = O.stepsList and O.stepsList.selected
+            if route and sel and route.steps[sel] then
+                local step = E.NewStep(self.kind, qChosen, tBox:GetText())
+                local after = (place == "above") and (sel - 1) or sel
+                if step and E.Insert(route, after, step) then
+                    at = after + 1
+                    O.stepsList:Select(at)                   -- the new row is selected
+                end
+            else
+                at = E.InsertHere(route, self.kind, qChosen, tBox:GetText())
+            end
+            if at then tBox:SetText(""); tBox:ClearFocus() end
+            RefreshAll()
+        end)
+        b.EnabledWhen = function() return spec[2] == "note" or #E.LogQuests() > 0 end
+        b.__kind = "button"
+        Register(pg, b)
+        addButtons[spec[2]] = b
+        prev = b
+    end
+    O.stepsAdd = addButtons                                  -- test seam
+
+    -- The list.
+    local sList = MakeSection(pg, dRow, "ROUTE", "wide")
+    local list = MakeRow(pg, sList, STEP_H)
+    list.label:SetText("")
+    list.lines = {}
+    list.selected = nil
+    -- The selection is the STEP (table identity), re-indexed on every
+    -- relayout, so a delete, move or insert elsewhere keeps the highlight
+    -- on the same step (bug hunt 8, lane 5).
+    list.selectedStep = nil
+    function list:Select(i)
+        local route = ns.Guide.PickRoute()
+        local step = route and i and route.steps[i] or nil
+        self.selectedStep = step
+        self.selected = step and i or nil
+    end
+    -- Drag and drop: press on a row, move past a few pixels, release on
+    -- the row to land on. A press without a move selects the row.
+    list.marker = T.SolidTex(list, "OVERLAY", 1, 1, 1, 1)
+    list.marker:SetHeight(2)
+    list.marker:SetPoint("LEFT", list, "LEFT", T.RAIL_W + 8, 0)
+    list.marker:SetPoint("RIGHT", list, "RIGHT", -8, 0)
+    T.Paint({ tex = list.marker, a = 1 })
+    list.marker:Hide()
+    local drag
+    local function CursorY()
+        local _, y = GetCursorPosition()
+        local s = UIParent:GetEffectiveScale()
+        if not y or not s or s == 0 then return nil end
+        return y / s
+    end
+    function list:DropTarget()
+        local y = CursorY()
+        local top = self:GetTop()
+        if not y or not top then return nil end
+        local n = #(self.lines)
+        local count = 0
+        for i = 1, n do if self.lines[i]:IsShown() then count = i end end
+        if count == 0 then return nil end
+        local slot = math.floor((top - y) / STEP_H + 0.5)     -- boundary index: 0 = above row 1
+        if slot < 0 then slot = 0 elseif slot > count then slot = count end
+        return slot
+    end
+    function list:BeginDrag(i)
+        if self.enabledState == false then return end        -- module off (hunt 9, lane 3)
+        drag = { from = i, y = CursorY(), moved = false }
+        self:SetScript("OnUpdate", function(self)
+            if not drag then return end
+            local y = CursorY()
+            if not drag.moved and y and drag.y and math.abs(y - drag.y) > 4 then drag.moved = true end
+            if not drag.moved then return end
+            local slot = self:DropTarget()
+            if not slot then self.marker:Hide() return end
+            self.marker:ClearAllPoints()
+            self.marker:SetPoint("LEFT", self, "LEFT", T.RAIL_W + 8, 0)
+            self.marker:SetPoint("RIGHT", self, "RIGHT", -8, 0)
+            self.marker:SetPoint("TOP", self, "TOP", 0, -slot * STEP_H + 1)
+            self.marker:Show()
+        end)
+    end
+    function list:EndDrag()
+        if not drag then return end
+        local d = drag
+        drag = nil
+        self:SetScript("OnUpdate", nil)
+        self.marker:Hide()
+        local route = ns.Guide.PickRoute()
+        if d.moved then
+            local slot = self:DropTarget()
+            if slot and route then
+                -- a boundary above row k means "land at k"; the row's own
+                -- removal shifts later boundaries down by one
+                local to = slot + 1
+                if to > d.from then to = to - 1 end
+                if to ~= d.from and E.Move(route, d.from, to) then self:Select(to) end
+            end
+        else
+            if self.selected == d.from then self:Select(nil) else self:Select(d.from) end
+        end
+        RefreshAll()
+    end
+    O.stepsDrag = function() return drag end                    -- test seam
+    function list:Relayout()
+        local route = ns.Guide.PickRoute()
+        local steps = route and route.steps or {}
+        local cur = route and ns.Guide.CurrentIndex(route)
+        -- re-find the selected step by identity
+        self.selected = nil
+        if self.selectedStep then
+            for i, st in ipairs(steps) do if st == self.selectedStep then self.selected = i break end end
+            if not self.selected then self.selectedStep = nil end
+        end
+        for i, step in ipairs(steps) do
+            local ln = self.lines[i]
+            if not ln then
+                ln = CreateFrame("Frame", nil, self)
+                ln:SetHeight(STEP_H)
+                ln:EnableMouse(true)
+                ln.sel = T.SolidTex(ln, "BACKGROUND", 1, 1, 1, 0.10)
+                ln.sel:SetAllPoints()
+                ln.sel:Hide()
+                ln:SetScript("OnMouseDown", function(self, button) if button == "LeftButton" then list:BeginDrag(self.index) end end)
+                ln:SetScript("OnMouseUp", function(self, button) if button == "LeftButton" then list:EndDrag() end end)
+                ln.text = T.MakeText(ln, 12, T.TEXT)
+                ln.text:SetPoint("LEFT", ln, "LEFT", T.RAIL_W + 14, 0)
+                ln.text:SetJustifyH("LEFT")
+                ln.text:SetWordWrap(false)
+                ln.del = T.MakeButton(ln); ln.del:SetSize(44, 20); ln.del:SetText("Del")
+                ln.del:SetPoint("RIGHT", ln, "RIGHT", -12, 0)
+                ln.down = T.MakeButton(ln); ln.down:SetSize(44, 20); ln.down:SetText("Down")
+                ln.down:SetPoint("RIGHT", ln.del, "LEFT", -4, 0)
+                ln.up = T.MakeButton(ln); ln.up:SetSize(36, 20); ln.up:SetText("Up")
+                ln.up:SetPoint("RIGHT", ln.down, "LEFT", -4, 0)
+                ln.text:SetPoint("RIGHT", ln.up, "LEFT", -8, 0)
+                ln.del:SetScript("OnClick", function() if ln.del.enabledState then E.Delete(ns.Guide.PickRoute(), ln.index) RefreshAll() end end)
+                ln.up:SetScript("OnClick", function() if ln.up.enabledState then E.Up(ns.Guide.PickRoute(), ln.index) RefreshAll() end end)
+                ln.down:SetScript("OnClick", function() if ln.down.enabledState then E.Down(ns.Guide.PickRoute(), ln.index) RefreshAll() end end)
+                self.lines[i] = ln
+            end
+            ln.index = i
+            ln.sel:SetShown(i == self.selected)
+            ln.text:SetText(("%d.  %s"):format(i, ns.Guide.StepText(step)))
+            if i == cur then
+                local r, g, b = T.Accent()
+                ln.text:SetTextColor(r, g, b, 1)
+            elseif cur and i < cur then
+                ln.text:SetTextColor(T.TEXT_MUTE[1], T.TEXT_MUTE[2], T.TEXT_MUTE[3], 1)
+            else
+                ln.text:SetTextColor(T.TEXT[1], T.TEXT[2], T.TEXT[3], 1)
+            end
+            ln.up:SetEnabledState(self.enabledState ~= false and i > 1)
+            ln.down:SetEnabledState(self.enabledState ~= false and i < #steps)
+            ln.del:SetEnabledState(self.enabledState ~= false)
+            ln:ClearAllPoints()
+            ln:SetPoint("TOPLEFT", self, "TOPLEFT", 0, -(i - 1) * STEP_H)
+            ln:SetPoint("RIGHT", self, "RIGHT", 0, 0)
+            ln:Show()
+        end
+        for i = #steps + 1, #self.lines do self.lines[i]:Hide() end
+        self:SetHeight(math.max(1, #steps) * STEP_H)
+        self.label:SetText(#steps == 0 and (route and "No steps" or "No route for this character") or "")
+        -- the page must be tall enough to scroll to the last row
+        local need = 320 + #steps * STEP_H + 60
+        pg:SetHeight(need)                                -- grows and shrinks with the list
+    end
+    list.Update = function(self) self:Relayout() end
+    list.SetEnabledState = function(self, e)
+        self.enabledState = e and true or false
+        self:Relayout()
+    end
+    list.__kind = "list"
+    Register(pg, list)
+    O.stepsList = list                                       -- test seam
+end
+ns.On("QUEST_LOG_UPDATE", function()
+    if activePage == "routes" and panel and panel:IsShown() then Refresh() end
+end)
+
+-- Trainer (Quality of Life): the catalogue window and its switches.
+PAGE_BODY.trainer = function()
+    local pg = pages.trainer.__content
+    local t = MakeTitle(pg, "Trainer")
+    local sT = MakeSection(pg, t, "SPELLBOOK")
+    MakeCheckbox(pg, "Enable unlearned spells in spellbook", sT,
+        function() return ns.db.trainer.enabled ~= false end,
+        function(v) ns.db.trainer.enabled = v end)
+end
+
 -- Chat (Quality of Life): the filter switch and the word set it reads.
 -- The list is one row that grows a line per word; the Add row hangs off
 -- it, so the card follows the list.
@@ -1505,6 +2002,7 @@ PAGE_BODY.chat = function()
             ln.text:SetTextColor(c[1], c[2], c[3], 1)
         end
     end
+    list.Update = function(self) self:Relayout() end
     list.__kind = "list"
     Register(pg, list)
     O.chatList = list                                    -- test seam
@@ -1533,6 +2031,7 @@ PAGE_BODY.chat = function()
         addBtn:SetEnabledState(self.enabledState)
         addRow:SetLabelEnabled(e)
     end
+    eb.Update = function() end
     eb.__kind = "edit"
     Register(pg, eb)
     O.chatAdd, O.chatAddButton = eb, addBtn              -- test seams
@@ -1606,6 +2105,10 @@ local function BuildPanel()
     MakeTab("global", "Global")
     MakeTab("chat", "Chat")
     MakeTab("font", "Font")
+    MakeTab("quests", "Quests")
+    MakeTab("trainer", "Trainer")
+    MakeTab("guide", "Guide")
+    MakeTab("routes", "Routes")
     MakeTab("bars", "Bars")
     MakeTab("queue", "Ability Queue")
     MakeTab("preview", "Ability Preview")

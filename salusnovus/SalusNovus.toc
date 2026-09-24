@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Salus Novus
 ## Notes: Boss visualizer, bars and reminders for WoW Forever, built from our own combat logs. /sn
-## Version: 0.4.6
+## Version: 0.5.0
 ## Author: Alex
 ## SavedVariables: SalusNovusDB
 
@@ -46,6 +46,8 @@ Data\Naxxramas.lua
 Data\OnyxiasLair.lua
 Data\RuinsOfAhnQiraj.lua
 Data\Reminders.lua
+Data\Routes.lua
+Data\Trainers.lua
 Schedule.lua
 Timers.lua
 Abilities.lua
@@ -56,5 +58,13 @@ Messages.lua
 HealthBars.lua
 Reminders.lua
 ChatFilter.lua
+Quests.lua
+Trainer.lua
+TrainerUI.lua
+Guide.lua
+Arrow.lua
+RouteEditor.lua
+Builder.lua
+Probe.lua
 Visualizer.lua
 Options.lua
