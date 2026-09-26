@@ -250,6 +250,37 @@ class Harness:
                     makeTabs()
                 end
                 local page = CreateFrame("Frame", nil, sbf); page:SetPoint("TOPLEFT", 20, -60); page:SetPoint("BOTTOMRIGHT", -20, 20); sbf.PagedSpellsFrame = page
+                -- The search box, shaped like Blizzard's SpellSearchBoxMixin +
+                -- SpellBookSearchMixin (wow-ui-source live): typing with focus fills
+                -- the preview container; Enter runs the full search, which enters
+                -- results mode and clears the selected tab (SetTab(nil)).
+                local search = CreateFrame("EditBox", nil, sbf); search:SetSize(300, 30); search:SetPoint("TOPRIGHT", -40, -10); sbf.SearchBox = search
+                local preview = CreateFrame("Frame", nil, sbf); preview:SetSize(280, 120); preview:SetPoint("TOPLEFT", search, "BOTTOMLEFT"); preview:Hide(); sbf.SearchPreviewContainer = preview
+                function sbf:SetPreviewResultSearch(text) if text and text ~= "" then preview:Show() else self:HidePreviewResultSearch() end end
+                function sbf:HidePreviewResultSearch() preview:Hide() end
+                function sbf:SetFullResultSearch(text)
+                    self.searchMode = text ~= nil and text ~= ""
+                    if self.searchMode then
+                        tabs.selected = nil
+                        for _, o in ipairs(tabs.buttons) do
+                            o.SquareBackgroundActive:Hide(); o.SquareBackgroundActiveGlow:Hide(); o:SetEnabled(true)
+                        end
+                    end
+                end
+                search:SetScript("OnTextChanged", function(self)
+                    if self:HasFocus() then sbf:SetPreviewResultSearch(self:GetText()) end
+                end)
+                search:SetScript("OnEnterPressed", function(self)
+                    sbf:HidePreviewResultSearch()
+                    sbf:SetFullResultSearch(self:GetText())
+                    self:ClearFocus()
+                end)
+                -- the client's SetText fires OnTextChanged; the mock's does not
+                W.typeSearch = function(text)
+                    search:SetFocus(); search:SetText(text)
+                    local h = search:GetScript("OnTextChanged"); if h then h(search, true) end
+                end
+                W.enterSearch = function() search:GetScript("OnEnterPressed")(search) end
                 W.fireEvent("ADDON_LOADED", "Blizzard_PlayerSpells")
                 return psf
             end

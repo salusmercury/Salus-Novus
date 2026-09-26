@@ -10735,6 +10735,52 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+def shown_spells(h):
+    return [str(x) for x in h.lua("""
+        local out = {}
+        for _, r in ipairs(ns.TrainerUI.Rows()) do if r:IsShown() and r.entry then out[#out + 1] = r.entry.name end end
+        return out
+    """).values()]
+
+
+@test("the spellbook's search box filters our list by spell name while our page shows, and hides Blizzard's preview over it", "trainer")
+def _():
+    h = fresh()
+    h.lua(TRAINER)
+    h.lua("ns.Trainer.Capture()")
+    h.lua("W.spellbookFrame(); ns.TrainerUI.ShowOurs()")
+    everything = shown_spells(h)
+    ok(len(everything) >= 4, "the list: %r" % everything)
+    h.lua("W.typeSearch('totem')")
+    eq(sorted(shown_spells(h)), ["Grounding Totem", "Magma Totem"], "totems only")
+    ok(not h.lua("return PlayerSpellsFrame.SpellBookFrame.SearchPreviewContainer:IsShown()"), "Blizzard's preview covers our list")
+    h.lua("W.typeSearch('SHOCK')")
+    eq(shown_spells(h), ["Flame Shock"], "case-insensitive")
+    h.lua("W.typeSearch('zzz')")
+    eq(shown_spells(h), [], "no match")
+    ok(h.lua("return SalusNovusTrainerTab.empty:IsShown()"), "no-match message")
+    h.lua("W.typeSearch('')")
+    eq(shown_spells(h), everything, "cleared: the whole list is back")
+    # Enter runs Blizzard's full search behind our page; ours stays, and closing
+    # the book must not leave a deselected tab disabled or gold
+    h.lua("W.typeSearch('magma'); W.enterSearch()")
+    eq(shown_spells(h), ["Magma Totem"], "Enter keeps our filtered page")
+    ok(not h.lua("return PlayerSpellsFrame.SpellBookFrame.PagedSpellsFrame:IsShown()"), "their page came back over ours")
+    h.lua("PlayerSpellsFrame:Hide()")
+    bad = h.lua("""
+        local out = {}
+        for i, b in ipairs(PlayerSpellsFrame.SpellBookFrame.CategoryTabSystem.buttons) do
+            if not b:IsEnabled() or b.SquareBackgroundActive:IsShown() then out[#out + 1] = i end
+        end
+        return out
+    """)
+    eq([int(x) for x in bad.values()], [], "tabs left selected-looking after the search cleared the selection")
+    # on Blizzard's own page the box is theirs: preview shows, our list untouched
+    h.lua("PlayerSpellsFrame:Show(); ns.TrainerUI.ShowTheirs(PlayerSpellsFrame.SpellBookFrame.CategoryTabSystem.buttons[1]); W.typeSearch('bolt')")
+    ok(h.lua("return PlayerSpellsFrame.SpellBookFrame.SearchPreviewContainer:IsShown()"), "their preview on their page")
+    eq(h.errors(), [], "errors")
+
+
 @test("hunt 10: rows beyond a shorter list are reset, not just hidden: no stale entry, hover or tooltip on a ghost row", "trainer")
 def _():
     h = fresh()

@@ -248,6 +248,16 @@ local function ShowEntry(r, e, stripe)
     r.req:Show()
 end
 
+--- The spellbook's search text, lower-cased; nil when empty.
+local function SearchText()
+    local box = host.book and rawget(host.book, "SearchBox")
+    if type(box) ~= "table" or not box.GetText then return nil end
+    local ok, t = pcall(box.GetText, box)
+    t = ok and ns.Str(t)
+    t = t and t:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    return t ~= "" and t or nil
+end
+
 --- Redraw the list from the current status.
 function UI.Refresh()
     if not content or not content:IsShown() then return end
@@ -268,8 +278,18 @@ function UI.Refresh()
         return
     end
     content.empty:Hide()
+    -- the spellbook's search box filters by spell name while our page shows
+    local q = SearchText()
+    local function Match(list)
+        if not q then return list end
+        local out = {}
+        for _, e in ipairs(list) do
+            if type(e.name) == "string" and e.name:lower():find(q, 1, true) then out[#out + 1] = e end
+        end
+        return out
+    end
     -- a group with nothing in it shows no header (Alex)
-    for _, g in ipairs({ { "Available", st.now }, { "Unavailable", st.later } }) do
+    for _, g in ipairs({ { "Available", Match(st.now) }, { "Unavailable", Match(st.later) } }) do
         local title, list = g[1], g[2]
         if #list > 0 then
             used = used + 1
@@ -285,6 +305,10 @@ function UI.Refresh()
         end
     end
     for i = used + 1, #rows do Reset(rows[i]) rows[i]:Hide() end     -- no stale entry/hover/tooltip on a ghost row
+    if q and used == 0 then
+        content.empty:SetText("No unlearned spell matches the search.")
+        content.empty:Show()
+    end
     content.list:SetHeight(math.max(10, y))
 end
 -- a refresh (level up, spells changed) can add a category tab: re-place
@@ -342,6 +366,7 @@ end
 local function ShowOurs()
     if not content then return end
     if host.page and host.page:IsShown() then host.page:Hide() hidPage = true end
+    if host.book and type(host.book.HidePreviewResultSearch) == "function" then pcall(host.book.HidePreviewResultSearch, host.book) end
     Layer()
     content:Show()
     DimTheirs()
@@ -484,6 +509,21 @@ local function BuildTab()
             C_Timer.After(0, PlaceTab)
             tab:Update()
         end)
+    end
+    -- The search box: while our page shows, typing filters our list and
+    -- Blizzard's preview (which would cover it) stays hidden. Enter still
+    -- runs their full search behind our page; that clears their selected
+    -- tab, so the one we dimmed is no longer theirs to restore.
+    local book, box = host.book, rawget(host.book, "SearchBox")
+    local function Ours() return content and content:IsShown() end
+    if type(box) == "table" and box.HookScript then
+        box:HookScript("OnTextChanged", function() if Ours() then UI.Refresh() end end)
+    end
+    if type(book.SetPreviewResultSearch) == "function" and type(book.HidePreviewResultSearch) == "function" then
+        hooksecurefunc(book, "SetPreviewResultSearch", function(self) if Ours() then self:HidePreviewResultSearch() end end)
+    end
+    if type(book.SetFullResultSearch) == "function" then
+        hooksecurefunc(book, "SetFullResultSearch", function() if Ours() then UndimTheirs(false) UI.Refresh() end end)
     end
     PlaceTab()
     tab:Update()
