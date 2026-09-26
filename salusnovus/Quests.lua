@@ -83,6 +83,14 @@ local function CanAbandon(ql, id)
     return not (ok and r == false)
 end
 
+--- Still in the log? A quest turned in since the list was taken must not
+-- reach SetSelectedQuest (the abandon would hit whatever stays selected).
+local function OnLog(ql, id)
+    if not ql.IsOnQuest then return true end
+    local ok, r = pcall(ql.IsOnQuest, id)
+    return not (ok and r == false)
+end
+
 --- Abandon the given quests; returns how many went. The ids were
 -- collected up front, so the shifting log does not matter here.
 function Q.Abandon(list)
@@ -90,7 +98,7 @@ function Q.Abandon(list)
     if not ql or not ql.SetSelectedQuest or not ql.SetAbandonQuest or not ql.AbandonQuest then return 0 end
     local n = 0
     for _, q in ipairs(list or {}) do
-        if CanAbandon(ql, q.questID) then
+        if OnLog(ql, q.questID) and CanAbandon(ql, q.questID) then
             local ok = pcall(function()
                 ql.SetSelectedQuest(q.questID)
                 ql.SetAbandonQuest()
@@ -103,12 +111,14 @@ function Q.Abandon(list)
     return n
 end
 
-function Q.AbandonAll()
+--- `list`: the quests a confirmation named (taken when it opened), so one
+-- picked up or gone low-level while it was open is left alone.
+function Q.AbandonAll(list)
     if not Enabled() then return 0 end
-    return Q.Abandon(Q.List())
+    return Q.Abandon(list or Q.List())
 end
 
-function Q.AbandonLowLevel()
+function Q.AbandonLowLevel(list)
     if not Enabled() then return 0 end
-    return Q.Abandon(Q.LowLevel())
+    return Q.Abandon(list or Q.LowLevel())
 end

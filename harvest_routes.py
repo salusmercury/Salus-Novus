@@ -9,10 +9,9 @@ the newest one into JSON for build_route.py.
     python harvest_routes.py --watch    # keep watching (poll every 5 s) until Ctrl-C
     python harvest_routes.py --dump     # also print the trail as readable lines
 
-Snapshots: forever_routes/raw/SalusNovus-<mtime>.lua (never deleted). The
-           client on this account does not read the file back at load, so
-           every reload starts a fresh session and the snapshots are the
-           only complete record: run --watch while playing.
+Snapshots: forever_routes/raw/SalusNovus-<mtime>.lua (never deleted). Until
+           the client fix of 2026-09-24 the file was never read back at load,
+           so old snapshots each hold one session; all of them are merged.
 Parsed:    forever_routes/recorder.json (all sessions from all snapshots)  -- { sessions: [ { char, class, race,
            faction, level, started, entries: [ {t,k,m,x,y,l,q,o,n,s,xp}, ... ] } ] }
 """

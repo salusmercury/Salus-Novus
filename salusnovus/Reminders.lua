@@ -554,7 +554,7 @@ ns.Commands.remind = function(rest)
     end
     ns.ReminderAdd(boss.encounterID, r)
     ns.ReminderRearm(r)
-    ns.Print(("reminder added for %s (%s%s) -- note: saved data does not survive a client restart on this account yet")
+    ns.Print(("reminder added for %s (%s%s)")
         :format(boss.name, trigger, r.arg and (" " .. tostring(r.arg)) or ""))
 end
 

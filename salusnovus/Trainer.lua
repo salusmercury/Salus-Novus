@@ -213,7 +213,7 @@ function T.Catalogue(class)
     local live = T.live and T.live[class]
     if live then return live end
     local saved = type(SalusNovusDB) == "table" and SalusNovusDB.trainers and SalusNovusDB.trainers[class]
-    if type(saved) == "table" and type(saved.entries) == "table" then return T.DeriveRanks(saved) end
+    if type(saved) == "table" and type(saved.entries) == "table" then return T.BorrowIds(T.DeriveRanks(saved)) end
     local shipped = ns.Trainers and ns.Trainers[class]
     if type(shipped) == "table" and type(shipped.entries) == "table" then return T.DeriveRanks(shipped) end
     return nil

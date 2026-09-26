@@ -7288,6 +7288,74 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("a long blocked-word list grows the Chat page so the last word can be scrolled to, and shrinks it again", "chat")
+def _():
+    h = Harness()
+    h.login("SalusNovusDB = { options = { chatFilter = { words = { %s } } } }" % ", ".join("w%03d = true" % i for i in range(300)))
+    open_options(h)
+    h.lua("ns.Options.tabs.chat:Click()")
+    probe = """
+        local pg = ns.Options.pages.chat.__content
+        local lowest
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.chat and w.lines then
+                for _, ln in ipairs(w.lines) do
+                    if ln:IsShown() and (not lowest or ln:GetBottom() < lowest) then lowest = ln:GetBottom() end
+                end
+            end
+        end
+        return pg:GetBottom(), lowest, pg:GetHeight()
+    """
+    bottom, lowest, _ = h.lua(probe)
+    ok(float(lowest) >= float(bottom), "the last word sits below the page: %r < %r" % (lowest, bottom))
+    h.lua("for i = 0, 299 do ns.ChatFilter.RemoveWord(('w%03d'):format(i)) end; ns.Options.RefreshAll()")
+    _, _, height = h.lua(probe)
+    eq(float(height), 900.0, "the page goes back to its usual height")
+    eq(h.errors(), [], "errors")
+
+
+@test("Yes abandons the quests the dialog counted: one picked up while it was open stays, one turned in meanwhile is skipped", "quests")
+def _():
+    h = fresh()
+    h.lua(QUEST_LOG)
+    open_options(h)
+    h.lua("ns.Options.tabs.quests:Click()")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.quests and w.__kind == "button" then
+                if w:GetParent().label:GetText():find("^All") then __btnAll = w end
+            end
+        end
+        __btnAll:Click()
+    """)
+    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon all 5 quests in your log?", "confirmation text")
+    h.lua("""
+        table.insert(__quests, { questID = 501, title = "Picked Up Meanwhile", level = 20 })
+        for i, q in ipairs(__quests) do if q.questID == 201 then table.remove(__quests, i) break end end
+        SalusNovusConfirm.yes:Click()
+    """)
+    eq([int(x) for x in h.lua("return __abandoned").values()], [101, 102, 401], "abandoned ids")
+    eq(ids(h, "ns.Quests.List()"), [202, 501], "the new quest must stay")
+    eq(h.errors(), [], "errors")
+
+
+@test("a quest that left the log is never selected for abandoning, even without CanAbandonQuest", "quests")
+def _():
+    h = fresh()
+    h.lua(QUEST_LOG)
+    h.lua("""
+        C_QuestLog.CanAbandonQuest = nil
+        __selected = {}
+        local sel = C_QuestLog.SetSelectedQuest
+        C_QuestLog.SetSelectedQuest = function(id) __selected[#__selected + 1] = id return sel(id) end
+        local snap = ns.Quests.List()
+        for i, q in ipairs(__quests) do if q.questID == 201 then table.remove(__quests, i) break end end
+        ns.Quests.AbandonAll(snap)
+    """)
+    ok(201 not in [int(x) for x in h.lua("return __selected").values()], "a quest no longer in the log reached SetSelectedQuest")
+    eq(h.errors(), [], "errors")
+
+
 @test("the Abandon buttons grey out at zero and while Quality of Life is off, and a greyed click opens nothing", "quests")
 def _():
     h = fresh()
@@ -10630,6 +10698,18 @@ def _():
     calls = [str(x) for x in h.lua("return __setCalls").values()]
     ok(not any(c.startswith("used=") for c in calls), "the unreadable filter is never set: %r" % calls)
     ok("unavailable=false" in calls and "available=true" in calls, "the readable ones are forced on and put back: %r" % calls)
+    eq(h.errors(), [], "errors")
+
+
+@test("a capture saved by an older version, without spell ids, borrows them from the shipped catalogue (tooltips)", "trainer")
+def _():
+    h = Harness()
+    h.login("""SalusNovusDB = { trainers = { SHAMAN = { class = "SHAMAN", entries = {
+        { name = "Lightning Bolt", rank = "Rank 2", level = 8, cost = 95 },
+        { name = "Lightning Bolt", rank = "Rank 3", level = 14, cost = 855 } } } } }""")
+    h.lua("UnitClass = function() return 'Shaman', 'SHAMAN' end")
+    got = h.lua("local c = ns.Trainer.Catalogue('SHAMAN') return { c.entries[1].spell or 0, c.entries[2].spell or 0 }")
+    eq([int(got[1]), int(got[2])], [529, 548], "spell ids from the shipped catalogue")
     eq(h.errors(), [], "errors")
 
 

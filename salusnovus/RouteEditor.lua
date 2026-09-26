@@ -7,8 +7,7 @@ in the log -- placed where the player stands.
 
 Two things happen on every edit. The loaded route (ns.Routes) is changed
 in place, so the guide and the arrow follow at once. And the edit is
-appended to SalusNovusDB.routeEdits[slug] with a unique id, because this
-account's client never reads saved variables back: harvest_routes.py
+appended to SalusNovusDB.routeEdits[slug] with a unique id: harvest_routes.py
 collects the edits from the snapshots and build_route.py applies each one
 ONCE to the route's step file (forever_routes/applied_edits.json remembers
 the ids), then recompiles Data/Routes.lua. Until that rebuild is copied

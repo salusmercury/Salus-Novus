@@ -5,9 +5,9 @@ WoWDungeonData/wow_forever_notes.md). Two consequences shape every file:
 
   * Secret values are live. Anything from the client is checked with
     ns.IsSecret before it is formatted, compared or stored.
-  * SavedVariables do not survive a client restart on this account (client
-    bug, reported). Salus Novus must be fully usable from defaults; SalusNovusDB is
-    written but never relied on.
+  * SavedVariables were not read back on the author's account until a client
+    fix (2026-09-24). Salus Novus stays fully usable from defaults, and every
+    saved value is checked on load (CopyDefaults, the migrations).
 
 The apply pipeline, the anchor mechanics (growth-origin records, snapping,
 the alignment grid, locks) and the theme colour are MerkUI's (Core.lua),

@@ -1174,7 +1174,7 @@ PAGE_BODY.bars = function()
         function() return br().max end, function(v) br().max = v end, nil, brOn)
     local brDir = MakeDropdown(pg, "Grow direction:", brMax,
         { "down", "up" }, { down = "Down", up = "Up" },
-        function() return br().direction or "down" end, function(v) br().direction = v end, brOn)
+        function() return br().direction or "up" end, function(v) br().direction = v end, brOn)
     local brW = MakeStepper(pg, "Width:", brDir, 100, 500,
         function() return br().width end, function(v) br().width = v end,
         function(v) return v .. " px" end, brOn)
@@ -1396,10 +1396,10 @@ PAGE_BODY.reminders = function()
         function() return rm().lead or 5 end, function(v) rm().lead = v end,
         function(v) return v == 0 and "no countdown" or (v .. " s") end, rmOn)
     local rmHold = MakeStepper(pg, "Hold after:", rmLead, 5, 150,
-        function() return math.floor((rm().hold or 4) * 10) end, function(v) rm().hold = v / 10 end,
+        function() return math.floor((rm().hold or 1.5) * 10) end, function(v) rm().hold = v / 10 end,
         function(v) return string.format("%.1f s", v / 10) end, rmOn)
     local rmSize = MakeStepper(pg, "Text size:", rmHold, 12, 40,
-        function() return rm().size or 22 end, function(v) rm().size = v end,
+        function() return rm().size or 14 end, function(v) rm().size = v end,
         function(v) return v .. " pt" end, rmOn)
     local rmColor = MakeColorSwatch(pg, "Default color:", rmSize,
         function() return rm().color end, rmOn)
@@ -1473,7 +1473,8 @@ PAGE_BODY.quests = function()
     local pg = pages.quests.__content
     local t = MakeTitle(pg, "Quests")
     local sAb = MakeSection(pg, t, "ABANDON")
-    local function ButtonRow(anchor, label, count, question, act)
+    local function ButtonRow(anchor, label, list, question, act)
+        local function count() return #list() end
         local row = MakeRow(pg, anchor)
         local btn = T.MakeButton(row)
         btn:SetSize(110, 24)
@@ -1493,10 +1494,10 @@ PAGE_BODY.quests = function()
         end
         btn:SetScript("OnClick", function(self)
             if not self.enabledState then return end
-            local n = count()
-            if n == 0 then return end
-            T.Confirm(question(n), "Abandon", function()
-                act()
+            local snap = list()             -- Yes abandons exactly what the dialog counted
+            if #snap == 0 then return end
+            T.Confirm(question(#snap), "Abandon", function()
+                act(snap)
                 RefreshAll()
             end)
         end)
@@ -1504,12 +1505,10 @@ PAGE_BODY.quests = function()
         Register(pg, btn)
         return row
     end
-    local rAll = ButtonRow(sAb, "All quests",
-        function() return #ns.Quests.List() end,
+    local rAll = ButtonRow(sAb, "All quests", function() return ns.Quests.List() end,
         function(n) return ("Abandon all %d quest%s in your log?"):format(n, n == 1 and "" or "s") end,
         ns.Quests.AbandonAll)
-    ButtonRow(rAll, "Low-level quests",
-        function() return #ns.Quests.LowLevel() end,
+    ButtonRow(rAll, "Low-level quests", function() return ns.Quests.LowLevel() end,
         function(n) return ("Abandon %d low-level quest%s?"):format(n, n == 1 and "" or "s") end,
         ns.Quests.AbandonLowLevel)
 end
@@ -1979,6 +1978,8 @@ PAGE_BODY.chat = function()
         for i = #words + 1, #self.lines do self.lines[i]:Hide() end
         self:SetHeight(math.max(1, #words) * WORD_H)
         self.label:SetText(#words == 0 and "No words" or "")
+        -- the page must be tall enough to scroll to the last word
+        pg:SetHeight(math.max(900, 50 + #words * WORD_H + 46 + 60))
     end
     list:Relayout()
     -- Registered so the page reads as disabled while the module is off.
