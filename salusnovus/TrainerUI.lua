@@ -24,7 +24,7 @@ ns.TrainerUI = UI
 local T = function() return ns.Trainer end
 
 local SOLID = ns.Theme.SOLID
-local TAB_ICON = "Interface\\Icons\\INV_Misc_Book_09"
+local TAB_ICON = 133741                                         -- INV_Misc_Book_09
 local TAB_FRAME_ATLAS = "spellbook-Tab-Frame-Glow-C60"          -- Blizzard's selected-tab frame
 local TAB_GLOW_ATLAS = "spellbook-Tab-Frame-glow-gradient-C60"  -- and the glow under it
 local ROW_H, HEAD_H = 40, 26
@@ -426,7 +426,10 @@ local function BuildTab()
     -- 2026-09-23): a 44x32 button, the icon 36x35 centred (it overhangs the
     -- box), and for the selected tab a gold frame atlas 43x38 anchored
     -- BOTTOM (0,1) with a glow gradient atlas 43x38 at BOTTOM (0,0).
-    tab.icon = tab:CreateTexture(nil, "ARTWORK")
+    -- .Icon, as on Blizzard's tabs: skins that restyle the tab row blank
+    -- every texture but a tab's Icon (EllesmereUI's Blizzard skin, 2026-09-25)
+    tab.Icon = tab:CreateTexture(nil, "ARTWORK")
+    tab.icon = tab.Icon
     tab.icon:SetTexture(TAB_ICON)
     tab.icon:SetSize(36, 35)
     tab.icon:SetPoint("CENTER", 0, 0)

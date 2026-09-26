@@ -27,7 +27,7 @@ engage list -- never on a timer. Outside a fight nothing is registered.
 local _, ns = ...
 
 local SOLID = ns.Theme.SOLID
-local QUESTION_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local QUESTION_ICON = 134400      -- INV_Misc_QuestionMark by file id, as the queue has it
 local MAX_MARKERS = 8
 local MAX_ROWS = 5
 local CANDIDATES = { "target", "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }

@@ -10713,6 +10713,28 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("the tab keeps its icon when a UI skin blanks the tab row's textures except each tab's .Icon (EllesmereUI's Blizzard skin)", "trainer")
+def _():
+    h = fresh()
+    h.lua(TRAINER)
+    h.lua("ns.Trainer.Capture()")
+    h.lua("W.spellbookFrame()")
+    ok(h.lua("return ns.TrainerUI.tab ~= nil"), "no tab")
+    h.lua("""
+        local row = PlayerSpellsFrame.SpellBookFrame.CategoryTabSystem
+        for _, tab in ipairs({ row:GetChildren() }) do
+            if tab:GetObjectType() == "Button" then
+                for _, r in ipairs({ tab:GetRegions() }) do
+                    if r ~= tab.Icon and r ~= tab.IconMask and r:IsObjectType("Texture") then r:SetTexture("") end
+                end
+            end
+        end
+    """)
+    tex = h.lua("local t = rawget(ns.TrainerUI.tab, 'Icon') return t and t:GetTexture()")
+    ok(tex not in (None, ""), "the skin blanked our icon: %r" % (tex,))
+    eq(h.errors(), [], "errors")
+
+
 @test("hunt 10: rows beyond a shorter list are reset, not just hidden: no stale entry, hover or tooltip on a ghost row", "trainer")
 def _():
     h = fresh()

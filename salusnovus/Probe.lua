@@ -235,6 +235,13 @@ function P.Spellbook()
             for _, c in ipairs({ k:GetChildren() }) do Describe(c, "       child ") end
         end
     end
+    local ours = rawget(_G, "SalusNovusTrainerTabButton")
+    if ours and ours.icon then
+        out[#out + 1] = ("our tab: shown=%s visible=%s alpha=%s"):format(ns.S(ours:IsShown()), ns.S(ours:IsVisible()), ns.S(ours:GetAlpha()))
+        Describe(ours.icon, "  our icon: ")
+    else
+        out[#out + 1] = "our tab: not built"
+    end
     out[#out + 1] = ("tab row level %s, page level %s, %d children"):format(ns.S(tabs:GetFrameLevel()), ns.S(psf.SpellBookFrame.PagedSpellsFrame and psf.SpellBookFrame.PagedSpellsFrame:GetFrameLevel()), n)
     return out
 end
@@ -298,7 +305,10 @@ ns.Commands.probe = function(rest)
         ns.Print("vertical (offset@left w): " .. table.concat(vert, "  ", 1, math.min(8, #vert)))
         ns.Print("horizontal (offset@bottom h): " .. table.concat(horz, "  ", 1, math.min(8, #horz)))
     elseif what == "spellbook" then
-        for _, line in ipairs(P.Spellbook()) do ns.Print(line) end
+        local lines = P.Spellbook()
+        for _, line in ipairs(lines) do ns.Print(line) end
+        -- kept (last run only) so it can be read off the SavedVariables file after /reload
+        if type(SalusNovusDB) == "table" then SalusNovusDB.lastProbe = { what = "spellbook", t = time(), lines = lines } end
     else
         ns.Print("probes: /sn probe waypoint [keep]  |  /sn probe nav  |  /sn probe trainer [capture]  |  /sn probe spellbook  |  /sn probe anchors  |  /sn probe grid")
     end
