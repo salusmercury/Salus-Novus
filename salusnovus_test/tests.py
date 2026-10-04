@@ -6162,6 +6162,33 @@ def _():
     eq(casts, [[30.5, 5400, "Summon Defias Blackguard", "Edwin VanCleef", "success"]], "summon not in the stream (or the player's was): %r" % casts)
 
 
+@test("parse_logs: a NEUTRAL creature that acts on a player is an enemy (Relic Guardian, flagged 0xa28 all fight, was dropped with its abilities); a neutral critter that only gets hit is not", "data")
+def _():
+    import sys, os, tempfile
+    from collections import defaultdict
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_logs as pl
+    RG = 'Creature-0-4615-2998-57170-260326-000041EEB1,"Relic Guardian",0xa28,0x0'
+    FROG = 'Creature-0-4615-2998-57170-13321-0000C1EEB2,"Frog",0xa28,0x0'
+    ME = 'Player-1-000001,"Merk",0x511,0x0'
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "WoWCombatLog-rg.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(HDR)
+            f.write('10/4/2026 01:46:14.153-5  ENCOUNTER_START,3482,"Relic Guardian",1,5,2998\n')
+            f.write('10/4/2026 01:46:20.000-5  SPELL_CAST_SUCCESS,' + RG + ',' + ME + ',8078,"Thunderclap",0x1\n')
+            f.write('10/4/2026 01:46:25.000-5  SPELL_DAMAGE,' + ME + ',' + FROG + ',100,"Strike",0x1\n')
+            f.write('10/4/2026 01:47:28.275-5  ENCOUNTER_END,3482,"Relic Guardian",1,5,1,74115\n')
+        dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
+        enc = defaultdict(list)
+        pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
+    mobs = dungeons[2998]["mobs"]
+    ok(mobs[260326]["hostile"], "the neutral boss that hit a player counts")
+    ok(not mobs[13321]["hostile"], "a neutral critter that only took a hit does not")
+    eq(enc["Relic Guardian"][0]["casts"], [[5.8, 8078, "Thunderclap", "Relic Guardian", "success"]], "its cast is in the pull's stream")
+
+
 @test("cast_health: a SPELL_SUMMON carries no health block, so the summoner's last block (a swing it made) supplies it", "data")
 def _():
     import sys, os, tempfile

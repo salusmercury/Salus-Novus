@@ -101,6 +101,7 @@ CONTROL_PLAYER = 0x100
 #   * a creature never seen HOSTILE as a source (the keystone NPC, ritual
 #     snakes, friendly escorts) isn't trash either.
 REACTION_HOSTILE = 0x40
+REACTION_NEUTRAL = 0x20
 
 
 def player_controlled(flags):
@@ -491,7 +492,12 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
             mob["name"] = mob["name"] or source_name
             mob["events"] += 1
             try:
-                if int(source_flags, 16) & REACTION_HOSTILE:
+                sf = int(source_flags, 16)
+                # A NEUTRAL creature acting on a player is an enemy too: the
+                # Relic Guardian (Excavation Site: Wetlands, 2026-10-04) is
+                # flagged neutral (0xa28) the whole fight, so the boss and its
+                # four abilities were dropped. Critters never touch a player.
+                if sf & REACTION_HOSTILE or (sf & REACTION_NEUTRAL and dest_guid.startswith("Player-")):
                     mob["hostile"] = True
             except (ValueError, TypeError):
                 pass
