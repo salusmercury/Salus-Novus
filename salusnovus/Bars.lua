@@ -162,10 +162,8 @@ local function Label()
     if boss then
         -- No label in a fight at all (Alex): the bars speak for themselves.
         frame.label:Hide()
-    elseif ns.db and ns.db.unlocked and not state.preview then
-        frame.label:SetText("Bars  \194\183  drag to move")
-        frame.label:Show()
     else
+        -- Nor unlocked (Alex): the unlock overlay names the frame.
         frame.label:Hide()
     end
 end

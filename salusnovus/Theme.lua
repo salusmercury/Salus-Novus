@@ -32,12 +32,11 @@ T.TEXT_DIM  = { 0.81, 0.81, 0.84 }       -- #cfcfd6
 T.TEXT_MUTE = { 0.455, 0.455, 0.50 }     -- #74747f
 T.RAIL_W    = 6                          -- the accent rail on cards and sections
 
--- The display face: heavy, condensed, uppercase (Anton in the mock;
--- Impact from the font pack is its nearest cousin). Falls back to the
--- active font when the pack is absent (SetFontSafe never warns for a path).
-T.DISPLAY = "Interface\\AddOns\\SharedMediaAdditionalFonts\\fonts\\impact.ttf"
+-- The display face: headings, titles and big labels. It was Impact from
+-- the font pack; now the global font like everything else (Alex,
+-- 2026-10-04), so it follows the font setting and is re-fonted on a change.
 function T.SetDisplay(fs, size)
-    ns.SetFontSafe(fs, size, "", T.DISPLAY)
+    ns.SetFontSafe(fs, size, "")
 end
 function T.Upper(s) return string.upper(tostring(s or "")) end
 
@@ -1095,8 +1094,11 @@ end
 
 --- A yes/no dialog: text, the yes button's label, what a yes does.
 -- One frame, reused; Cancel, Escape and a click outside all decline.
+-- `typed`: a word the player must type before yes is enabled (the
+-- abandon-everything button: Alex, 2026-09-29); Enter confirms once it
+-- matches.
 local confirm
-function T.Confirm(text, yesLabel, onYes)
+function T.Confirm(text, yesLabel, onYes, typed)
     if not confirm then
         local f = CreateFrame("Frame", "SalusNovusConfirm", UIParent)
         f:SetSize(400, 140)
@@ -1132,11 +1134,25 @@ function T.Confirm(text, yesLabel, onYes)
         f.no:SetText("Cancel")
         f.no:SetScript("OnClick", function() f:Hide() end)
         f.yes:SetScript("OnClick", function()
+            if not f.yes.enabledState then return end
             local fn = f.onYes
             f:Hide()
             if fn then fn() end
         end)
-        f:SetScript("OnHide", function(self) self.onYes = nil end)
+        f.typedBox = T.MakeEditBox(f, 200)
+        f.typedBox:SetPoint("BOTTOMLEFT", 24, 56)
+        f.typedBox:Hide()
+        local function Matches()
+            local t = tostring(f.typedBox:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", ""):lower()
+            return f.typed ~= nil and t == f.typed
+        end
+        f.typedBox:HookScript("OnTextChanged", function() if f.typed then f.yes:SetEnabledState(Matches()) end end)
+        f.typedBox:SetScript("OnEnterPressed", function() if Matches() then f.yes:Click() end end)
+        f.typedBox:SetScript("OnEscapePressed", function() f:Hide() end)
+        f:SetScript("OnHide", function(self)
+            self.onYes, self.typed = nil, nil
+            self.typedBox:ClearFocus()
+        end)
         -- Escape closes the dialog; every other key passes through to the
         -- game (OnKeyDown never fires without EnableKeyboard, and a frame
         -- that keeps the keyboard eats movement). SetPropagateKeyboardInput
@@ -1161,7 +1177,13 @@ function T.Confirm(text, yesLabel, onYes)
     confirm.text:SetText(text or "")
     confirm.yes:SetText(yesLabel or "OK")
     confirm.onYes = onYes
+    confirm.typed = typed and tostring(typed):lower() or nil
+    confirm:SetHeight(typed and 180 or 140)
+    confirm.typedBox:SetText("")
+    confirm.typedBox:SetShown(typed ~= nil)
+    confirm.yes:SetEnabledState(typed == nil)
     confirm:Show()
+    if typed then confirm.typedBox:SetFocus() end
     return confirm
 end
 

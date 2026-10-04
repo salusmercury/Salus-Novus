@@ -55,10 +55,13 @@ for _, m in ipairs(MODULES) do MODULE_BY_SECTION[m.label] = m end
 local GROUPS = {
     { section = "Global",                                 key = "global",     label = "Settings",        pages = { "global" } },
     { section = "Boss Warnings", module = "bossWarnings", key = "anchors",    label = "Anchors",         pages = { "bars", "queue", "preview", "messages", "health", "reminders" } },
-    { section = "Boss Warnings", module = "bossWarnings", key = "visualizer", label = "Boss Visualizer", launch = true },
+    { section = "Boss Warnings", module = "bossWarnings", key = "visualizer", label = "Boss Visualizer", launch = true,
+      open = function(v) ns.VisualizerToggle(v) end, shown = function() return ns.VisualizerShown() end },
     { section = "Quality of Life", module = "qol",       key = "chat",       label = "Chat",            pages = { "chat" } },
     { section = "Quality of Life", module = "qol",       key = "font",       label = "Font",            pages = { "font" } },
     { section = "Quality of Life", module = "qol",       key = "quests",     label = "Quests",          pages = { "quests" } },
+    { section = "Quality of Life", module = "qol",       key = "session",    label = "Session",         pages = { "session" } },
+    { section = "Quality of Life", module = "qol",       key = "camping",    label = "Camping",         pages = { "camping" } },
     { section = "Quality of Life", module = "qol",       key = "trainer",    label = "Trainer",         pages = { "trainer" } },
     { section = "Leveling",        module = "leveling",  key = "guide",      label = "Settings",        pages = { "guide" } },
     { section = "Leveling",        module = "leveling",  key = "routes",     label = "Routes",          pages = { "routes" } },
@@ -115,7 +118,7 @@ local function MeasureSidebar()
 end
 MeasureSidebar()
 
-local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings", chat = "Chat", font = "Font", quests = "Quests", trainer = "Trainer", guide = "Settings", routes = "Routes" }
+local PAGE_STRIP_LABEL = { bars = "Bars", queue = "Ability Queue", preview = "Ability Preview", messages = "Messages", health = "Health Bars", reminders = "Reminders", global = "Settings", chat = "Chat", font = "Font", quests = "Quests", session = "Session", camping = "Camping", trainer = "Trainer", guide = "Settings", routes = "Routes" }
 
 local panel
 local shell
@@ -917,9 +920,6 @@ local function SelectPage(key)
         strip:SetShown(k == groupKey)
         if k == groupKey and strip.Relayout then strip:Relayout() end
         for pk, btn in pairs(strip.buttons) do btn:SetActive(pk == key) end
-        -- Unlock Frames greys out while the strip's module is off: its
-        -- anchors are hidden, so there is nothing to drag.
-        if strip.unlock then strip.unlock:SetEnabledState(not strip.module or ns.ModuleOn(strip.module)) end
     end
     activePage = key
     lastPage[groupKey] = key
@@ -1007,10 +1007,6 @@ local function GroupTab(g, order)
                 ns.ApplyAll()
                 RefreshAll()
                 SyncPreviews()
-                -- Unlock Frames greys out at once, not on the next page change.
-                for _, strip in pairs(strips) do
-                    if strip.unlock and strip.module == m.key then strip.unlock:SetEnabledState(ns.ModuleOn(m.key)) end
-                end
             end)
             sw.Update = function(self) self:SetChecked(ns.ModuleOn(m.key)) end
             sw.__kind, sw.__get, sw.__set = "check",
@@ -1038,7 +1034,7 @@ local function GroupTab(g, order)
     if g.launch then
         -- A launcher row: opens the other window; the panel comes back
         -- when it closes (ReturnToOptions).
-        tab:SetScript("OnClick", function() OpenWindow(ns.VisualizerToggle, ns.VisualizerShown) end)
+        tab:SetScript("OnClick", function() OpenWindow(g.open, g.shown) end)
     else
         tab:SetScript("OnClick", function() SelectPage(lastPage[g.key] or g.pages[1]) end)
     end
@@ -1061,17 +1057,6 @@ local function GroupStrip(g)
     strip.buttons = {}
     strip.order = {}
     strip.module = g.module
-    -- Unlock Frames, in the header left of the close X, for the group
-    -- whose pages own movable frames.
-    if g.key == "anchors" then
-        local unlock = T.MakeButton(strip)
-        unlock:SetSize(120, 24)
-        unlock:SetPoint("RIGHT", shell.close, "LEFT", -12, 0)
-        unlock:SetText("Unlock Frames")
-        unlock:SetScript("OnClick", function() EnterUnlockMode() end)
-        strip.unlock = unlock
-        O.unlockButton = unlock
-    end
     strip:Hide()
     strips[g.key] = strip
     return strip
@@ -1467,13 +1452,22 @@ PAGE_BODY.font = function()
         function(v) ns.db.font.wholeUI = v end)
 end
 
--- Quests (Quality of Life): abandon all, or the low-level ones, each
--- behind a confirmation that names the count.
+-- Quests (Quality of Life): abandon all, the low-level ones, or one zone's,
+-- each behind a confirmation that names the count; "all" also wants the
+-- word typed (Alex, 2026-09-29).
 PAGE_BODY.quests = function()
     local pg = pages.quests.__content
     local t = MakeTitle(pg, "Quests")
-    local sAb = MakeSection(pg, t, "ABANDON")
-    local function ButtonRow(anchor, label, list, question, act)
+    local sR = MakeSection(pg, t, "REWARDS")
+    local rGold = MakeCheckbox(pg, "Mark the reward that sells for the most", sR,
+        function() return ns.db.quests.goldMark ~= false end,
+        function(v) ns.db.quests.goldMark = v; if ns.Quests.MarkAll then ns.Quests.MarkAll() end end)
+    local sDq = MakeSection(pg, rGold, "DUNGEONS")
+    local rDq = MakeCheckbox(pg, "Check party quests on entering a dungeon", sDq,
+        function() return ns.db.quests.dungeonCheck ~= false end,
+        function(v) ns.db.quests.dungeonCheck = v end)
+    local sAb = MakeSection(pg, rDq, "ABANDON")
+    local function ButtonRow(anchor, label, list, question, act, typed)
         local function count() return #list() end
         local row = MakeRow(pg, anchor)
         local btn = T.MakeButton(row)
@@ -1499,18 +1493,76 @@ PAGE_BODY.quests = function()
             T.Confirm(question(#snap), "Abandon", function()
                 act(snap)
                 RefreshAll()
-            end)
+            end, typed)
         end)
         btn.__kind = "button"
         Register(pg, btn)
         return row
     end
     local rAll = ButtonRow(sAb, "All quests", function() return ns.Quests.List() end,
-        function(n) return ("Abandon all %d quest%s in your log?"):format(n, n == 1 and "" or "s") end,
-        ns.Quests.AbandonAll)
-    ButtonRow(rAll, "Low-level quests", function() return ns.Quests.LowLevel() end,
+        function(n) return ("Abandon all %d quest%s in your log? Type confirm to continue."):format(n, n == 1 and "" or "s") end,
+        ns.Quests.AbandonAll, "confirm")
+    local rLow = ButtonRow(rAll, "Low-level quests", function() return ns.Quests.LowLevel() end,
         function(n) return ("Abandon %d low-level quest%s?"):format(n, n == 1 and "" or "s") end,
         ns.Quests.AbandonLowLevel)
+
+    -- By zone: one line per quest-log header, each with its own Abandon.
+    local sZ = MakeSection(pg, rLow, "BY ZONE")
+    local ZONE_H = 30
+    local zl = MakeRow(pg, sZ, ZONE_H)
+    zl.label:SetText("")
+    zl.lines = {}
+    function zl:Relayout()
+        local zones = ns.Quests.Zones()
+        local on = self.enabledState ~= false
+        for i, z in ipairs(zones) do
+            local ln = self.lines[i]
+            if not ln then
+                ln = CreateFrame("Frame", nil, self)
+                ln:SetHeight(ZONE_H)
+                ln.text = T.MakeText(ln, 14, T.TEXT)
+                ln.text:SetPoint("LEFT", ln, "LEFT", T.RAIL_W + 14, 0)
+                ln.btn = T.MakeButton(ln)
+                ln.btn:SetSize(110, 24)
+                ln.btn:SetPoint("RIGHT", ln, "RIGHT", -12, 0)
+                ln.btn:SetText("Abandon")
+                ln.btn:SetScript("OnClick", function(b)
+                    if not b.enabledState or not ln.zone then return end
+                    local zone = ln.zone
+                    local snap = ns.Quests.InZone(zone)      -- Yes abandons exactly what the dialog counted
+                    if #snap == 0 then return end
+                    T.Confirm(("Abandon %d quest%s in %s?"):format(#snap, #snap == 1 and "" or "s", zone), "Abandon", function()
+                        ns.Quests.AbandonZone(snap)
+                        RefreshAll()
+                    end)
+                end)
+                self.lines[i] = ln
+            end
+            ln.zone = z.zone
+            ln.text:SetText(("%s (%d)"):format(z.zone, #z.quests))
+            local c = on and T.TEXT or T.TEXT_MUTE
+            ln.text:SetTextColor(c[1], c[2], c[3], 1)
+            ln.btn:SetEnabledState(on)
+            ln:ClearAllPoints()
+            ln:SetPoint("TOPLEFT", self, "TOPLEFT", 0, -(i - 1) * ZONE_H)
+            ln:SetPoint("RIGHT", self, "RIGHT", 0, 0)
+            ln:Show()
+        end
+        for i = #zones + 1, #self.lines do self.lines[i]:Hide(); self.lines[i].zone = nil end
+        self:SetHeight(math.max(1, #zones) * ZONE_H)
+        self.label:SetText(#zones == 0 and "No quests" or "")
+        -- the page must be tall enough to scroll to the last zone
+        pg:SetHeight(math.max(900, 330 + #zones * ZONE_H + 60))
+    end
+    zl:Relayout()
+    zl.SetEnabledState = function(self, e)
+        self.enabledState = e and true or false
+        self:Relayout()
+    end
+    zl.Update = function(self) self:Relayout() end
+    zl.__kind = "list"
+    Register(pg, zl)
+    O.zoneList = zl                                          -- test seam
 end
 -- The counts follow the log while the page is up.
 ns.On("QUEST_LOG_UPDATE", function()
@@ -1928,6 +1980,43 @@ ns.On("QUEST_LOG_UPDATE", function()
     if activePage == "routes" and panel and panel:IsShown() then Refresh() end
 end)
 
+-- Session (Quality of Life): the XP / gold / lockouts databar.
+PAGE_BODY.session = function()
+    local pg = pages.session.__content
+    local o = function() return ns.db.session end
+    local on = function() return o().enabled ~= false end
+    local t = MakeTitle(pg, "Session")
+    local sB = MakeSection(pg, t, "BAR")
+    local rOn = MakeCheckbox(pg, "Show the bar", sB,
+        function() return on() end, function(v) o().enabled = v end)
+    local rXP = MakeCheckbox(pg, "XP per hour", rOn,
+        function() return o().xp ~= false end, function(v) o().xp = v end, on)
+    local rGold = MakeCheckbox(pg, "Gold per hour", rXP,
+        function() return o().gold ~= false end, function(v) o().gold = v end, on)
+    local rInst = MakeCheckbox(pg, "Instance lockouts", rGold,
+        function() return o().instances ~= false end, function(v) o().instances = v end, on)
+    local rSize = MakeStepper(pg, "Text size", rInst, 8, 20,
+        function() return tonumber(o().size) or 12 end, function(v) o().size = v end, nil, on)
+    local sI = MakeSection(pg, rSize, "INSTANCES")
+    MakeStepper(pg, "Instances per hour", sI, 1, 30,
+        function() return (ns.Session.Limit()) end, function(v) o().limit = v end, nil,
+        function() return on() and not select(2, ns.Session.Limit()) end)
+end
+
+-- Camping (Quality of Life): the camp panel.
+PAGE_BODY.camping = function()
+    local pg = pages.camping.__content
+    local o = function() return ns.db.camping end
+    local on = function() return o().enabled ~= false end
+    local t = MakeTitle(pg, "Camping")
+    local sP = MakeSection(pg, t, "PANEL")
+    local rOn = MakeCheckbox(pg, "Show the camp panel", sP,
+        function() return on() end, function(v) o().enabled = v end)
+    MakeStepper(pg, "Background alpha", rOn, 0, 100,
+        function() return tonumber(o().alpha) or 90 end, function(v) o().alpha = v end,
+        function(v) return ("%d%%"):format(v) end, on)
+end
+
 -- Trainer (Quality of Life): the catalogue window and its switches.
 PAGE_BODY.trainer = function()
     local pg = pages.trainer.__content
@@ -2074,6 +2163,16 @@ local function BuildPanel()
     T.SetDisplay(shell.pageTitle, 34)
     shell.pageTitle:SetPoint("LEFT", shell.header, "LEFT", SIDEBAR_W + 26, 0)
 
+    -- Unlock Frames: in the header left of the close X on every page; the
+    -- anchors are every module's now (session bar, camp, guide, arrow ...),
+    -- not just Boss Warnings' (Alex, 2026-10-03).
+    local unlock = T.MakeButton(shell.header)
+    unlock:SetSize(120, 24)
+    unlock:SetPoint("RIGHT", shell.close, "LEFT", -12, 0)
+    unlock:SetText("Unlock Frames")
+    unlock:SetScript("OnClick", function() EnterUnlockMode() end)
+    O.unlockButton = unlock
+
     -- Footer: Reload UI and Close, bottom-right.
     local footerLine = T.SolidTex(panel, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
     footerLine:SetHeight(1)
@@ -2095,6 +2194,8 @@ local function BuildPanel()
     MakeTab("chat", "Chat")
     MakeTab("font", "Font")
     MakeTab("quests", "Quests")
+    MakeTab("session", "Session")
+    MakeTab("camping", "Camping")
     MakeTab("trainer", "Trainer")
     MakeTab("guide", "Guide")
     MakeTab("routes", "Routes")
@@ -2109,6 +2210,17 @@ local function BuildPanel()
     for i, g in ipairs(GROUPS) do
         if g.launch then O.launcher = GroupTab(g, i) end
     end
+    -- The Wishlist sits on its own at the foot of the sidebar: a window of
+    -- its own, not a setting of any module.
+    local wl = GroupTab({ key = "wishlistLauncher", label = "Wishlist", launch = true, navY = 0,
+        open = function(v) ns.WishlistUI.Toggle(v) end, shown = function() return ns.WishlistUI.Shown() end }, 1)
+    wl:ClearAllPoints()
+    wl:SetPoint("BOTTOMLEFT", shell.side, "BOTTOMLEFT", 0, 14)
+    local wlLine = T.SolidTex(shell.side, "ARTWORK", T.LINE[1], T.LINE[2], T.LINE[3], T.LINE[4])
+    wlLine:SetHeight(1)
+    wlLine:SetPoint("BOTTOMLEFT", wl, "TOPLEFT", 22, 8)
+    wlLine:SetPoint("RIGHT", shell.side, "RIGHT", -14, 0)
+    O.wishlistLauncher = wl                                  -- test seam
     LayoutSidebar()
     SelectPage("global")
     lastR, lastG, lastB = T.Accent()

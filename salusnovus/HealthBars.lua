@@ -469,7 +469,9 @@ local function Apply()
         Resolve()
     elseif unlocked then
         Disarm()
-        state.live = { Placeholders()[1] }      -- one sample bar on screen while dragging
+        -- One sample bar while dragging, no markers (Alex): their labels
+        -- crowd above the unlock box, which names the frame anyway.
+        state.live = { { name = "Sample boss", unit = nil, refused = false, abilities = {} } }
         Refresh()
         frame.bar:SetMinMaxValues(0, 1)
         frame.bar:SetValue(0.6)

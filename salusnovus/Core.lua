@@ -127,6 +127,19 @@ ns.defaults = {
     -- Trainer catalogue (Quality of Life > Trainer): the captured list is
     -- SalusNovusDB.trainers[class] at the top level; these are the switches.
     trainer = { enabled = true },
+    -- Quests (Quality of Life): the gold coin on the best-selling reward.
+    quests = { goldMark = true, dungeonCheck = true },
+    -- Session bar (Quality of Life): XP/h, gold/h and instance lockouts on one
+    -- databar; per-character sessions in SalusNovusDB.session, the account's
+    -- instance entries in SalusNovusDB.instances. `limit` = instances per hour
+    -- until the client's own error teaches the real one.
+    session = { enabled = true, xp = true, gold = true, instances = true, size = 12, limit = 5 },
+    -- Camping (Quality of Life): the camp panel; show = "duration" (your
+    -- campfire kit ready, or within kitMinutes of it, or a campfire in range)
+    -- or "always"; alpha = the background's opacity, 0-100.
+    camping = { enabled = true, alpha = 90 },
+    -- Wishlist (Quality of Life): lists live in SalusNovusDB.wishlist[character].
+    wishlist = {},
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing
@@ -262,8 +275,57 @@ end
 -- Movable frames register here so one toggle can lock/unlock them all.
 local movables = {}
 ns.movables = movables            -- SnapMovable aligns against the other anchors
+
+-- Unlock mode looks like EllesmereUI's (Alex, 2026-10-03): a dark slate box
+-- over the whole anchor, a thin light edge, the anchor's name centred.
+-- Modules keep toggling their own unlockBg / unlockLabel; those are made
+-- invisible and their Show/Hide/SetShown drive this overlay instead.
+local UNLOCK_NAMES = {
+    barsPos = "Timer Bars", queuePos = "Ability Queue", previewPos = "Ability Preview",
+    messagesPos = "Messages", healthPos = "Health Bars", remindersPos = "Reminders",
+    guidePos = "Guide", arrowPos = "Arrow", sessionPos = "Session", campingPos = "Camping", dungeonQuestsPos = "Dungeon Quests",
+}
+function ns.UnlockOverlay(frame, name)
+    if frame.unlockOverlay then return frame.unlockOverlay end
+    local driver = frame.unlockBg or frame.unlockLabel
+    if not driver then return nil end
+    local o = CreateFrame("Frame", nil, frame)
+    o:SetAllPoints()
+    o:SetFrameLevel((frame:GetFrameLevel() or 0) + 20)
+    o:EnableMouse(false)                          -- the drag belongs to the anchor
+    o.bg = o:CreateTexture(nil, "BACKGROUND")
+    o.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+    o.bg:SetAllPoints()
+    o.bg:SetVertexColor(0.10, 0.13, 0.17, 0.92)
+    o.border = ns.CreateBorder(o)
+    o.border:Layout(o, 1, -1)
+    o.border:SetColor(0.70, 0.72, 0.78, 0.55)
+    o.border:Show()
+    o.label = o:CreateFontString(nil, "OVERLAY")
+    ns.SetFontSafe(o.label, 12, "")
+    o.label:SetPoint("CENTER")
+    o.label:SetTextColor(0.92, 0.93, 0.95, 1)
+    o.label:SetText(name or "")
+    o:Hide()
+    frame.unlockOverlay = o
+    if frame.unlockBg then frame.unlockBg:SetAlpha(0) end
+    if frame.unlockLabel then frame.unlockLabel:SetAlpha(0) end
+    -- Our own texture/fontstring: wrapping its methods touches nothing of Blizzard's.
+    local show, hide, setShown = driver.Show, driver.Hide, driver.SetShown
+    driver.Show = function(self, ...) o:Show() return show(self, ...) end
+    driver.Hide = function(self, ...) o:Hide() return hide(self, ...) end
+    driver.SetShown = function(self, v, ...) o:SetShown(v and true or false) return setShown(self, v, ...) end
+    o:SetShown(driver:IsShown() and true or false)
+    return o
+end
+
 function ns.RegisterMovable(frame, saveKey, origin, restore)
     movables[frame] = saveKey or true
+    if type(saveKey) == "string" and (frame.unlockBg or frame.unlockLabel) then
+        local label = frame.unlockLabel and frame.unlockLabel:GetText()
+        label = type(label) == "string" and label:gsub("%s*\194\183.*$", "") or nil
+        ns.UnlockOverlay(frame, UNLOCK_NAMES[saveKey] or label)
+    end
     frame.__origin = origin       -- function -> the growth-origin point
     frame.__restore = restore     -- function -> the module's RestorePosition (re-layout after a scale change)
     frame:SetMovable(true)

@@ -4,6 +4,7 @@
 ## Version: 0.5.5
 ## Author: Alex
 ## SavedVariables: SalusNovusDB
+## OptionalDeps: AtlasLootClassic
 
 Core.lua
 Fonts.lua
@@ -59,6 +60,14 @@ HealthBars.lua
 Reminders.lua
 ChatFilter.lua
 Quests.lua
+Wishlist.lua
+WishlistUI.lua
+WishlistRoll.lua
+DungeonQuests.lua
+Session.lua
+Camping.lua
+CampingUI.lua
+SessionBar.lua
 Trainer.lua
 TrainerUI.lua
 Guide.lua

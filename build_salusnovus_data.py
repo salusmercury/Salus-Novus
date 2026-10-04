@@ -36,7 +36,7 @@ LOG_DIR = os.environ.get("SN_LOG_DIR") or r"C:\Program Files (x86)\World of Warc
 FALSE_START_SECONDS = 5.0  # a shorter pull with no casts is a false start, not a pull
 HEALTH_HP_SPREAD = 6.0    # % points: casts at the same health across pulls...
 HEALTH_T_SPREAD = 3.0     # ...but not at the same time -> a health trigger
-HEALTH_MAX_PCT = 95.0     # an opener at full health is a timed ability
+HEALTH_MAX_PCT = 90.0     # an opener near full health is a timed ability (Rend at 90-94%: 2026-09-30)
 
 
 def parse_ts(ts):

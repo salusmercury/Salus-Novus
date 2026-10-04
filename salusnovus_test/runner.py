@@ -20,6 +20,14 @@ ADDON = os.environ.get("MERCURY_PATH", os.path.join(ROOT, "salusnovus"))
 MOCK = os.path.join(ROOT, "merkui_test", "wow_mock.lua")
 
 
+# Generated boss data the tests were written against, frozen: a new combat
+# log regenerates salusnovus/Data and must not move the tests' timings
+# (2026-09-30: a second Hall of Thanes run broke 6 timing tests).
+FIXTURES = {
+    "Data\HallOfThanes.lua": os.path.join(HERE, "fixtures", "HallOfThanes.lua"),
+}
+
+
 def toc_files():
     order = []
     with io.open(os.path.join(ADDON, "SalusNovus.toc"), encoding="utf-8") as fh:
@@ -357,7 +365,7 @@ class Harness:
             end
         """)
         for fname in toc_files():
-            path = os.path.join(ADDON, fname)
+            path = FIXTURES.get(fname.replace("/", "\\")) or os.path.join(ADDON, fname)
             if not os.path.exists(path):
                 self.load_errors.append((fname, "FILE MISSING"))
                 continue

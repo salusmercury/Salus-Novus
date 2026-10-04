@@ -426,8 +426,8 @@ def _():
     n = int(h.lua("return __n"))
     ok(n > 100, "expected the whole UI enrolled, got %d strings" % n)
     # spot checks across the UI
-    # (the shell titles are the DISPLAY face by design since the Slab look, not the body font)
-    for expr in ("ns.Visualizer._lanes[2].name",
+    # headings too: the display face is the global font now (Alex, 2026-10-04)
+    for expr in ("ns.Visualizer._lanes[2].name", "ns.Options.shell.pageTitle",
                  "ns.Visualizer.form.text", "ns.Bars._bars[1].text", "SalusNovusReminderFrame.unlockText",
                  "ns.Options.launcher.label"):
         eq(str(h.lua("return %s.__font" % expr)), "Fonts\\MORPHEUS.TTF", "%s not re-fonted" % expr)
@@ -886,10 +886,14 @@ def _():
         for _, o in ipairs(ns.Schedule.Lanes(ns.Data[3065].bosses[3])) do
             for ci, t in ipairs(o.lanes.casts) do ev[#ev+1] = { t = t, spellID = o.a.spellID, pulls = o.lanes.support[ci] } end
         end
-        table.sort(ev, function(x, y) return x.t < y.t end)
+        -- casts at the same second may come out in either order: tie-break by spell
+        table.sort(ev, function(x, y) if x.t ~= y.t then return x.t < y.t end return x.spellID < y.spellID end)
         local t0 = ns.Timers.StartedAt()
+        local recs = {}
+        for _, b in ipairs(ns.Timers.Sorted()) do recs[#recs+1] = b end
+        table.sort(recs, function(x, y) if x.at ~= y.at then return x.at < y.at end return x.spellID < y.spellID end)
         local out = {}
-        for i, b in ipairs(ns.Timers.Sorted()) do
+        for i, b in ipairs(recs) do
             if math.abs((b.at - t0) - ev[i].t) > 0.001 or b.spellID ~= ev[i].spellID or b.pulls ~= ev[i].pulls then out[#out+1] = i end
         end
         return table.concat(out, ",")
@@ -2167,7 +2171,7 @@ def _():
     h.lua("ns.Options.SelectPage('global')")
     global_before = page_states(h, "global")
     h.lua("ns.Options.moduleSwitches.bossWarnings:Click()")
-    ok(not h.lua("return ns.Options.unlockButton.enabledState"), "Unlock Frames should grey out on the click itself, not the next page change")
+    ok(h.lua("return ns.Options.unlockButton.enabledState ~= false"), "Unlock Frames serves every module's anchors: it stays live")
     for key in ("bars", "reminders"):
         h.lua("ns.Options.SelectPage('%s')" % key)
         states = page_states(h, key)
@@ -2185,7 +2189,7 @@ def _():
             end
         """ % key)
         ok(not running, "%s preview should be halted while the module is off" % key)
-    ok(not h.lua("return ns.Options.unlockButton.enabledState"), "Unlock Frames should be disabled")
+    ok(h.lua("return ns.Options.unlockButton.enabledState ~= false"), "Unlock Frames still live with Boss Warnings off")
     h.lua("ns.Options.SelectPage('global')")
     states = page_states(h, "global")
     # Global is not a module: its controls follow only their own rules
@@ -2197,7 +2201,7 @@ def _():
     h.lua("ns.db.unlocked = false; ns.db.modules.bossWarnings = true; ns.ApplyAll(); SalusNovusOptions:Show(); ns.Options.SelectPage('bars')")
     states = page_states(h, "bars")
     ok(any(states), "controls did not re-enable when the module came back")
-    ok(h.lua("return ns.Options.unlockButton.enabledState"), "Unlock Frames should be enabled again")
+    ok(h.lua("return ns.Options.unlockButton.enabledState ~= false"), "Unlock Frames live")
     ok(h.lua("return SalusNovusBars:GetParent() ~= UIParent"), "preview did not resume")
     eq(h.errors(), [], "errors")
 
@@ -3321,12 +3325,12 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("health bars anchor: unlock shows placeholders and is draggable; disabled/module-off hide it; the page preview drains and stops", "health")
+@test("health bars anchor: unlock shows a sample bar without markers and is draggable; disabled/module-off hide it; the page preview drains and stops", "health")
 def _():
     h = fresh()
     h.lua("ns.db.unlocked = true; ns.ApplyAll()")
     ok(h.lua("return SalusNovusHealthBars:IsShown() and SalusNovusHealthBars:IsMouseEnabled()"), "unlock placeholders missing")
-    eq(int(h.lua("local n = 0 for i = 1, 8 do if ns.HealthBars._markers[i]:IsShown() then n = n + 1 end end return n")), 2, "placeholder markers")
+    eq(int(h.lua("local n = 0 for i = 1, 8 do if ns.HealthBars._markers[i]:IsShown() then n = n + 1 end end return n")), 0, "no sample markers: their labels crowd the unlock box")
     h.lua("ns.db.unlocked = false; ns.db.healthBars.enabled = false; ns.ApplyAll()")
     ok(not h.lua("return SalusNovusHealthBars:IsShown()"), "disabled still shown")
     h.lua("ns.db.healthBars.enabled = true; ns.db.modules.bossWarnings = false; ns.ApplyAll()")
@@ -5415,10 +5419,12 @@ def _():
     sys.path.insert(0, ROOT)
     import build_salusnovus_data as g
 
-    # Samples at 95.0% HP (at the boundary, should be accepted)
-    samples = [(0, 10.0, 95.0), (1, 20.0, 95.0)]
-    result = g.health_trigger(samples)
-    eq(result, 95, "95% HP should be accepted")
+    # Samples exactly at the cutoff are accepted, just above it are not
+    cut = g.HEALTH_MAX_PCT
+    eq(g.health_trigger([(0, 10.0, cut), (1, 20.0, cut)]), int(round(cut)), "%.0f%% HP should be accepted" % cut)
+    eq(g.health_trigger([(0, 10.0, cut + 0.5), (1, 20.0, cut + 0.5)]), None, "just above the cutoff is a timed opener")
+    # Rend in the Hall of Thanes (2026-09-30): an opener at 90-94% is timed, not a trigger
+    eq(g.health_trigger([(1, 7.0, 90.5), (2, 4.3, 92.5), (3, 8.5, 93.8)]), None, "Rend's opener")
 
 
 @test("health_trigger: HP spread exactly at threshold accepted", "bughunt3")
@@ -7282,7 +7288,8 @@ def _():
     eq(str(h.lua("return __btnLow:GetParent().label:GetText()")), "Low-level quests (1)", "count should refresh after abandoning (202 stays)")
     eq(str(h.lua("return __btnAll:GetParent().label:GetText()")), "All quests (3)", "the other count should refresh too")
     h.lua("__btnAll:Click()")
-    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon all 3 quests in your log?", "confirmation text for all")
+    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon all 3 quests in your log? Type confirm to continue.", "confirmation text for all")
+    h.lua("SalusNovusConfirm.typedBox:SetText('confirm'); SalusNovusConfirm.typedBox:GetScript('OnTextChanged')(SalusNovusConfirm.typedBox)")
     h.lua("SalusNovusConfirm.yes:Click()")
     eq(ids(h, "ns.Quests.List()"), [202], "yes should abandon everything abandonable")
     eq(h.errors(), [], "errors")
@@ -7328,7 +7335,8 @@ def _():
         end
         __btnAll:Click()
     """)
-    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon all 5 quests in your log?", "confirmation text")
+    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon all 5 quests in your log? Type confirm to continue.", "confirmation text")
+    h.lua("SalusNovusConfirm.typedBox:SetText('confirm'); SalusNovusConfirm.typedBox:GetScript('OnTextChanged')(SalusNovusConfirm.typedBox)")
     h.lua("""
         table.insert(__quests, { questID = 501, title = "Picked Up Meanwhile", level = 20 })
         for i, q in ipairs(__quests) do if q.questID == 201 then table.remove(__quests, i) break end end
@@ -7353,6 +7361,68 @@ def _():
         ns.Quests.AbandonAll(snap)
     """)
     ok(201 not in [int(x) for x in h.lua("return __selected").values()], "a quest no longer in the log reached SetSelectedQuest")
+    eq(h.errors(), [], "errors")
+
+
+def quest_buttons(h):
+    h.lua("""
+        ns.Options.tabs.quests:Click()
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.quests and w.__kind == "button" then
+                if w:GetParent().label:GetText():find("^All") then __btnAll = w else __btnLow = w end
+            end
+        end
+    """)
+
+
+def type_confirm(h, text):
+    h.lua("SalusNovusConfirm.typedBox:SetText(%r); SalusNovusConfirm.typedBox:GetScript('OnTextChanged')(SalusNovusConfirm.typedBox)" % text)
+
+
+@test("Abandon All wants 'confirm' typed: the button stays off for anything else, any case works, Enter confirms", "quests")
+def _():
+    h = fresh()
+    h.lua(QUEST_LOG)
+    open_options(h)
+    quest_buttons(h)
+    h.lua("__btnAll:Click()")
+    ok(h.lua("return SalusNovusConfirm.typedBox:IsShown()"), "no box to type in")
+    ok(not h.lua("return SalusNovusConfirm.yes.enabledState"), "Abandon must start disabled")
+    h.lua("SalusNovusConfirm.yes:GetScript('OnClick')(SalusNovusConfirm.yes)")   # its own guard, not just the widget's
+    eq(ids(h, "ns.Quests.List()"), [101, 102, 201, 202, 401], "a click on the disabled button abandoned quests")
+    type_confirm(h, "yes")
+    ok(not h.lua("return SalusNovusConfirm.yes.enabledState"), "a wrong word must not enable Abandon")
+    h.lua("SalusNovusConfirm.typedBox:GetScript('OnEnterPressed')(SalusNovusConfirm.typedBox)")
+    eq(ids(h, "ns.Quests.List()"), [101, 102, 201, 202, 401], "Enter with the wrong word abandoned quests")
+    type_confirm(h, "  CONFIRM ")
+    ok(h.lua("return SalusNovusConfirm.yes.enabledState"), "the word in capitals (and spaces) should count")
+    h.lua("SalusNovusConfirm.typedBox:GetScript('OnEnterPressed')(SalusNovusConfirm.typedBox)")
+    eq(ids(h, "ns.Quests.List()"), [202], "Enter with the word should abandon everything abandonable")
+    # the plain dialogs are untouched: no box, Abandon enabled
+    h.lua(QUEST_LOG)
+    h.lua("ns.Options.RefreshAll(); __btnLow:Click()")
+    ok(not h.lua("return SalusNovusConfirm.typedBox:IsShown()"), "low-level must stay a plain yes/no")
+    ok(h.lua("return SalusNovusConfirm.yes.enabledState"), "low-level Abandon enabled at once")
+    eq(h.errors(), [], "errors")
+
+
+@test("By Zone lists each quest-log header with its count, and a zone's Abandon takes only that zone's quests", "quests")
+def _():
+    h = fresh()
+    h.lua(QUEST_LOG)
+    open_options(h)
+    h.lua("ns.Options.tabs.quests:Click()")
+    lines = [str(x) for x in h.lua("local o = {} for _, ln in ipairs(ns.Options.zoneList.lines) do if ln:IsShown() then o[#o + 1] = ln.text:GetText() end end return o").values()]
+    eq(lines, ["Elwynn Forest (2)", "Westfall (3)"], "zones and counts (task and hidden quests left out)")
+    h.lua("ns.Options.zoneList.lines[2].btn:Click()")
+    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), "Abandon 3 quests in Westfall?", "the offer")
+    ok(not h.lua("return SalusNovusConfirm.typedBox:IsShown()"), "a zone is a plain yes/no")
+    h.lua("SalusNovusConfirm.yes:Click()")
+    eq(ids(h, "ns.Quests.List()"), [101, 102, 202], "Westfall's abandonable quests gone, Elwynn's kept")
+    lines = [str(x) for x in h.lua("local o = {} for _, ln in ipairs(ns.Options.zoneList.lines) do if ln:IsShown() then o[#o + 1] = ln.text:GetText() end end return o").values()]
+    eq(lines, ["Elwynn Forest (2)", "Westfall (1)"], "counts follow")
+    h.lua("ns.Options.moduleSwitches.qol:Click()")
+    ok(not h.lua("return ns.Options.zoneList.lines[1].btn.enabledState"), "zone buttons grey out with Quality of Life off")
     eq(h.errors(), [], "errors")
 
 
@@ -8989,7 +9059,7 @@ def _():
     result = h.lua("""
         local rows = {}
         for key, tab in pairs(ns.Options.tabs) do
-            if tab:IsShown() then
+            if tab:IsShown() and key ~= "wishlistLauncher" then   -- the foot row sits below every section by design
                 rows[#rows + 1] = { key = key, top = tab:GetTop() }
             end
         end
@@ -10869,3 +10939,1031 @@ def _():
     eq(gaps, [32], "even 32px columns everywhere, the centre included")
     eq(h.errors(), [], "errors")
 
+
+
+# ---------------------------------------------------------------- best reward
+
+# The quest frame's reward tiles: __choices = { { name, price, count }, ... };
+# __show(n) lays out n choice buttons the way QuestInfo_ShowRewards does
+# (type = "choice", id = the choice index) and calls QuestInfo_Display.
+REWARDMOCK = """
+    __uncached = {}
+    QuestInfoFrame = { questLog = false }
+    QuestInfoRewardsFrame = CreateFrame("Frame", "QuestInfoRewardsFrame", UIParent)
+    QuestInfoRewardsFrame.RewardButtons = {}
+    local function link(c) return "|Hitem:" .. c.name .. "|h[" .. c.name .. "]|h" end
+    GetNumQuestChoices = function() return #__choices end
+    GetQuestItemLink = function(kind, i) local c = __choices[i] return c and link(c) end
+    GetQuestItemInfo = function(kind, i) local c = __choices[i] return c.name, 134400, c.count or 1 end
+    C_Item = C_Item or {}
+    C_Item.GetItemInfo = function(l)
+        for _, c in ipairs(__choices) do
+            if link(c) == l and not __uncached[c.name] then return c.name, l, 2, 10, 5, "", "", 1, "", 0, c.price end
+        end
+        return nil
+    end
+    QuestInfo_Display = function() end
+    function __show(n)
+        for i = 1, math.max(n, #QuestInfoRewardsFrame.RewardButtons) do
+            local b = QuestInfoRewardsFrame.RewardButtons[i]
+            if not b then
+                b = CreateFrame("Button", nil, QuestInfoRewardsFrame)
+                b.Icon = b:CreateTexture(nil, "ARTWORK")
+                local id = i
+                b.GetID = function() return id end
+                QuestInfoRewardsFrame.RewardButtons[i] = b
+            end
+            b.type = "choice"
+            b:SetShown(i <= n)
+        end
+        QuestInfo_Display()
+    end
+    function __gold()
+        local o = {}
+        for i, b in ipairs(QuestInfoRewardsFrame.RewardButtons) do
+            if b.snGold and b.snGold:IsShown() then o[#o + 1] = i end
+        end
+        return o
+    end
+"""
+
+
+def gold(h):
+    return [int(x) for x in h.lua("return __gold()").values()]
+
+
+@test("a gold coin marks the quest reward that sells for the most (price x count); ties all get one; one choice or no value gets none", "quests")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    ok(h.lua("return ns.Quests.HookRewards()"), "QuestInfo_Display not hooked")
+    h.lua("__choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 }, { name = 'Potion', price = 50, count = 5 } }; __show(3)")
+    eq(gold(h), [2], "the shield (340) beats 5 potions (250) and the sword")
+    h.lua("__choices = { { name = 'Sword', price = 120 }, { name = 'Potion', price = 50, count = 5 } }; __show(2)")
+    eq(gold(h), [2], "5 potions (250) beat the sword: count matters, and the old coin moved")
+    h.lua("__choices = { { name = 'A', price = 300 }, { name = 'B', price = 300 } }; __show(2)")
+    eq(gold(h), [1, 2], "a tie marks both")
+    h.lua("__choices = { { name = 'Only', price = 999 } }; __show(1)")
+    eq(gold(h), [], "a single reward is not a choice")
+    h.lua("__choices = { { name = 'X', price = 0 }, { name = 'Y', price = 0 } }; __show(2)")
+    eq(gold(h), [], "nothing sells: no coin")
+    eq(h.errors(), [], "errors")
+
+
+@test("the gold coin waits for an uncached reward's price, stays off when switched off, and is its own frame (a skin that fades tile art can't hide it)", "quests")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    h.lua("ns.Quests.HookRewards()")
+    h.lua("__uncached.Shield = true; __choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 } }; __show(2)")
+    eq(gold(h), [1], "only the known price can be marked yet")
+    h.lua("__uncached.Shield = nil; W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true)")
+    eq(gold(h), [2], "the price arrived: the coin moves to the shield")
+    ok(h.lua("local b = QuestInfoRewardsFrame.RewardButtons[2] return b.snGold:GetParent() == b and b.snGold:GetObjectType() == 'Frame'"), "the coin must be a child frame, not tile art")
+    ok(h.lua("local b = QuestInfoRewardsFrame.RewardButtons[2] local p, rel, rp, x, y = b.snGold:GetPoint(1) return p == 'TOPLEFT' and rel == b.Icon and rp == 'TOPLEFT' and x > 0 and y < 0"), "the coin sits inside the icon's top-left corner")
+    h.lua("ns.db.quests.goldMark = false; __show(2)")
+    eq(gold(h), [], "switched off: no coin")
+    h.lua("ns.db.quests.goldMark = true; ns.db.modules.qol = false; __show(2)")
+    eq(gold(h), [], "Quality of Life off: no coin")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- wishlist
+
+# AtlasLoot's runtime surface (Loader:LoadModule, ItemDB:Get/GetModuleList/
+# GetItemTable) with three dungeons, an item cache, known proficiency spells,
+# bags/bank counts, the instance flag, a party of two and the addon channel.
+WISHMOCK = """
+    __al = {
+        RagefireChasm = { name = "Ragefire Chasm", LevelRange = { 8, 13, 18 }, LoadDifficulty = 1, items = {
+            { name = "Taragaman", [1] = { { 1, 101 }, { 2, 102 } } } } },
+        TheDeadmines = { name = "The Deadmines", LevelRange = { 10, 17, 26 }, LoadDifficulty = 1, items = {
+            { name = "Rhahk'Zor", [1] = { { 1, 201 }, { 3, 202 }, { 16, "INV_Box_01" }, { 17, 203 } } },
+            { name = "Mr. Smite", [1] = { { 1, 204 } } } } },
+        Gnomeregan = { name = "|cffff0000Gnomeregan|r |TInterface\\AddOns\\AtlasLootClassic\\ltn2.tga:15:56:2:0|t", LevelRange = { 24, 29, 38 }, LoadDifficulty = 1,
+            GetContentType = function(self) return "Dungeons", 2 end, items = {
+            { name = "Thermaplugg", [1] = { { 1, 301 } } } } },
+        -- named from its map, as AtlasLoot does for a dozen dungeons
+        Uldaman = { MapID = 1337, LevelRange = { 30, 35, 45 }, LoadDifficulty = 1, items = {
+            { name = "Archaedas", [1] = { { 1, 402 } } } } },
+        ScarletMonasteryGraveyard = { name = "Scarlet Monastery - Graveyard", InstanceID = 189, LevelRange = { 21, 30, 32 }, LoadDifficulty = 1, items = {
+            { name = "Bloodmage Thalnos", [1] = { { 1, 401 } } } } },
+        ScarletMonasteryLibrary = { name = "Scarlet Monastery - Library", InstanceID = 189, LevelRange = { 21, 33, 37 }, LoadDifficulty = 1, items = {
+            { name = "Arcanist Doan", [1] = { { 1, 405 } } } } },
+        -- not dungeons: a raid (by type) and World Bosses (no level range)
+        MoltenCore = { name = "Molten Core", LevelRange = { 50, 60, 60 }, LoadDifficulty = 1,
+            GetContentType = function(self) return "40 Raids", 5 end, items = {
+            { name = "Ragnaros", [1] = { { 1, 403 } } } } },
+        WorldBosses = { name = "World Bosses", LoadDifficulty = 1, items = {
+            { name = "Azuregos", [1] = { { 1, 404 } } } } },
+    }
+    -- AtlasLoot's order, not by level: the list sorts by level
+    __alKeys = { "Uldaman", "RagefireChasm", "MoltenCore", "TheDeadmines", "ScarletMonasteryLibrary", "ScarletMonasteryGraveyard", "WorldBosses", "Gnomeregan" }
+    C_Map = C_Map or {}
+    C_Map.GetAreaInfo = function(id) if id == 1337 then return "Uldaman" end end
+    AtlasLoot = {
+        Loader = { LoadModule = function(self, name, cb) __loadedModule = name if cb then cb(name) end return true end },
+        ItemDB = {
+            Get = function(self, m) return __al end,
+            GetModuleList = function(self, m) return __alKeys end,
+            GetItemTable = function(self, m, key, b, dif) return __al[key].items[b][dif] end,
+        },
+    }
+    -- id = { name, quality, ilvl, req, equipLoc, classID, subclassID }
+    __items = {
+        [101] = { "Cloth Hood", 2, 15, 12, "INVTYPE_HEAD", 4, 1 },
+        [102] = { "Mail Hauberk", 3, 16, 13, "INVTYPE_CHEST", 4, 3 },
+        [201] = { "Rockslicer", 3, 21, 18, "INVTYPE_2HWEAPON", 2, 1 },
+        [202] = { "Rhahk'Zor's Hammer", 3, 21, 16, "INVTYPE_2HWEAPON", 2, 5 },
+        [203] = { "Ogre Loincloth", 2, 20, 15, "INVTYPE_LEGS", 4, 2 },
+        [204] = { "Smite's Mighty Hammer", 3, 23, 18, "INVTYPE_2HWEAPON", 2, 5 },
+        [301] = { "Thermaplugg's Left Arm", 3, 34, 29, "INVTYPE_2HWEAPON", 2, 1 },
+        [401] = { "Thalnos Plate", 3, 34, 29, "INVTYPE_CHEST", 4, 4 },
+        [402] = { "Archaedas Plate", 3, 44, 40, "INVTYPE_CHEST", 4, 4 },
+        [403] = { "Ragnaros Plate", 4, 66, 60, "INVTYPE_CHEST", 4, 4 },
+        [404] = { "Azuregos Plate", 4, 66, 60, "INVTYPE_CHEST", 4, 4 },
+        [405] = { "Doan Plate", 3, 40, 35, "INVTYPE_CHEST", 4, 4 },
+    }
+    __uncached = {}
+    C_Item = C_Item or {}
+    C_Item.GetItemInfo = function(id)
+        local t = __items[id]
+        if not t or __uncached[id] then return nil end
+        return t[1], "|Hitem:" .. id .. "|h[" .. t[1] .. "]|h", t[2], t[3], t[4], "", "", 1, t[5], 134400, 0, t[6], t[7], 1
+    end
+    C_Item.RequestLoadItemDataByID = function(id) end
+    __known = { [9078] = true, [9077] = true, [9116] = true, [198] = true, [199] = true, [1180] = true, [227] = true, [15590] = true }
+    IsPlayerSpell = function(id) return __known[id] == true end
+    __have = {}
+    C_Item.GetItemCount = function(id, bank) return __have[id] or 0 end
+    IsEquippedItem = function(id) return false end
+    __inst, __instType = false, "none"
+    IsInInstance = function() return __inst, __instType end
+    UnitClass = function() return "Shaman", "SHAMAN" end
+    UnitLevel = function() return 20 end
+    UnitName = function(u)
+        if u == "player" then return "Grumble" end
+        if u == "party1" then return "Brakka" end
+        if u == "party2" then return "Lyss" end
+        return nil
+    end
+    UnitFullName = function(u) return UnitName(u), "Forever" end
+    Ambiguate = function(n) return (n:gsub("%-.*$", "")) end
+    __group = true
+    IsInGroup = function() return __group end
+    IsInRaid = function() return false end
+    GetNumGroupMembers = function() return __group and 2 or 0 end
+    __sent = {}
+    C_ChatInfo = C_ChatInfo or {}
+    C_ChatInfo.RegisterAddonMessagePrefix = function(p) return 0 end
+    C_ChatInfo.SendAddonMessage = function(p, msg, ch) __sent[#__sent + 1] = { p, msg, ch } end
+"""
+
+
+def wish(h):
+    h.lua(WISHMOCK)
+    h.lua("ns.Wishlist.catalog = nil; ns.Wishlist.party = {}; ns.Wishlist.prefixOK = false; ns.Wishlist.RegisterPrefix()")
+    # this character last picked Ragefire and the Deadmines
+    h.lua("SalusNovusDB.wishlistPool = { ['Grumble-Forever'] = { RagefireChasm = true, TheDeadmines = true } }")
+
+
+def browse_names(h, pool, slot="nil"):
+    return sorted(str(x) for x in h.lua("local o = {} for _, e in ipairs(ns.Wishlist.Browse(%s, %s)) do o[#o + 1] = e.info.name end return o" % (pool, slot)).values())
+
+
+@test("wishlist reads AtlasLoot at runtime, opens on the dungeons within 8 levels, and shows only gear you can equip", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open()")
+    eq(str(h.lua("return __loadedModule")), "AtlasLootClassic_DungeonsAndRaids", "the on-demand module was not loaded")
+    eq(sorted(str(k) for k in h.lua("local o = {} for k in pairs(ns.WishlistUI.pool) do o[#o + 1] = k end return o").values()),
+       ["RagefireChasm", "TheDeadmines"], "the character's saved pick is restored")
+    eq(sorted(str(k) for k in h.lua("return ns.Wishlist.NearDungeons(20, 8)").values()), ["RagefireChasm", "TheDeadmines"], "near level 20: Ragefire and Deadmines, not Gnomeregan")
+    # a level-20 shaman: cloth/leather/shield, maces/daggers/staves/fists; no mail (40), no axes (not trained)
+    eq(browse_names(h, "ns.WishlistUI.pool"), ["Cloth Hood", "Ogre Loincloth", "Rhahk'Zor's Hammer", "Smite's Mighty Hammer"], "equippable loot of the pool")
+    h.lua("__known[8737] = true; __known[197] = true")        # trained mail at 40, axes at a weapon master
+    eq(browse_names(h, "ns.WishlistUI.pool"), ["Cloth Hood", "Mail Hauberk", "Ogre Loincloth", "Rhahk'Zor's Hammer", "Rockslicer", "Smite's Mighty Hammer"], "mail and axes once known")
+    eq(browse_names(h, "ns.WishlistUI.pool", "'Two-Hand'"), ["Rhahk'Zor's Hammer", "Rockslicer", "Smite's Mighty Hammer"], "browse by slot across the pool")
+    h.lua("ns.WishlistUI.Refresh()")
+    eq(int(h.lua("return ns.WishlistUI.Build().mine.count")), 6, "the window lists them")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist tags: the class's three specs (several at once) and BIS or Upgrade (one, toggled); owned items are marked", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); ns.Wishlist.Wish(204, true); ns.Wishlist.ToggleSpec(204, 'Enhancement'); ns.Wishlist.ToggleSpec(204, 'Restoration')")
+    rec = h.lua("return ns.Wishlist.Get(204)")
+    ok(rec["spec"]["Enhancement"] and rec["spec"]["Restoration"], "two specs at once")
+    h.lua("ns.Wishlist.ToggleSpec(204, 'Restoration'); ns.Wishlist.SetTag(204, 'bis')")
+    ok(h.lua("return ns.Wishlist.Get(204).spec.Restoration == nil and ns.Wishlist.Get(204).tag == 'bis'"), "spec toggled off, BIS on")
+    h.lua("ns.Wishlist.SetTag(204, 'up')")
+    eq(str(h.lua("return ns.Wishlist.Get(204).tag")), "up", "Upgrade replaces BIS")
+    h.lua("ns.Wishlist.SetTag(204, 'up')")
+    ok(h.lua("return ns.Wishlist.Get(204).tag == nil"), "a second click clears it")
+    eq([str(x) for x in h.lua("return ns.Wishlist.MySpecs()").values()], ["Elemental", "Enhancement", "Restoration"], "shaman trees")
+    ok(h.lua("return SalusNovusDB.wishlist['Grumble-Forever']['204'] ~= nil"), "saved per character")
+    h.lua("__have[202] = 1; ns.WishlistUI.Refresh()")
+    subs = [str(x) for x in h.lua("local o = {} for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then o[#o + 1] = r.sub:GetText() end end return o").values()]
+    ok(any("OWNED" in s and "Mr. Smite" not in s for s in subs), "the owned hammer is marked: %r" % subs)
+    eq(h.errors(), [], "errors")
+
+
+@test("an item you GAIN inside a dungeon leaves the wishlist; nothing is checked outside; items already owned are not 'gained'", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.Wishlist.Wish(204, true); ns.Wishlist.Wish(203, true)")
+    h.lua("__have[204] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "outside an instance nothing is delisted")
+    h.lua("__inst, __instType = true, 'party'; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    h.lua("W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "owned before entering: not a gain")
+    h.lua("__have[203] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return ns.Wishlist.Get(203) == nil"), "the loincloth dropped in the dungeon: delisted")
+    h.lua("ns.db.modules.qol = false; ns.Wishlist.Wish(201, true); __have[201] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return ns.Wishlist.Get(201) ~= nil"), "Quality of Life off keeps it")
+    eq(h.errors(), [], "errors")
+
+
+@test("the wishlist goes to the group in chunks under 240 bytes with BIS/Upgrade marks; strangers, whispers and orphan chunks are refused", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        SalusNovusDB.wishlist = { ['Grumble-Forever'] = {} }
+        for i = 1, 60 do SalusNovusDB.wishlist['Grumble-Forever'][tostring(1000000 + i)] = { spec = {} } end
+        SalusNovusDB.wishlist['Grumble-Forever']['1000001'].tag = 'bis'
+        SalusNovusDB.wishlist['Grumble-Forever']['1000001'].spec = { Elemental = true, Restoration = true }
+        ns.Wishlist.Broadcast()
+        W.advance(1.1)
+    """)
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    ok(len(sent) >= 2 and all(len(m) <= 240 for m in sent), "chunked: %r" % [len(m) for m in sent])
+    ok(sent[0].startswith("WL|SHAMAN|1000001b.13,") and all(m.startswith("WLC|SHAMAN|") for m in sent[1:]), "head then continuations")
+    total = sum(len(m.split("|")[2].split(",")) for m in sent)
+    eq(total, 60, "every id went out")
+    # receiving
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b,201', 'PARTY', 'Brakka-Forever')")
+    eq([(int(x["id"]), str(x["tag"]) if x["tag"] else None) for x in h.lua("return ns.Wishlist.party.Brakka.items").values()], [(204, "bis"), (201, None)], "parsed with tags")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.3,201u.12,202.9', 'PARTY', 'Brakka-Forever')")
+    got = [(int(x["id"]), [str(v) for v in x["specs"].values()]) for x in h.lua("return ns.Wishlist.party.Brakka.items").values()]
+    eq(got, [(204, ["Protection"]), (201, ["Arms", "Fury"])], "specs by the sender's class; a malformed piece is dropped")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|ROGUE|204', 'PARTY', 'Stranger')")
+    ok(h.lua("return ns.Wishlist.party.Stranger == nil"), "not in my group")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|PRIEST|204', 'WHISPER', 'Lyss')")
+    ok(h.lua("return ns.Wishlist.party.Lyss == nil"), "whispers are refused")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WLC|PRIEST|204', 'PARTY', 'Lyss')")
+    ok(h.lua("return ns.Wishlist.party.Lyss == nil"), "an orphan continuation is refused")
+    h.lua("__sent = {}; ns.Wishlist.OnAddonMessage('SNWish', 'REQ', 'PARTY', 'Lyss'); W.advance(1.1)")
+    ok(len(list(h.lua("return __sent").values())) >= 1, "a request is answered")
+    eq(h.errors(), [], "errors")
+
+
+@test("the party page ranks dungeons by most wanted entries or by most party members", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); ns.Wishlist.Wish(101, true); ns.Wishlist.Wish(102, true); ns.Wishlist.Wish(103, true)")
+    # Ragefire: 2 of mine (101, 102); Deadmines: Brakka 204 + Lyss 203
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b', 'PARTY', 'Brakka'); ns.Wishlist.OnAddonMessage('SNWish', 'WL|PRIEST|203', 'PARTY', 'Lyss')")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka')")
+    total = h.lua("local o = {} for _, d in ipairs(ns.Wishlist.Rank('total')) do o[#o + 1] = d.name .. ':' .. d.total .. ':' .. d.people end return o")
+    people = h.lua("local o = {} for _, d in ipairs(ns.Wishlist.Rank('people')) do o[#o + 1] = d.name .. ':' .. d.total .. ':' .. d.people end return o")
+    eq([str(x) for x in total.values()], ["The Deadmines:2:2", "Ragefire Chasm:2:1"], "most wanted: a tie on 2, more people first")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|ROGUE|102', 'PARTY', 'Lyss')")
+    eq([str(x) for x in h.lua("local o = {} for _, d in ipairs(ns.Wishlist.Rank('total')) do o[#o + 1] = d.name .. ':' .. d.total end return o").values()],
+       ["Ragefire Chasm:3", "The Deadmines:1"], "Lyss's new list replaced her old one")
+    eq([str(x) for x in h.lua("local o = {} for _, d in ipairs(ns.Wishlist.Rank('people')) do o[#o + 1] = d.name .. ':' .. d.people end return o").values()],
+       ["Ragefire Chasm:2", "The Deadmines:1"], "most party members")
+    h.lua("RAID_CLASS_COLORS = { ROGUE = { r = 1, g = 244 / 255, b = 104 / 255 } }")
+    h.lua("ns.WishlistUI.view = 'party'; ns.WishlistUI.Refresh()")
+    eq(int(h.lua("return ns.WishlistUI.Build().party.count")), 2, "the party view lists both dungeons")
+    heads = [str(x) for x in h.lua("local o = {} for _, l in ipairs(ns.WishlistUI.Build().party.lines) do if l:IsShown() then o[#o + 1] = l:GetText() end end return o").values()]
+    eq(heads, ["Ragefire Chasm", "The Deadmines"], "headings are the dungeon name alone")
+    cards = [(str(n), str(t)) for n, t in zip(
+        h.lua("local o = {} for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() then o[#o + 1] = c.name:GetText() end end return o").values(),
+        h.lua("local o = {} for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() then o[#o + 1] = c.sub:GetText() end end return o").values())]
+    eq([c[0] for c in cards], ["Mail Hauberk", "Cloth Hood", "Smite's Mighty Hammer"], "one item card each, the most wanted first")
+    ok(cards[0][1].startswith("Taragaman") and "Grumble|r" in cards[0][1] and "Lyss|r" in cards[0][1], "boss, then both names: %r" % cards[0][1])
+    ok("|cfffff468Lyss|r" in cards[0][1], "Lyss (a rogue, from her message) in rogue yellow: %r" % cards[0][1])
+    eq(str(h.lua("return ns.WishlistUI.ClassName('Lyss', 'ROGUE')")).lower()[:10], "|cfffff468", "a rogue is yellow")
+    ok("Brakka|r (Arms/Protection) |cffff4040BIS|r" in cards[2][1], "specs from the message, then BIS in red: %r" % cards[2][1])
+    h.lua("ns.Wishlist.ToggleSpec(101, 'Restoration'); ns.Wishlist.SetTag(101, 'up'); ns.WishlistUI.Refresh()")
+    sub101 = str(h.lua("for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() and c.id == 101 then return c.sub:GetText() end end"))
+    ok(sub101.endswith("Grumble|r (Restoration) Upgrade"), "my own specs, Upgrade in the line's grey: %r" % sub101)
+    # the two sorts disagree: Deadmines 3 wishes from 1 player, Ragefire 2 from 2
+    h.lua("""
+        SalusNovusDB.wishlist = { ['Grumble-Forever'] = { ['201'] = { spec = {} }, ['202'] = { spec = {} }, ['203'] = { spec = {} } } }
+        ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|101', 'PARTY', 'Brakka')
+        ns.Wishlist.OnAddonMessage('SNWish', 'WL|PRIEST|102', 'PARTY', 'Lyss')
+    """)
+    first = lambda s: str(h.lua("return ns.Wishlist.Rank('%s')[1].name" % s))
+    eq((first("total"), first("people")), ("The Deadmines", "Ragefire Chasm"), "most wanted vs most party members")
+    eq(h.errors(), [], "errors")
+
+
+@test("the wishlist window is laid out like the visualizer: dungeon rows in the sidebar (clean names, level line), multiselect, Mine/Party switch", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open()")
+    names = [str(x) for x in h.lua("local o = {} for _, r in ipairs(ns.WishlistUI.Build().dungeonRows) do if r:IsShown() then o[#o + 1] = r.label:GetText() end end return o").values()]
+    eq(names, ["Ragefire Chasm", "The Deadmines", "Graveyard", "Gnomeregan", "Library", "Uldaman"],
+       "every dungeon by level, map-named ones included, raids and World Bosses out, the SM wing by its wing")
+    eq(str(h.lua("return ns.WishlistUI.Build().dungeonRows[3].sub:GetText()")), "Level 30-32", "the level line is levels only; wings sharing one instance keep AtlasLoot's per-wing levels")
+    eq(str(h.lua("return ns.WishlistUI.Build().dungeonRows[4].sub:GetText()")), "Level 31-37", "Gnomeregan by name: the visualizer's 31-37, not AtlasLoot's 29-38")
+    ok(all("|T" not in n and "|c" not in n for n in names), "AtlasLoot's texture and colour codes leaked into names: %r" % names)
+    eq(str(h.lua("return ns.Wishlist.catalog.dungeons[4].name")), "Gnomeregan", "the NEW tag is stripped")
+    ok(h.lua("return ns.WishlistUI.Build().dungeonRows[1].fill:IsShown() and not ns.WishlistUI.Build().dungeonRows[4].fill:IsShown()"), "the near pool is highlighted, Gnomeregan is not")
+    h.lua("ns.WishlistUI.Build().dungeonRows[4]:Click()")
+    ok(h.lua("return ns.WishlistUI.pool.Gnomeregan and ns.WishlistUI.pool.RagefireChasm"), "a click adds to the pool")
+    ok(h.lua("return ns.WishlistUI.Build().dungeonRows[4].fill:IsShown()"), "the added dungeon lights up")
+    h.lua("ns.WishlistUI.Build().dungeonRows[1]:Click()")
+    ok(h.lua("return ns.WishlistUI.pool.RagefireChasm == nil and not ns.WishlistUI.Build().dungeonRows[1].fill:IsShown()"), "a second click takes it out")
+    h.lua("ns.Wishlist.Wish(204, true); ns.WishlistUI.Refresh()")
+    eq(str(h.lua("return ns.WishlistUI.Build().dungeonRows[2].count:GetText()")), "1", "the row counts your wishes from it")
+    h.lua("ns.WishlistUI.Build().tabParty:Click()")
+    ok(h.lua("return ns.WishlistUI.Build().party:IsShown() and not ns.WishlistUI.Build().mine:IsShown()"), "Party switch")
+    ok(h.lua("return ns.WishlistUI.Build():GetFrameStrata() == 'DIALOG' and ns.WishlistUI.Build():GetFrameLevel() >= 120"), "above the settings")
+    eq(h.errors(), [], "errors")
+
+
+@test("item cards: a click anywhere wishes, hover shows the item tooltip, the slot shows only on All, no level requirement, square cropped icons", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open()")
+    h.lua("ns.WishlistUI.slot = 'Two-Hand'; ns.WishlistUI.Refresh()")
+    rows = "local o = {} for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then o[#o + 1] = r.sub:GetText() end end return o"
+    subs = [str(x) for x in h.lua(rows).values()]
+    ok(subs and all(not x.startswith("Two-Hand") for x in subs), "a slot tab repeats the slot: %r" % subs)
+    ok(all("req" not in x for x in subs), "level requirement still shown: %r" % subs)
+    h.lua("ns.WishlistUI.slot = nil; ns.WishlistUI.Refresh()")
+    subs = [str(x) for x in h.lua(rows).values()]
+    ok(all(x.split("  ")[0] in ("Head", "Chest", "Legs", "Two-Hand", "Main Hand") for x in subs), "All shows the slot first: %r" % subs)
+    h.lua("__card = ns.WishlistUI.Build().mine.rows[1]; __cardID = __card.id; __card:Click()")
+    ok(h.lua("return ns.Wishlist.Get(__cardID) ~= nil"), "a click on the card wishes the item")
+    h.lua("__card:Click()")
+    ok(h.lua("return ns.Wishlist.Get(__cardID) == nil"), "a second click takes it off")
+    h.lua("W.advance(0.1)")
+    eq(int(h.lua("local n = 0 for _, c in ipairs(__card.chips) do if c:IsShown() then n = n + 1 end end return n")), 5, "spec, BIS and Upgrade buttons show on an unwished card too")
+    # a tag on an item not yet wished wishes it with that tag
+    h.lua("for _, c in ipairs(__card.chips) do if c:IsShown() and c.text:GetText() == 'BIS' then c:Click() end end")
+    ok(h.lua("local r = ns.Wishlist.Get(__cardID) return r ~= nil and r.tag == 'bis'"), "BIS on an unwished item wishes it as BIS")
+    h.lua("W.advance(1.5); __sent = {}; for _, c in ipairs(__card.chips) do if c:IsShown() and c.text:GetText():upper() == 'ELEMENTAL' then c:Click() end end; W.advance(1.1)")
+    ok(any(".1" in str(m[2]) for m in h.lua("return __sent").values()), "a spec change goes out to the group")
+    h.lua("__card:Click()")
+    h.lua("__compared = false; GameTooltip.SetItemByID = function(self, id) __compared = true end; ns.WishlistUI.ItemTip().SetItemByID = function(self, id) __tip = id end; __card:GetScript('OnEnter')(__card)")
+    eq(int(h.lua("return __tip")), int(h.lua("return __cardID")), "hover shows that item's tooltip")
+    ok(h.lua("return ns.WishlistUI.ItemTip() ~= GameTooltip and not __compared"), "our own tooltip, not GameTooltip (which adds the equipped-item comparison)")
+    h.lua("__card:GetScript('OnLeave')(__card)")
+    eq(h.errors(), [], "errors")
+
+
+@test("the Wishlist launcher sits at the foot of the settings sidebar, hides the settings, and closing the wishlist brings them back", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    open_options(h)
+    ok(h.lua("return ns.Options.wishlistLauncher ~= nil and ns.Options.wishlistLauncher.label:GetText() == 'WISHLIST'"), "launcher row missing")
+    side_bottom = float(h.lua("return ns.Options.wishlistLauncher:GetParent():GetBottom()"))
+    ok(float(h.lua("return ns.Options.wishlistLauncher:GetBottom()")) - side_bottom < 30, "launcher not at the foot of the sidebar")
+    ok(h.lua("return ns.Options.pages.wishlist == nil"), "the old Quality of Life page is gone")
+    h.lua("ns.Options.wishlistLauncher:Click(); W.advance(0.1)")
+    ok(h.lua("return SalusNovusWishlist:IsShown() and not SalusNovusOptions:IsShown()"), "the launcher did not swap the windows")
+    h.lua("W.advance(1); SalusNovusWishlist:Hide()")
+    ok(h.lua("return SalusNovusOptions:IsShown()"), "settings did not come back")
+    h.lua("ns.Options.launcher:Click(); W.advance(0.1)")
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "the visualizer launcher still opens the visualizer")
+    eq(h.errors(), [], "errors")
+
+
+@test("without AtlasLoot the wishlist says so instead of showing an empty window", "wishlist")
+def _():
+    h = fresh()
+    h.lua("AtlasLoot = nil; ns.Wishlist.catalog = nil; ns.WishlistUI.Open()")
+    ok(str(h.lua("return ns.WishlistUI.Build().mine.empty:GetText()")).startswith("AtlasLoot Classic is not installed"), "message")
+    ok(h.lua("return ns.WishlistUI.Build().mine.empty:IsShown()"), "shown")
+    # the Party tab says so too, and the rest of the feature runs without it
+    h.lua("ns.WishlistUI.Build().tabParty:Click()")
+    ok(h.lua("return ns.WishlistUI.Build().party.empty:IsShown()") and str(h.lua("return ns.WishlistUI.Build().party.empty:GetText()")).startswith("AtlasLoot Classic is not installed"), "party tab message")
+    h.lua("""
+        ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b', 'PARTY', 'Brakka')
+        ns.Wishlist.Wish(204, true); ns.Wishlist.Rank('total'); ns.Wishlist.Rank('people')
+        W.fireEvent('BAG_UPDATE_DELAYED'); W.fireEvent('PLAYER_EQUIPMENT_CHANGED')
+        ns.WishlistUI.Build():Hide(); SlashCmdList["SALUSNOVUS"]("wish"); ns.WishlistUI.Refresh()
+    """)
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist hardening: an uncached item is asked for once (not every redraw), no list is filed under an unknown name, an item with no ownership snapshot is never 'gained'", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("__asks = 0; C_Item.RequestLoadItemDataByID = function(id) if id == 999 then __asks = __asks + 1 end end")
+    h.lua("for i = 1, 5 do ns.Wishlist.Info(999) end")
+    eq(int(h.lua("return __asks")), 1, "one request per item, not one per redraw")
+    h.lua("W.advance(31); ns.Wishlist.Info(999)")
+    eq(int(h.lua("return __asks")), 2, "asked again after 30 s in case the answer was lost")
+    # no name yet: nothing is written under '?'
+    h.lua("__realUFN = UnitFullName; UnitFullName = function() return nil end; ns.Wishlist.Wish(204, true)")
+    ok(h.lua("return SalusNovusDB.wishlist == nil or SalusNovusDB.wishlist['?'] == nil"), "a list was filed under '?'")
+    h.lua("UnitFullName = __realUFN")
+    # an item with no snapshot that is already owned is not a gain
+    h.lua("__inst, __instType = true, 'party'; ns.Wishlist.Wish(203, true); __have[203] = 1; ns.Wishlist._ForgetBaseline(203); W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return ns.Wishlist.Get(203) ~= nil"), "an item with no snapshot was delisted")
+    eq(h.errors(), [], "errors")
+
+
+@test("the dungeon pick is remembered per character across sessions; a first-timer starts with nothing picked; vanished dungeons are dropped", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("SalusNovusDB.wishlistPool = nil; ns.WishlistUI.Open()")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.WishlistUI.pool) do n = n + 1 end return n")), 0, "a first-timer starts with nothing picked")
+    ok(h.lua("return not ns.WishlistUI.Build().dungeonRows[1].fill:IsShown()"), "nothing highlighted")
+    h.lua("ns.WishlistUI.Build().dungeonRows[3]:Click()")
+    key = str(h.lua("return ns.WishlistUI.Build().dungeonRows[3].key"))
+    ok(h.lua("return SalusNovusDB.wishlistPool['Grumble-Forever']['%s'] == true" % key), "the click was saved")
+    # another session: the pick comes back; a dungeon AtlasLoot no longer has is dropped
+    h.lua("SalusNovusDB.wishlistPool['Grumble-Forever'].GoneDungeon = true; ns.WishlistUI.Build():Hide(); ns.WishlistUI.pool = {}; ns.WishlistUI.Open()")
+    eq(sorted(str(k) for k in h.lua("local o = {} for k in pairs(ns.WishlistUI.pool) do o[#o + 1] = k end return o").values()), [key], "restored, without the vanished one")
+    # per character: another character has its own (empty) pick
+    h.lua("ns.WishlistUI.Build():Hide(); __realUFN = UnitFullName; UnitFullName = function() return 'Alt', 'Forever' end; ns.WishlistUI.Open()")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.WishlistUI.pool) do n = n + 1 end return n")), 0, "another character starts with its own pick")
+    h.lua("ns.WishlistUI.Build().dungeonRows[1]:Click()")
+    eq(sorted(str(k) for k in h.lua("local o = {} for k in pairs(SalusNovusDB.wishlistPool['Grumble-Forever']) do o[#o + 1] = k end return o").values()), sorted([key, "GoneDungeon"]), "the alt's click left Grumble's pick alone")
+    ok(h.lua("return SalusNovusDB.wishlistPool['Alt-Forever'] ~= nil"), "the alt's pick is its own")
+    h.lua("UnitFullName = __realUFN")
+    eq(h.errors(), [], "errors")
+
+
+@test("loot rolls: a strip under the roll frame lists who wished for the item (you first, specs, BIS), nothing for unwanted items, follows the frame away, falls back without one", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        RAID_CLASS_COLORS = { WARRIOR = { r = 199 / 255, g = 156 / 255, b = 110 / 255 } }
+        ns.Wishlist.Wish(204, true); ns.Wishlist.ToggleSpec(204, 'Enhancement'); ns.Wishlist.SetTag(204, 'bis')
+        ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka')
+        __rollItem = { [5] = 204, [6] = 999, [7] = 204 }
+        GetLootRollItemLink = function(id) local i = __rollItem[id] return i and ('|cff0070dd|Hitem:' .. i .. '::|h[x]|h|r') end
+        GroupLootFrame1 = CreateFrame('Frame', 'GroupLootFrame1', UIParent); GroupLootFrame1:SetSize(240, 50)
+        GroupLootFrame1:SetPoint('CENTER'); GroupLootFrame1.rollID = 5; GroupLootFrame1:Show()
+        GroupLootFrame2 = CreateFrame('Frame', 'GroupLootFrame2', UIParent); GroupLootFrame2:SetSize(240, 50)
+        GroupLootFrame2:SetPoint('CENTER', 0, -80); GroupLootFrame2.rollID = 6; GroupLootFrame2:Show()
+        W.fireEvent('START_LOOT_ROLL', 5, 60000); W.fireEvent('START_LOOT_ROLL', 6, 60000); W.advance(0.1)
+    """)
+    ok(h.lua("return ns.WishlistRoll.strips[5] ~= nil and ns.WishlistRoll.strips[5]:IsShown()"), "no strip for a wished item")
+    lines = [str(x) for x in h.lua("local o = {} for _, l in ipairs(ns.WishlistRoll.strips[5].lines) do if l:IsShown() then o[#o + 1] = l:GetText() end end return o").values()]
+    eq(len(lines), 2, "you and Brakka: %r" % lines)
+    ok(lines[0].startswith("You ") and "(Enhancement)" in lines[0] and "|cffff4040BIS|r" in lines[0], "you first, your spec, BIS in red: %r" % lines[0])
+    ok("Brakka|r" in lines[1] and "(Arms/Protection)" in lines[1] and "BIS" in lines[1], "Brakka in class colour with specs: %r" % lines[1])
+    eq(str(h.lua("local _, rel = ns.WishlistRoll.strips[5]:GetPoint(1) return rel and rel:GetName()")), "GroupLootFrame1", "hangs under its roll frame")
+    ok(h.lua("return ns.WishlistRoll.strips[6] == nil or not ns.WishlistRoll.strips[6]:IsShown()"), "nobody wants it: no strip")
+    # the frame goes (rolled / won): the strip follows within a tick
+    h.lua("GroupLootFrame1:Hide(); W.advance(0.3)")
+    ok(h.lua("return not ns.WishlistRoll.strips[5]:IsShown()"), "strip outlived its roll frame")
+    # a roll with no frame found still shows, until it ends
+    h.lua("W.fireEvent('START_LOOT_ROLL', 7, 60000); W.advance(0.1)")
+    ok(h.lua("return ns.WishlistRoll.strips[7] ~= nil and ns.WishlistRoll.strips[7]:IsShown()"), "a frameless roll got no strip")
+    h.lua("W.fireEvent('CANCEL_LOOT_ROLL', 7); W.advance(0.1)")
+    ok(h.lua("return not ns.WishlistRoll.strips[7]:IsShown()"), "the strip stayed after the roll ended")
+    # Quality of Life off: nothing
+    h.lua("GroupLootFrame1:Show(); ns.db.modules.qol = false; W.advance(0.3); ns.WishlistRoll.Sweep()")
+    ok(h.lua("return not ns.WishlistRoll.strips[5]:IsShown()"), "shown with Quality of Life off")
+    eq(h.errors(), [], "errors")
+
+
+@test("an AtlasLoot whose dungeon module is missing, out of date or silent never leaves the wishlist stuck on Loading", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    # an unknown module: AtlasLoot returns nil and never calls back
+    h.lua("ns.Wishlist.catalog = nil; __al = nil; AtlasLoot.Loader.LoadModule = function() return nil end; ns.WishlistUI.Open()")
+    h.lua("W.advance(1.5)")
+    eq(str(h.lua("return ns.WishlistUI.Build().mine.empty:GetText()")), "AtlasLoot's dungeon data did not load", "a silent loader times out to a message")
+    # a module in any other state names it
+    h.lua("ns.WishlistUI.Build():Hide(); AtlasLoot.Loader.LoadModule = function() return 'INTERFACE_VERSION' end; ns.WishlistUI.why = nil; ns.WishlistUI.Open()")
+    eq(str(h.lua("return ns.WishlistUI.Build().mine.empty:GetText()")), "AtlasLoot's Dungeons and Raids module is interface version", "an out-of-date module says so")
+    # a loader that throws
+    h.lua("ns.WishlistUI.Build():Hide(); AtlasLoot.Loader.LoadModule = function() error('boom') end; ns.WishlistUI.Open()")
+    eq(str(h.lua("return ns.WishlistUI.Build().mine.empty:GetText()")), "AtlasLoot's loader failed", "a broken loader")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- session bar
+
+SESSIONMOCK = """
+    __xp, __xpMax, __money, __level = 100, 1000, 10000, 20
+    UnitXP = function() return __xp end
+    UnitXPMax = function() return __xpMax end
+    GetMoney = function() return __money end
+    UnitLevel = function() return __level end
+    GetMaxPlayerLevel = function() return 60 end
+    GetXPExhaustion = function() return 4500 end
+    GetRealZoneText = function() return "Westfall" end
+    UnitFullName = function() return "Grumble", "Forever" end
+    __inst = false
+    IsInInstance = function() if __inst then return true, "party" end return false, "none" end
+    GetInstanceInfo = function() return __instName or "The Deadmines", "party", 1, "Normal", 5, 0, false, __instMap or 36 end
+    GetNumSavedInstances = function() return 1 end
+    GetSavedInstanceInfo = function() return "Molten Core", 1, 5000, 9, true, false, 0, true, 40, "40 Player" end
+    __ctrl = false
+    IsControlKeyDown = function() return __ctrl end
+    SalusNovusDB.session = nil; SalusNovusDB.instances = nil
+    W.fireEvent('PLAYER_ENTERING_WORLD')
+"""
+
+
+def session(h):
+    h.lua(SESSIONMOCK)
+
+
+@test("session XP: kills (with the rested bonus), quests and other are told apart, a level-up counts across the boundary, the rate is per logged-in hour", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("W.fireEvent('CHAT_MSG_COMBAT_XP_GAIN', 'Defias Pillager dies, you gain 60 experience. (+30 exp Rested bonus)'); __xp = 160; W.fireEvent('PLAYER_XP_UPDATE')")
+    h.lua("W.fireEvent('QUEST_TURNED_IN', 101, 200, 0); __xp = 360; W.fireEvent('PLAYER_XP_UPDATE')")
+    h.lua("W.advanceTimersOnly(5); __xp = 400; W.fireEvent('PLAYER_XP_UPDATE')")
+    h.lua("W.advanceTimersOnly(5); __xp, __xpMax = 50, 1200; W.fireEvent('PLAYER_XP_UPDATE')")
+    x = h.lua("return ns.Session.State().xp")
+    eq((int(x["kill"]), int(x["rested"]), int(x["quest"]), int(x["other"])), (60, 30, 200, 40 + 650), "kill / rested / quest / other")
+    eq(int(x["total"]), 950, "total, across the level-up (400 -> 1000, then 50)")
+    eq(int(h.lua("return ns.Session.State().zones.Westfall")), 950, "per zone")
+    h.lua("ns.Session.State().xp.secs = 1800")
+    eq(int(h.lua("return math.floor(ns.Session.XPRate())")), 1900, "950 in half an hour = 1900/h")
+    eq(int(h.lua("return math.floor(ns.Session.TimeToLevel())")), int((1200 - 50) / 1900 * 3600), "time to level at that rate")
+    ok(str(h.lua("return ns.Session.XPText()")).startswith("1.9k xp/h"), str(h.lua("return ns.Session.XPText()")))
+    h.lua("__level = 60")
+    eq(str(h.lua("return ns.Session.XPText()")), "Max level", "at the cap")
+    eq(h.errors(), [], "errors")
+
+
+@test("session gold: money is filed by what was open or what just happened (loot, quest, vendor, repair, flights, mail), net per hour", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("W.fireEvent('CHAT_MSG_MONEY', 'You loot 5 Silver'); __money = 10500; W.fireEvent('PLAYER_MONEY')")
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('QUEST_TURNED_IN', 101, 0, 300); __money = 10800; W.fireEvent('PLAYER_MONEY')")
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('MERCHANT_SHOW'); __money = 10500; W.fireEvent('PLAYER_MONEY')")
+    h.lua("ns.Session.OnRepair(); __money = 10300; W.fireEvent('PLAYER_MONEY'); W.fireEvent('MERCHANT_CLOSED')")
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('TAXIMAP_OPENED'); __money = 10250; W.fireEvent('PLAYER_MONEY'); W.fireEvent('TAXIMAP_CLOSED')")
+    h.lua("W.fireEvent('MAIL_SHOW'); __money = 20250; W.fireEvent('PLAYER_MONEY'); W.fireEvent('MAIL_CLOSED')")
+    h.lua("W.advanceTimersOnly(5); __money = 20000; W.fireEvent('PLAYER_MONEY')")
+    g = h.lua("return ns.Session.State().gold")
+    inc = {str(k): int(v) for k, v in g["inc"].items()}
+    out = {str(k): int(v) for k, v in g["out"].items()}
+    eq(inc, {"loot": 500, "quest": 300, "mail": 10000}, "earned by source")
+    eq(out, {"vendor": 300, "repair": 200, "travel": 50, "other": 250}, "spent by source")
+    h.lua("ns.Session.State().gold.secs = 3600")
+    eq(int(h.lua("return ns.Session.GoldRate()")), 10000, "net 1g per hour")
+    eq(str(h.lua("return ns.Session.GoldText()")), "1 gold/h", "text")
+    eq([str(h.lua("return ns.Session.Gold(%d)" % c)) for c in (2200, 15000, 6339, -2500, 4)], ["0.22", "1.5", "0.63", "-0.25", "0"], "gold with up to two decimals")
+    eq(str(h.lua("return ns.Session.Money(-12345)")), "-1g 23s", "money format")
+    eq(h.errors(), [], "errors")
+
+
+@test("session lockouts: a new dungeon counts once, re-entry does not, a reset makes the next entry new, entries fall off after an hour, the error teaches the limit", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "entering the Deadmines")
+    h.lua("__inst = false; W.fireEvent('PLAYER_ENTERING_WORLD'); __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "walking out and back in is the same instance")
+    h.lua("W.fireEvent('CHAT_MSG_SYSTEM', 'The Deadmines has been reset.'); W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "after a reset it is a new one")
+    h.lua("__instName, __instMap = 'Wailing Caverns', 43; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 3, "another dungeon")
+    eq(str(h.lua("return ns.Session.InstancesText()")).split("  ")[0], "Instances 3/5", "default limit 5")
+    eq(int(h.lua("return ns.Session.NextSlot()")), 3600, "the next slot frees an hour after the first entry")
+    h.lua("W.fireEvent('UI_ERROR_MESSAGE', 0, 'You have entered too many instances recently.')")
+    eq(int(h.lua("return (ns.Session.Limit())")), 3, "learned from the error")
+    h.lua("W.advanceTimersOnly(3601)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 0, "an hour later they are gone")
+    eq(str(h.lua("return ns.Session.RaidSaves()[1].name")), "Molten Core", "raid saves from the client")
+    h.lua("__ufn = UnitFullName; UnitFullName = function() return nil end; __inst = true; __instName, __instMap = 'Ragefire Chasm', 389; W.fireEvent('PLAYER_ENTERING_WORLD'); UnitFullName = __ufn")
+    eq(int(h.lua("return #ns.Session.Recent()")), 0, "no entry is filed before the character's name is known")
+    eq(h.errors(), [], "errors")
+
+
+@test("session bar: one databar with three segments; a click opens that segment's breakdown, a second closes it; ctrl-click resets XP or gold; the settings page builds", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("ns.SessionBar.Refresh()")
+    ok(h.lua("return SalusNovusSession and SalusNovusSession:IsShown()"), "bar shown")
+    shown = "local n = 0 for _, s in ipairs(SalusNovusSession.segs) do if s:IsShown() then n = n + 1 end end return n"
+    h.lua("GetNumSavedInstances = function() return 0 end; ns.SessionBar.Layout()")
+    eq(int(h.lua(shown)), 2, "no lockouts: XP and gold only")
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); ns.SessionBar.Layout()")
+    eq(int(h.lua(shown)), 3, "a dungeon entered: the lockout segment appears")
+    h.lua("__xp = 300; W.fireEvent('PLAYER_XP_UPDATE'); __money = 15000; W.fireEvent('PLAYER_MONEY')")
+    h.lua("SalusNovusSession.segs[1]:Click()")
+    ok(h.lua("return SalusNovusSessionDetail:IsShown() and SalusNovusSessionDetail.key == 'xp'"), "XP breakdown open")
+    rows = [str(x) for x in h.lua("local o = {} for _, r in ipairs(SalusNovusSessionDetail.rows) do if r.left:IsShown() then o[#o + 1] = r.left:GetText() end end return o").values()]
+    ok("Kills" in rows and "Quests" in rows and "Ctrl-click to reset" in rows, rows)
+    h.lua("SalusNovusSession.segs[1]:Click()")
+    ok(h.lua("return not SalusNovusSessionDetail:IsShown()"), "a second click closes it")
+    h.lua("__ctrl = true; SalusNovusSession.segs[1]:Click(); __ctrl = false")
+    eq(int(h.lua("return ns.Session.State().xp.total")), 0, "ctrl-click reset XP")
+    ok(int(h.lua("return (ns.Session.GoldTotals())")) > 0, "gold untouched by the XP reset")
+    h.lua("__ctrl = true; SalusNovusSession.segs[2]:Click(); __ctrl = false")
+    eq(int(h.lua("return (ns.Session.GoldTotals())")), 0, "ctrl-click reset gold")
+    h.lua("ns.db.session.gold = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusSession.segs[2]:IsShown()"), "a segment can be switched off")
+    h.lua("ns.db.modules.qol = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusSession:IsShown()"), "Quality of Life off hides it")
+    h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('session')")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- camping
+
+CAMPMOCK = """
+    __auras, __have, __cd = {}, {}, {}
+    C_UnitAuras = C_UnitAuras or {}
+    C_UnitAuras.GetPlayerAuraBySpellID = function(id) return __auras[id] end
+    C_Item = C_Item or {}
+    C_Item.GetItemCount = function(id) return __have[id] or 0 end
+    C_Item.GetItemIconByID = function(id) return 1000 + id end
+    C_Container = C_Container or {}
+    C_Container.GetItemCooldown = function(id) local c = __cd[id] if c then return c[1], c[2], 1 end return 0, 0, 1 end
+    __aura = function(id, left, dur) __auras[id] = { spellId = id, expirationTime = GetTime() + left, duration = dur or 3600 } end
+"""
+
+
+def camp(h):
+    h.lua(CAMPMOCK)
+
+
+@test("camping data: the 37 Wowhead items plus the 4 the client adds (3 campfire kits); buffs read lit or missing from auras; carried items sorted campfires first; shared and kit cooldowns", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.Camping.ITEMS) do n = n + 1 end return n")), 41, "the guide's 37 and the four it missed")
+    ok(h.lua("return ns.Camping.ITEMS[279973] and ns.Camping.ITEMS[279982] and ns.Camping.ITEMS[278030] and ns.Camping.ITEMS[272942]"), "Alliance banner, Iron Oven, Scarlet Banner, Scrap Item")
+    eq(int(h.lua("local n = 0 for _, it in pairs(ns.Camping.ITEMS) do if it.kit then n = n + 1 end end return n")), 3, "campfire kits")
+    eq(int(h.lua("return #ns.Camping.Buffs()")), 10, "ten buff lines (engineering and cooking give none)")
+    h.lua("__aura(1230587, 1500); __aura(1229741, 2520)")
+    lit = [str(b["line"]) for b in h.lua("local o = {} for _, b in ipairs(ns.Camping.Buffs()) do if b.left then o[#o + 1] = b end end return o").values()]
+    eq(lit, ["alchemy"], "only the mana regeneration buff is up")
+    eq(int(h.lua("return math.floor(ns.Camping.BenefitsLeft())")), 2520, "camp benefits left")
+    ok(h.lua("return not ns.Camping.Nearby()"), "no campfire")
+    h.lua("__aura(1283391, 0, 0)")
+    ok(h.lua("return ns.Camping.Nearby()"), "campfire nearby aura")
+    h.lua("__have[279956] = 2; __have[279981] = 5; __have[279979] = 1")
+    order = [int(u["id"]) for u in h.lua("return ns.Camping.Usables()").values()]
+    eq(order, [279981, 279956, 279979], "campfire kit first, then by line (alchemy before skinning)")
+    eq(int(h.lua("return ns.Camping.Shared(false)")), 0, "features ready")
+    h.lua("__cd[279956] = { GetTime() - 600, 3600 }; __cd[279979] = { GetTime() - 600, 3600 }; __cd[279981] = { GetTime() - 60, 300 }")
+    eq(int(h.lua("return math.floor(ns.Camping.Shared(false))")), 3000, "the shared feature cooldown")
+    eq(int(h.lua("return math.floor(ns.Camping.Shared(true))")), 240, "the campfire kit cooldown, separate")
+    eq(h.errors(), [], "errors")
+
+
+@test("camp panel: always shown, centered bigger title; edge-to-edge icons with tooltips; Sit for buffs / Buffed for; no sit bar once buffed; waits out combat; background alpha; /sn camp pins", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    # the kit just used: on its 5 minute cooldown
+    h.lua("__have[279956] = 2; __have[279981] = 5; __cd[279981] = { GetTime(), 300 }; __cd[279956] = { GetTime(), 3600 }; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "kit on cooldown, no campfire: shown anyway")
+    eq(str(h.lua("return SalusNovusCamping.status:GetText()")), "", "no campfire: no status text")
+    y0 = float(h.lua("local _, _, _, _, y = SalusNovusCamping.buffs[1]:GetPoint(1) return y"))
+    eq(str(h.lua("return (SalusNovusCamping.title:GetPoint(1))")), "TOP", "title centered")
+    eq(int(h.lua("local _, s = SalusNovusCamping.title:GetFont() return s")), 16, "title bigger")
+    ok(h.lua("return (SalusNovusCamping.title:GetFont()) == ns.ActiveFont()"), "title in the global font")
+    h.lua("__aura(1283391, 0, 0); W.fireEvent('UNIT_AURA', 'player')")
+    eq(str(h.lua("return SalusNovusCamping.status:GetText()")), "Sit for buffs", "status")
+    y1 = float(h.lua("local _, _, _, _, y = SalusNovusCamping.buffs[1]:GetPoint(1) return y"))
+    eq(y0 - y1, 22.0, "the status row opens only when it has something to say")
+    ok(h.lua("return SalusNovusCamping.foot == nil"), "no footer text")
+    ids = [int(x) for x in h.lua("local o = {} for _, b in ipairs(SalusNovusCamping.btns) do if b:IsShown() then o[#o + 1] = b.itemID end end return o").values()]
+    eq(ids, [279981, 279956], "a button per carried camping item")
+    # edge to edge: icon 2 starts 2 px after icon 1 ends
+    x1 = float(h.lua("local _, _, _, x = SalusNovusCamping.buffs[1]:GetPoint(1) return x"))
+    x2 = float(h.lua("local _, _, _, x = SalusNovusCamping.buffs[2]:GetPoint(1) return x"))
+    eq(x2 - x1, float(h.lua("return SalusNovusCamping.buffs[1]:GetWidth()")) + 2, "icons sit edge to edge")
+    eq(int(h.lua("local n = 0 for _, b in ipairs(SalusNovusCamping.buffs) do if b:IsShown() then n = n + 1 end end return n")), 10, "ten buff icons, two rows of five")
+    h.lua("__aura(1229739, 20, 60); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
+    ok(h.lua("return SalusNovusCamping.sit:IsShown()"), "the sit bar while sitting")
+    eq(str(h.lua("return SalusNovusCamping.sit.text:GetText()")), "20s", "seconds to buffs")
+    ok(h.lua("local r, g, b = SalusNovusCamping.sit.border.all[1]:GetVertexColor() return SalusNovusCamping.sit.border.all[1]:IsShown() and r == 0 and g == 0 and b == 0"), "a black border round the sit bar")
+    h.lua("__aura(1229741, 3600); __aura(1230587, 3600); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
+    ok(h.lua("return not SalusNovusCamping.sit:IsShown()"), "already buffed and still seated: the bar does not fill again")
+    ok(h.lua("return SalusNovusCamping.dur:IsShown()"), "the green duration bar while buffed")
+    eq(str(h.lua("return SalusNovusCamping.dur.text:GetText()")), "Buffed for 59m", "its time inside it")
+    ok(abs(float(h.lua("return SalusNovusCamping.dur:GetValue()")) - 3599.4 / 3600) < 0.01, "full bar at the start")
+    eq(str(h.lua("return SalusNovusCamping.status:GetText()")), "", "no status text while buffed")
+    times = [str(x) for x in h.lua("local o = {} for _, b in ipairs(SalusNovusCamping.buffs) do o[#o + 1] = b.time:GetText() end return o").values()]
+    eq(times[0], "59m", "mana regeneration lit with its time")
+    ok(all(t == "" for t in times[1:]), "the rest missing: %r" % times)
+    # tooltips
+    h.lua("__tipSpell = nil; GameTooltip.SetSpellByID = function(self, id) __tipSpell = id end; local b = SalusNovusCamping.buffs[1]; b:GetScript('OnEnter')(b)")
+    eq(int(h.lua("return __tipSpell")), 1230587, "a buff icon's tooltip is its spell")
+    h.lua("__tipItem = nil; GameTooltip.SetItemByID = function(self, id) __tipItem = id end; local b = SalusNovusCamping.btns[1]; b:GetScript('OnEnter')(b)")
+    eq(int(h.lua("return __tipItem")), 279981, "an item button's tooltip is its item")
+    # background alpha
+    h.lua("ns.db.camping.alpha = 40; ns.ApplyAll()")
+    eq(round(float(h.lua("return SalusNovusCamping.bg:GetAlpha()")), 2), 0.4, "background alpha")
+    # combat: no layout, no show/hide (secure buttons) until it ends
+    h.lua("W.inCombat = true; __auras[1283391] = nil; __auras[1229741] = nil; W.fireEvent('UNIT_AURA', 'player')")
+    ok(h.lua("return SalusNovusCamping:IsShown() and ns.CampingUI.pending"), "nothing changes in combat")
+    h.lua("ns.CampingUI.pending = false; ns.db.camping.enabled = false; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusCamping:IsShown() and ns.CampingUI.pending"), "turned off in combat: it waits to hide")
+    h.lua("ns.db.camping.enabled = true")
+    h.lua("ns.CampingUI.pending = false; ns.CampingUI.Layout()")
+    ok(h.lua("return ns.CampingUI.pending"), "and so does a direct layout")
+    h.lua("W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED')")
+    ok(h.lua("return SalusNovusCamping:IsShown() and not ns.CampingUI.pending"), "laid out after combat, still shown")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "/sn camp closes it")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "and opens it")
+    h.lua("__aura(1283391, 0, 0); ns.db.modules.qol = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "Quality of Life off")
+    h.lua("ns.db.modules.qol = true; ns.db.camping.enabled = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "the panel setting off")
+    eq(h.errors(), [], "errors")
+
+
+@test("camping never shows inside an instance: not pinned, not near a campfire", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua(SESSIONMOCK)
+    h.lua("__have[279981] = 5; __aura(1283391, 0, 0); __aura(1229741, 2520); ns.ApplyAll()")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "outside: shown")
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "in a dungeon: hidden even with a campfire aura")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "and /sn camp can't pin it open there")
+    h.lua("__inst = false; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "back outside: shown again")
+    eq(h.errors(), [], "errors")
+
+
+@test("campfire in range: the whole camp panel's border glows (marching pixel lines that stay on the edge and turn the corners); none without one", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("__have[279956] = 2; __have[279981] = 5; ns.ApplyAll(); W.advance(0.6)")
+    ok(h.lua("return SalusNovusCamping:IsShown() and not SalusNovusCamping.glow:IsShown()"), "no campfire: no glow")
+    ok(h.lua("return SalusNovusCamping.nearby == nil"), "no separate campfire icon")
+    h.lua("__aura(1283391, 0, 0); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
+    ok(h.lua("return SalusNovusCamping.glow:IsShown()"), "campfire: the border glows")
+    bad = h.lua("""
+        local f, g = SalusNovusCamping, SalusNovusCamping.glow
+        local fw, fh = f:GetWidth(), f:GetHeight()
+        local bad = 0
+        local want = 8 * math.floor((fw + fh) * (2 / 8 - 0.1))
+        for k = 0, 99 do
+            g.phase = k / 100; g.Draw()
+            local n, area = 0, 0
+            for _, t in ipairs(g.tex) do if t:IsShown() then
+                n = n + 1
+                area = area + t:GetWidth() * t:GetHeight()
+                local _, _, _, x, y = t:GetPoint(1)
+                if x < -0.01 or -y < -0.01 or x + t:GetWidth() > fw + 0.01 or -y + t:GetHeight() > fh + 0.01 then bad = bad + 1 end
+            end end
+            if n < 8 or math.abs(area / 2 - want) > 0.01 then bad = bad + 1 end
+        end
+        return bad""")
+    eq(int(bad), 0, "every line on the panel's edge, all eight drawn at full length (none clipped at a corner), at every phase")
+    h.lua("__p1 = SalusNovusCamping.glow.phase; W.advance(0.5)")
+    ok(h.lua("return SalusNovusCamping.glow.phase ~= __p1"), "the lines march")
+    h.lua("__auras[1283391] = nil; W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
+    ok(h.lua("return not SalusNovusCamping.glow:IsShown()"), "walked away: the glow goes")
+    eq(h.errors(), [], "errors")
+
+
+@test("camp boosts hidden from the aura API light from the Camp Benefits tooltip (Alex's Lodestone: on him, invisible to GetPlayerAuraBySpellID)", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("""
+        __auras[1229741] = { spellId = 1229741, auraInstanceID = 77, expirationTime = GetTime() + 3300, duration = 3600 }
+        C_TooltipInfo = C_TooltipInfo or {}
+        C_TooltipInfo.GetUnitBuffByAuraInstanceID = function(unit, id)
+            if unit ~= 'player' or id ~= 77 then return nil end
+            return { lines = { { leftText = 'Camp Benefits' },
+                               { leftText = 'Gained the following camp benefits:\\n\\nLodestone: Melee Attack Power increased by 32.\\n\\nEnchanted Lute: Armor increased by 114.' },
+                               { leftText = '55 minutes remaining' } } }
+        end
+    """)
+    lit = {str(b["line"]): int(b["left"]) for b in h.lua("local o = {} for _, b in ipairs(ns.Camping.Buffs()) do if b.left then o[#o + 1] = b end end return o").values()}
+    eq(lit, {"mining": 3300, "enchanting": 3300}, "Lodestone and the Lute lit from the one multi-line tooltip line, with Camp Benefits' time")
+    # no auraInstanceID in the aura data: found by its place in the buff list
+    h.lua("""
+        __auras[1229741].auraInstanceID = nil
+        C_UnitAuras.GetBuffDataByIndex = function(unit, i) if i == 1 then return { spellId = 999 } elseif i == 2 then return { spellId = 1229741 } end end
+        C_TooltipInfo.GetUnitBuff = function(unit, i) if i == 2 then return C_TooltipInfo.GetUnitBuffByAuraInstanceID('player', 77) end end
+    """)
+    lit2 = sorted(str(b["line"]) for b in h.lua("local o = {} for _, b in ipairs(ns.Camping.Buffs()) do if b.left then o[#o + 1] = b end end return o").values())
+    eq(lit2, ["enchanting", "mining"], "found by buff index when there is no instance ID")
+    h.lua("SlashCmdList['SALUSNOVUS']('campdebug')")
+    ok(any("Lodestone" in str(x) for x in h.lua("return W.printed").values()), "the debug dump names it")
+    eq(h.errors(), [], "errors")
+
+
+@test("after a /reload GetPlayerAuraBySpellID can miss Camp Benefits (Alex: buffed, panel saw nothing): the buff list finds it -- by spell ID, else by name -- and the bar and boosts light", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("""
+        __list = { { spellId = 999, name = 'Other' },
+                   { spellId = 1229741, name = 'Camp Benefits', expirationTime = GetTime() + 2760, duration = 3600 } }
+        C_UnitAuras.GetBuffDataByIndex = function(unit, i) if unit == 'player' then return __list[i] end end
+        C_TooltipInfo = C_TooltipInfo or {}
+        C_TooltipInfo.GetUnitBuff = function(unit, i)
+            if i ~= 2 then return nil end
+            return { lines = { { leftText = 'Camp Benefits' },
+                               { leftText = 'Gained the following camp benefits:\\n\\nTent: rest.\\n\\nFish Bowl: All stats increased by 8%.\\n\\nLodestone: Melee Attack Power increased by 32.' } } }
+        end
+        ns.ApplyAll(); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)
+    """)
+    eq(int(h.lua("return math.floor(ns.Camping.BenefitsLeft())")), 2759, "Camp Benefits from the buff list")
+    ok(h.lua("return SalusNovusCamping.dur:IsShown()"), "the green bar")
+    lit = sorted(str(b["line"]) for b in h.lua("local o = {} for _, b in ipairs(ns.Camping.Buffs()) do if b.left then o[#o + 1] = b end end return o").values())
+    eq(lit, ["fishing", "leatherworking", "mining"], "Tent, Fish Bowl and Lodestone lit through the list's tooltip")
+    # no spell ID on the list entry (or a secret one): matched by name
+    h.lua("__list[2].spellId = nil; W.fireEvent('UNIT_AURA', 'player')")
+    ok(h.lua("return ns.Camping.BenefitsLeft() ~= nil"), "found by name")
+    eq(int(h.lua("local n = 0 for _, b in ipairs(ns.Camping.Buffs()) do if b.left then n = n + 1 end end return n")), 3, "and its tooltip, read by that index, still lights the boosts")
+    h.lua("__list[2] = nil; W.fireEvent('UNIT_AURA', 'player')")
+    ok(h.lua("return ns.Camping.BenefitsLeft() == nil"), "gone from the list: gone")
+    h.lua("__list[2] = { spellId = 1229741, name = 'Camp Benefits', expirationTime = GetTime() + 600, duration = 3600 }")
+    ok(h.lua("return ns.Camping.BenefitsLeft() == nil"), "a change with no event waits for the cache...")
+    h.lua("W.advance(1.1)")
+    ok(h.lua("return ns.Camping.BenefitsLeft() ~= nil"), "...a second at most")
+    h.lua("W.printed = {}; SlashCmdList['SALUSNOVUS']('campdebug')")
+    ok(any("found list #2" in str(x) for x in h.lua("return W.printed").values()), "the debug dump says where it was found")
+    eq(h.errors(), [], "errors")
+
+
+@test("in combat aura data is hidden (Alex: mid-fight the buff list read 0 buffs, panel went dark): the last out-of-combat reading plays back -- bar, boosts, campfire -- and still runs out on time", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("""
+        __auras[1229741] = { spellId = 1229741, auraInstanceID = 77, expirationTime = GetTime() + 600, duration = 3600 }
+        __auras[1283391] = { spellId = 1283391, expirationTime = 0, duration = 0 }   -- no timer, like the real one
+        C_TooltipInfo = C_TooltipInfo or {}
+        C_TooltipInfo.GetUnitBuffByAuraInstanceID = function(unit, id)
+            if id ~= 77 then return nil end
+            return { lines = { { leftText = 'Gained the following camp benefits:\\n\\nLodestone: Melee Attack Power increased by 32.' } } }
+        end
+        ns.ApplyAll(); W.advance(0.6)
+    """)
+    LIT = "local o = {} for _, b in ipairs(ns.Camping.Buffs()) do if b.left then o[#o + 1] = b.line end end return o"
+    eq(list(h.lua(LIT).values()), ["mining"], "out of combat: Lodestone lit")
+    # combat: everything reads as absent
+    h.lua("""
+        __saved = { C_UnitAuras.GetPlayerAuraBySpellID, C_TooltipInfo.GetUnitBuffByAuraInstanceID }
+        C_UnitAuras.GetPlayerAuraBySpellID = function() return nil end
+        C_TooltipInfo.GetUnitBuffByAuraInstanceID = function() return nil end
+        W.inCombat = true; W.fireEvent('PLAYER_REGEN_DISABLED'); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)
+    """)
+    ok(h.lua("return ns.Camping.BenefitsLeft() ~= nil and ns.Camping.BenefitsLeft() > 590"), "Camp Benefits from the last reading")
+    eq(list(h.lua(LIT).values()), ["mining"], "Lodestone still lit")
+    ok(h.lua("return ns.Camping.Nearby()"), "the campfire still remembered")
+    ok(h.lua("return SalusNovusCamping.dur:IsShown() and SalusNovusCamping.glow:IsShown()"), "bar and glow stay up")
+    h.lua("W.advance(601)")
+    ok(h.lua("return ns.Camping.BenefitsLeft() == nil"), "it still runs out on time in combat")
+    eq(list(h.lua(LIT).values()), [], "and the boosts with it")
+    h.lua("W.printed = {}; SlashCmdList['SALUSNOVUS']('campdebug')")
+    ok(any("IN COMBAT" in str(x) for x in h.lua("return W.printed").values()), "the debug dump says it's combat")
+    # out of combat: live readings again
+    h.lua("""
+        C_UnitAuras.GetPlayerAuraBySpellID, C_TooltipInfo.GetUnitBuffByAuraInstanceID = __saved[1], __saved[2]
+        __auras[1229741] = nil; __auras[1283391] = nil
+        W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED'); W.advance(0.6)
+    """)
+    ok(h.lua("return ns.Camping.BenefitsLeft() == nil and not ns.Camping.Nearby()"), "after combat: live again")
+    h.lua("W.inCombat = true; W.fireEvent('PLAYER_REGEN_DISABLED'); W.advance(0.6)")
+    ok(h.lua("return not ns.Camping.Nearby()"), "walked away from the fire before the next pull: not played back")
+    h.lua("W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED')")
+    eq(h.errors(), [], "errors")
+
+
+@test("Unlock Frames is in the header on every page; unlock mode draws the Ellesmere-style overlay (dark box, light edge, the anchor's name) instead of the old tint and label", "options")
+def _():
+    h = fresh()
+    h.lua(SESSIONMOCK)
+    open_options(h)
+    h.lua("ns.Options.SelectPage('quests')")
+    ok(h.lua("return ns.Options.unlockButton:IsShown() and ns.Options.unlockButton:GetParent() == ns.Options.shell.header"), "Unlock Frames on the Quests page, in the header")
+    h.lua("ns.Options.unlockButton:Click()")
+    ok(h.lua("return ns.db.unlocked"), "unlock mode from a non-Anchors page")
+    for frame, name in (("SalusNovusSession", "Session"), ("SalusNovusBars", "Timer Bars"), ("SalusNovusArrow", "Arrow")):
+        ok(h.lua("return %s.unlockOverlay ~= nil and %s.unlockOverlay:IsShown()" % (frame, frame)), "%s overlay shown" % name)
+        eq(str(h.lua("return %s.unlockOverlay.label:GetText()" % frame)), name, "%s overlay names it" % name)
+    eq(float(h.lua("return SalusNovusSession.unlockLabel:GetAlpha()")), 0.0, "the old label stays invisible")
+    eq(float(h.lua("return SalusNovusBars.unlockBg:GetAlpha()")), 0.0, "the old tint stays invisible")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusSession.unlockOverlay:IsShown()"), "overlay gone when locked")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- dungeon quests
+
+DQMOCK = """
+    __ql = {
+        { questID = 0, title = 'The Deadmines', isHeader = true },
+        { questID = 101, title = 'Red Silk Bandanas', level = 17 },
+        { questID = 102, title = 'Collecting Memories', level = 18 },
+        { questID = 0, title = 'Westfall', isHeader = true },
+        { questID = 201, title = 'The Defias Brotherhood', level = 14 },
+    }
+    __on = { party1 = { [101] = true }, party2 = {} }
+    C_QuestLog = C_QuestLog or {}
+    C_QuestLog.GetNumQuestLogEntries = function() return #__ql end
+    C_QuestLog.GetInfo = function(i) return __ql[i] end
+    C_QuestLog.IsQuestTask = function() return false end
+    C_QuestLog.IsUnitOnQuest = function(unit, id) return (__on[unit] or {})[id] == true end
+    C_QuestLog.IsPushableQuest = function() return true end
+    C_QuestLog.SetSelectedQuest = function(id) __selected = id end
+    QuestLogPushQuest = function() __pushed = __selected end
+    __dqInst = false
+    IsInInstance = function() if __dqInst then return true, 'party' end return false, 'none' end
+    GetInstanceInfo = function() return __dqName or 'The Deadmines', 'party', 1, 'Normal', 5, 0, false, 36 end
+    IsInGroup = function() return true end
+    GetNumGroupMembers = function() return 3 end
+    UnitExists = function(u) return u == 'party1' or u == 'party2' end
+    UnitName = function(u)
+        if u == 'player' then return 'Grumble' end
+        if u == 'party1' then return 'Brakka' end
+        if u == 'party2' then return 'Lyss' end
+    end
+    UnitClass = function(u) return 'Warrior', u == 'party2' and 'PRIEST' or 'WARRIOR' end
+    Ambiguate = function(n) return (n:gsub('%-.*$', '')) end
+    __sent = {}
+    C_ChatInfo = C_ChatInfo or {}
+    C_ChatInfo.RegisterAddonMessagePrefix = function() return 0 end
+    C_ChatInfo.SendAddonMessage = function(p, msg, ch) __sent[#__sent + 1] = { p, msg, ch } end
+"""
+
+DQROWS = "local o = {} for _, r in ipairs(SalusNovusDungeonQuests.rows) do if r:IsShown() then o[#o + 1] = { r.title:GetText(), r.sub:GetText(), r.share:IsShown() and r.share.questID or 0 } end end return o"
+
+
+def dq_rows(h):
+    return [(str(r[1]), str(r[2]), int(r[3])) for r in h.lua(DQROWS).values()]
+
+
+@test("dungeon quest check: in a dungeon, each of your quests a party member lacks is listed with who and a Share button; nothing outside or with nothing to act on", "dungeonquests")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    h.lua("W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    ok(h.lua("return SalusNovusDungeonQuests == nil or not SalusNovusDungeonQuests:IsShown()"), "no card outside a dungeon")
+    h.lua("__dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    ok(h.lua("return SalusNovusDungeonQuests:IsShown()"), "card in the Deadmines")
+    rows = dq_rows(h)
+    eq([r[0] for r in rows], ["Red Silk Bandanas", "Collecting Memories"], "only this dungeon's quests (not Westfall's)")
+    ok("Lyss" in rows[0][1] and "Brakka" not in rows[0][1], "Brakka has the first already: %r" % rows[0][1])
+    ok("Brakka" in rows[1][1] and "Lyss" in rows[1][1], "both lack the second: %r" % rows[1][1])
+    eq(rows[0][2], 101, "Share button on the row")
+    h.lua("SalusNovusDungeonQuests.rows[1].share:Click()")
+    eq(int(h.lua("return __pushed")), 101, "Share selects that quest and pushes it")
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    ok(any(m.startswith("DQ|deadmines|101:Red Silk Bandanas;102:Collecting Memories") for m in sent), "our dungeon quests went to the group: %r" % sent)
+    h.lua("__on.party1[102] = true; __on.party2[101] = true; __on.party2[102] = true; W.fireEvent('UNIT_QUEST_LOG_CHANGED', 'party1'); W.advance(1)")
+    ok(h.lua("return not SalusNovusDungeonQuests:IsShown()"), "everyone has everything: the card goes")
+    eq(h.errors(), [], "errors")
+
+
+@test("dungeon quest check: a party member's quests for this dungeon that you lack are listed (from their Salus Novus); other dungeons, strangers and whispers are ignored; X closes it until the next dungeon; the setting turns it off", "dungeonquests")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    h.lua("__on.party1[102] = true; __on.party2 = { [101] = true, [102] = true }; __dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    ok(h.lua("return SalusNovusDungeonQuests == nil or not SalusNovusDungeonQuests:IsShown()"), "nothing to act on")
+    h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|deadmines|103:Oh Brother...;101:Red Silk Bandanas', 'PARTY', 'Brakka-Forever'); W.advance(1)")
+    rows = dq_rows(h)
+    eq(len(rows), 1, "only the quest we lack: %r" % rows)
+    eq(rows[0][0], "Oh Brother...", "their quest")
+    ok("Brakka" in rows[0][1] and rows[0][2] == 0, "who can share it, and no Share button for us: %r" % (rows[0],))
+    h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|wailingcaverns|301:Deviate Hides', 'PARTY', 'Lyss'); W.advance(1)")
+    eq(len(dq_rows(h)), 1, "another dungeon's quests are not ours")
+    h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|deadmines|104:Stranger Quest', 'PARTY', 'Nobody'); ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|deadmines|105:Whisper Quest', 'WHISPER', 'Lyss'); W.advance(1)")
+    eq(len(dq_rows(h)), 1, "strangers and whispers ignored")
+    ok(h.lua("return ns.DungeonQuests.party.Nobody == nil"), "a stranger's list is not even kept")
+    ok(h.lua("return (SalusNovusDungeonQuests.title:GetFont()) == ns.ActiveFont()"), "title in the global font")
+    ok(h.lua("local c = SalusNovusDungeonQuests.close local p = c:GetPoint(1) return c:GetWidth() >= 24 and #c.bars == 2 and p == 'TOPRIGHT'"), "a big drawn X in the top-right corner")
+    h.lua("SalusNovusDungeonQuests.close:Click(); W.advance(1)")
+    ok(h.lua("return not SalusNovusDungeonQuests:IsShown()"), "X closes it")
+    h.lua("W.fireEvent('UNIT_QUEST_LOG_CHANGED', 'party1'); W.advance(1)")
+    ok(h.lua("return not SalusNovusDungeonQuests:IsShown()"), "and it stays closed in this dungeon")
+    h.lua("__dqInst = false; W.fireEvent('PLAYER_ENTERING_WORLD'); __dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    ok(h.lua("return SalusNovusDungeonQuests:IsShown()"), "back for the next dungeon run")
+    h.lua("ns.db.quests.dungeonCheck = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusDungeonQuests:IsShown()"), "the setting turns it off")
+    eq(h.errors(), [], "errors")
