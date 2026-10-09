@@ -353,7 +353,7 @@ ns.Timers.Register({
         if state.preview then return end
         if not Enabled() then return end
         Build()
-        Refresh()
+        Refresh((ns.db and ns.db.unlocked and not ns.Timers.Any()) and true or false)   -- unlocked with nothing live: keep the placeholders
     end,
     OnTick = Tick,
 })
@@ -361,7 +361,7 @@ ns.Timers.Register({
 function ns.QueuePreviewStart(stage)
     Build()
     state.preview = stage
-    state.previewBars = ns.Timers.FakeBars(6, 7, true)
+    state.previewBars = ns.Timers.FakeBars(MAX_ICONS, 7, true)   -- Max icons 7 and 8 show too (the sweep)
     frame:SetParent(stage)
     frame:SetFrameStrata(stage:GetFrameStrata())
     frame:SetFrameLevel(stage:GetFrameLevel() + 5)

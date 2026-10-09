@@ -199,10 +199,22 @@ function T.MakeButton(parent)
     text:SetJustifyH("CENTER")
     btn.text = text
     btn.raw = ""
-    btn.SetText = function(_, t) btn.raw = tostring(t or ""); text:SetText(T.Upper(t)) end
+    -- The width a caller sets is a minimum: the label always fits. (Sized
+    -- for condensed Impact, labels ran past the edges in the global font.)
+    local setSize, setWidth = btn.SetSize, btn.SetWidth
+    function btn:Fit()
+        local tw = tonumber(text:GetStringWidth()) or 0
+        local want = math.ceil(tw + 20)
+        local minW = self.__minW or 0
+        setWidth(self, math.max(minW, want))
+    end
+    function btn:SetSize(w, h) self.__minW = w setSize(self, w, h) self:Fit() end
+    function btn:SetWidth(w) self.__minW = w setWidth(self, w) self:Fit() end
+    btn.SetText = function(_, t) btn.raw = tostring(t or ""); text:SetText(T.Upper(t)); btn:Fit() end
     btn.GetText = function() return btn.raw end
     btn.enabledState, btn.primary = true, false
     local function Rest(self)
+        if self.__minW then self:Fit() end        -- the font may have changed since
         if self.primary then
             local r, g, b = T.Accent()
             local a = self.enabledState and 1 or 0.4
@@ -388,6 +400,8 @@ function T.MakeEditBox(parent, width)
     eb.border:Show()
     eb:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
     eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    -- A click in selects what's there, so typing replaces it (Alex)
+    eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
     return eb
 end
 
@@ -420,7 +434,12 @@ function T.MakeScrollArea(parent)
     local syncing = false
     sf:SetScript("OnScrollRangeChanged", function(self, _, yrange)
         yrange = math.max(0, math.floor(yrange or 0))
+        -- The bar first takes the real offset (a caller may have set it):
+        -- clamping a stale value to the new range would scroll the view.
+        syncing = true
+        slider:SetValue(math.min(tonumber(self:GetVerticalScroll()) or 0, yrange))
         slider:SetMinMaxValues(0, yrange)
+        syncing = false
         slider:SetShown(yrange > 1)
         if self:GetVerticalScroll() > yrange then self:SetVerticalScroll(yrange) end
     end)
@@ -434,6 +453,12 @@ function T.MakeScrollArea(parent)
     end)
     sf:EnableMouseWheel(true)
     slider:SetScript("OnValueChanged", function(_, v) if not syncing then sf:SetVerticalScroll(v) end end)
+    -- A scroll set from outside (a list opening at the top) moves the bar.
+    sf:SetScript("OnVerticalScroll", function(_, off)
+        syncing = true
+        slider:SetValue(off or 0)
+        syncing = false
+    end)
     sf.child, sf.slider = child, slider
     return sf
 end
@@ -458,8 +483,17 @@ function T.DecorateNavRow(btn)
     btn.hover = T.SolidTex(btn, "HIGHLIGHT", 1, 1, 1, 0.06)
     btn.hover:SetPoint("TOPLEFT", 12, -3)
     btn.hover:SetPoint("BOTTOMRIGHT", -12, 3)
+    -- The label's near-black/white is picked against the accent, so a new
+    -- accent re-picks it (white on a new bright yellow was unreadable).
+    function btn:Repaint()
+        if self.fill:IsShown() and self.label then
+            local r, g, b = T.OnAccent()
+            self.label:SetTextColor(r, g, b, 1)
+        end
+    end
     return {
         { tex = btn.fill, a = 1 },
+        { repaint = btn },
     }
 end
 
@@ -530,7 +564,16 @@ function T.SnapBox(b)
     if math.abs(dx) < 0.001 and math.abs(dy) < 0.001 then return end
     local point, rel, relPoint, x, y = b:GetPoint(1)
     if not point then return end
-    b:SetPoint(point, rel, relPoint, (x or 0) + dx, (y or 0) + dy)
+    x, y = x or 0, y or 0
+    -- from the offset the box was PLACED at: snapping the snapped offset again
+    -- walked the boxes off over a session (the sweep)
+    if b._snapX ~= x or b._snapY ~= y then b._baseX, b._baseY = x, y end
+    local bx, by = b._baseX, b._baseY
+    local lb, bb = l - (x - bx), bt - (y - by)
+    dx = math.floor(lb / u + 0.5) * u - lb
+    dy = math.floor(bb / u + 0.5) * u - bb
+    b._snapX, b._snapY = bx + dx, by + dy
+    b:SetPoint(point, rel, relPoint, b._snapX, b._snapY)
 end
 function T.SnapCheckBoxes()
     for _, b in ipairs(T.checkBoxes) do T.SnapBox(b) end
@@ -604,6 +647,9 @@ function T.MakeLabelledCheckBox(parent, label, size)
     b.label = T.MakeText(b, 13, T.TEXT)
     b.label:SetPoint("LEFT", b, "RIGHT", 8, 0)
     b.label:SetText(label or "")
+    -- the words toggle it too (a click on them fell through: the sweep)
+    local w = tonumber(b.label:GetStringWidth()) or 0
+    if b.SetHitRectInsets then b:SetHitRectInsets(0, -(w + 8), 0, 0) end
     return b
 end
 
@@ -779,6 +825,14 @@ local function BuildPicker()
     picker:Hide()
     if UISpecialFrames then table.insert(UISpecialFrames, "SalusNovusColorPicker") end
     return picker
+end
+
+--- Put the picker away without calling anyone (its owner closed): a live
+-- picker wrote into the next form opened (the sweep).
+function T.DropColorPicker()
+    if not picker then return end
+    picker.onChange, picker.onCancel = nil, nil
+    picker:Hide()
 end
 
 function T.OpenColorPicker(c, onChange, onCancel)
@@ -1158,6 +1212,16 @@ function T.Confirm(text, yesLabel, onYes, typed)
         -- that keeps the keyboard eats movement). SetPropagateKeyboardInput
         -- is protected in combat on this client: pcall'd.
         f:EnableKeyboard(true)
+        f:HookScript("OnShow", function(self)
+            local okC, c = pcall(InCombatLockdown)
+            local fight = okC and c
+            -- Out of combat, keys pass through by default; in combat
+            -- propagation can't be switched, so the dialog doesn't take the
+            -- keyboard at all (Escape still closes it via UISpecialFrames).
+            if not fight then pcall(self.SetPropagateKeyboardInput, self, true) end
+            pcall(self.EnableKeyboard, self, not fight)
+        end)
+        if UISpecialFrames and f.GetName and f:GetName() then table.insert(UISpecialFrames, f:GetName()) end
         f:SetScript("OnKeyDown", function(self, key)
             if key == "ESCAPE" then
                 pcall(self.SetPropagateKeyboardInput, self, false)

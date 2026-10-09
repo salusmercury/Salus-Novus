@@ -307,7 +307,7 @@ ns.Timers.Register({
         if state.preview then return end
         if not Enabled() then return end
         Build()
-        Refresh()
+        Refresh((ns.db and ns.db.unlocked and not ns.Timers.Any()) and true or false)   -- unlocked with nothing live: keep the placeholders
     end,
     -- No OnTick: the frame's own OnUpdate drives values every frame.
 })
@@ -315,7 +315,7 @@ ns.Timers.Register({
 function ns.BarsPreviewStart(stage)
     Build()
     state.preview = stage
-    state.previewBars = ns.Timers.FakeBars(3, 40, true)
+    state.previewBars = ns.Timers.FakeBars(MAX_BARS, 40, true)   -- Maximum bars shows in its preview (the sweep)
     frame:SetParent(stage)
     frame:SetFrameStrata(stage:GetFrameStrata())
     frame:SetFrameLevel(stage:GetFrameLevel() + 5)

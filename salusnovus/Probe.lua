@@ -2,7 +2,7 @@
 
     /sn probe waypoint     -- can we place and supertrack a user waypoint
                               where the player stands, and read the numbers
-                              a leveling arrow would need?
+                              a waypoint arrow would need?
 
 Every call is pcall'd and every result is printed through ns.S, so a
 secret value shows as "?" instead of throwing. Nothing here changes a
@@ -242,14 +242,16 @@ function P.Spellbook()
     else
         out[#out + 1] = "our tab: not built"
     end
-    out[#out + 1] = ("tab row level %s, page level %s, %d children"):format(ns.S(tabs:GetFrameLevel()), ns.S(psf.SpellBookFrame.PagedSpellsFrame and psf.SpellBookFrame.PagedSpellsFrame:GetFrameLevel()), n)
+    out[#out + 1] = ("tab row level %s, page level %s, %d children"):format(ns.S(tabs:GetFrameLevel()), ns.S(type(sbf) == "table" and sbf.PagedSpellsFrame and sbf.PagedSpellsFrame:GetFrameLevel()), n)
     return out
 end
 
 ns.Commands = ns.Commands or {}
 ns.Commands.probe = function(rest)
-    local what, arg = (rest or ""):match("^(%S*)%s*(%S*)")
-    if what == "waypoint" then
+    local what, arg, more = (rest or ""):match("^(%S*)%s*(%S*)%s*(%S*)")
+    if what == "ah" then
+        P.AH(arg, more)                              -- ProbeAH.lua
+    elseif what == "waypoint" then
         for _, line in ipairs(P.Waypoint(arg == "keep")) do ns.Print(line) end
     elseif what == "nav" then
         for _, line in ipairs(P.Nav()) do ns.Print(line) end
@@ -310,6 +312,6 @@ ns.Commands.probe = function(rest)
         -- kept (last run only) so it can be read off the SavedVariables file after /reload
         if type(SalusNovusDB) == "table" then SalusNovusDB.lastProbe = { what = "spellbook", t = time(), lines = lines } end
     else
-        ns.Print("probes: /sn probe waypoint [keep]  |  /sn probe nav  |  /sn probe trainer [capture]  |  /sn probe spellbook  |  /sn probe anchors  |  /sn probe grid")
+        ns.Print("probes: /sn probe ah [browse | scan | read | search <itemID> | invest]  |  /sn probe waypoint [keep]  |  /sn probe nav  |  /sn probe trainer [capture]  |  /sn probe spellbook  |  /sn probe anchors  |  /sn probe grid")
     end
 end

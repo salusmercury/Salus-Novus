@@ -568,6 +568,14 @@ function methods:IsEventRegistered(e) return self.__events[e] and true or false 
 
 -- Text
 function methods:SetText(t) self.__text = t; return self end
+-- Typed by the player: the text, then OnTextChanged with userInput true
+-- (SetText is the code's own change and fires nothing here).
+function methods:Type(t)
+    self.__text = t
+    local h = self.__scripts and self.__scripts.OnTextChanged
+    if h then h(self, true) end
+    return self
+end
 function methods:GetText() return self.__text end
 function methods:SetFont(path, size, flags)
     -- The real thing returns FALSE for a bad path; it does not error, and it

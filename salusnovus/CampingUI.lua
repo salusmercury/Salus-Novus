@@ -26,7 +26,7 @@ local PAD, ICON, GAP, PER_ROW = 8, 36, 2, 5
 local W = PAD * 2 + PER_ROW * ICON + (PER_ROW - 1) * GAP
 
 local frame
-U.pinned = false
+U.pinned = nil          -- nil = follow the settings (see Refresh)
 
 local function O() return ns.db and ns.db.camping end
 
@@ -142,7 +142,7 @@ local function Build()
     frame:SetClampedToScreen(true)
     frame:SetSize(W, 120)
     frame:Hide()
-    frame.bg = Th.SolidTex(frame, "BACKGROUND", Th.BG[1], Th.BG[2], Th.BG[3], Alpha())
+    frame.bg = Th.SolidTex(frame, "BACKGROUND", Th.BG[1], Th.BG[2], Th.BG[3], 1)   -- SetAlpha(Alpha()) in Layout is the only dial
     frame.bg:SetAllPoints()
     frame.border = ns.CreateBorder(frame)
     frame.border:Layout(frame, 1, -1)
@@ -182,7 +182,7 @@ local function Build()
     frame.sit:SetHeight(12)
     frame.sit:SetStatusBarTexture(Th.SOLID)
     frame.sit:SetMinMaxValues(0, 1)
-    frame.sit.bg = Th.SolidTex(frame.sit, "BACKGROUND", 1, 1, 1, 0.08)
+    frame.sit.bg = Th.SolidTex(frame.sit, "BACKGROUND", Th.BG[1], Th.BG[2], Th.BG[3], 1)   -- the panel's own background
     frame.sit.bg:SetAllPoints()
     frame.sit.border = ns.CreateBorder(frame.sit)       -- black edge, like the timer bars
     frame.sit.border:Layout(frame.sit, 1, 0)
@@ -197,7 +197,8 @@ local function Build()
 
     ns.RegisterMovable(frame, "campingPos", function() return "TOPLEFT" end, RestorePosition)
     frame:SetScript("OnDragStart", function(self)
-        if ns.db and ns.db.unlocked then self:StartMoving() end
+        -- Protected (secure item buttons): no drag in combat.
+        if ns.db and ns.db.unlocked and not InCombat() then self:StartMoving() end
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -287,6 +288,7 @@ function U.Layout()
     local c = C()
     local unlocked = ns.db and ns.db.unlocked and true or false
     frame.bg:SetAlpha(Alpha())
+    frame.sit.bg:SetAlpha(Alpha())
     -- Under the title; the duration bar / "Sit for buffs" row only when it
     -- has something to say (no campfire, not buffed: no row).
     local top = 28 + ((c.BenefitsLeft() or c.Nearby()) and 22 or 0)
@@ -367,10 +369,16 @@ function U.Tick()
     end
 end
 
---- Show or hide with the settings, the campfire kit and the pin.
+--- Show or hide with the settings and the pin. U.pinned: nil = follow the
+-- settings, true = /sn camp opened it, false = /sn camp closed it. The
+-- panel setting off, or an instance, wins over either.
 function U.Refresh()
     local c = C()
-    local want = (c.WantShown() or (U.pinned and c.Enabled() and not c.InInstance())) and true or false
+    local want
+    if ns.db and ns.db.unlocked then want = true
+    elseif U.pinned == false then want = false
+    elseif U.pinned == true then want = c.Enabled() and not c.InInstance()
+    else want = c.WantShown() and true or false end
     if not frame and not want then return end
     Build()
     if InCombat() then U.pending = true return end
@@ -386,8 +394,9 @@ end
 
 --- /sn camp and the Session bar's Camp segment: pin it open or closed.
 function U.Toggle()
+    -- The pin is what Refresh reads, so a close holds against the next
+    -- aura or bag event, and one made in combat lands when combat ends.
     U.pinned = not (frame and frame:IsShown())
-    if not U.pinned and frame and not InCombat() then frame:Hide() return end
     U.Refresh()
 end
 

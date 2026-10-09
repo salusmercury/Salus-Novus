@@ -256,6 +256,8 @@ local function Display(r, lead)
     restack = true
     frame:Show()
     R._fired[#R._fired + 1] = f.label
+    if #R._fired > 50 then table.remove(R._fired, 1) end   -- a test seam, not a log
+    return true
 end
 R.Display = Display
 
@@ -283,6 +285,15 @@ local function RetractShown(id)
             table.insert(lines, f)
             restack = true
         end
+    end
+end
+
+--- A countdown still running never reached its moment: not spent (death,
+-- turned off mid-pull), so it comes back.
+local function UnfireCounting()
+    local now = GetTime()
+    for _, f in ipairs(active) do
+        if f.rid ~= nil and f.fireAt and now < f.fireAt then fired[f.rid] = nil end
     end
 end
 
@@ -323,8 +334,9 @@ local function Arm(r, showAt, lead)
         scheduled[id] = nil
         -- Dead men need no cues; not marked fired, so a res gets it back.
         if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then return end
-        Display(r, lead)
-        fired[id] = true
+        -- fired only when it showed: one declined (a preview had the frame)
+        -- isn't lost for the pull (the sweep)
+        if Display(r, lead) then fired[id] = true end
     end)
 end
 
@@ -360,6 +372,13 @@ function ns.ReminderRearm(r)
     local opts = O()
     if not (Enabled() and state.encounter and state.pullAt) then return end
     if type(r) ~= "table" or r.id == nil or r.enabled == false then return end
+    -- Only this fight's reminders: one saved for another boss mid-pull (or a
+    -- /sn test) must not count down here. Same list ScheduleFor reads.
+    local mine = false
+    for _, x in ipairs(R.For(state.encounter)) do
+        if x == r or x.id == r.id then mine = true break end
+    end
+    if not mine then return end
     if r.trigger == "pull" then
         Arm(r, state.pullAt, 0)
     elseif r.trigger == "time" and tonumber(r.arg) then
@@ -393,6 +412,7 @@ end
 -- every "cast" reminder for the fight fires, throttled.
 function R.OnCast(unit)
     if not state.encounter then return end
+    if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then return end   -- no cues at a corpse (the sweep)
     local opts = O()
     if not Enabled() then return end
     if ns.IsSecret(unit) or type(unit) ~= "string" then return end
@@ -404,24 +424,51 @@ function R.OnCast(unit)
         local okA, hostile = pcall(UnitCanAttack, "player", unit)
         if okA and not ns.IsSecret(hostile) and hostile == false then return end
     end
+    -- The boss, by name (readable on target and plates): an add's cast
+    -- warned falsely and spent the throttle the boss's needed (the sweep).
+    -- Fail open: a secret or missing name still counts.
+    local okN, uname = pcall(UnitName, unit)
+    if okN and type(uname) == "string" and not ns.IsSecret(uname) and not R.IsBossName(uname) then return end
     local now = GetTime()
     if now - state.lastCastFire < (opts.castThrottle or 3) then return end
     local any = false
     for _, r in ipairs(R.For(state.encounter)) do
-        if r.trigger == "cast" and r.enabled ~= false then Display(r, 0) any = true end
+        if r.trigger == "cast" and r.enabled ~= false then RetractShown(r.id) Display(r, 0) any = true end
     end
     if any then state.lastCastFire = now end
 end
 
+--- Is `name` one of this fight's boss NPCs (or the boss)? Unknown data: yes.
+function R.IsBossName(name)
+    local boss = ns.Timers.Boss()
+    if not boss then return true end
+    if boss.name == name then return true end
+    -- the boss as the hub counts it (npcs[1] and boss-phase NPCs): the data
+    -- lists the fight's adds too, and an add's cast still warned (the sweep)
+    return ns.Schedule.IsBossSource(boss, name)
+end
+
 --- A boss emote or yell. Secret text is dropped without being touched.
-function R.OnEmote(text)
+function R.OnEmote(text, sender, gate)
     if not state.encounter then return end
     if not Enabled() then return end
+    if UnitIsDeadOrGhost and UnitIsDeadOrGhost("player") then return end   -- no cues at a corpse (the sweep)
     if ns.IsSecret(text) or type(text) ~= "string" then return end
-    local lower = text:lower()
+    local readable = type(sender) == "string" and sender ~= "" and not ns.IsSecret(sender)
+    -- Emotes and says (trash and escorts talk too): a readable speaker must
+    -- be one of the fight's NPCs. Yells and boss emotes are the fight's own
+    -- (a controller like Lord Victor Nefarius speaks for the boss: the sweep).
+    if gate and readable then
+        local boss = ns.Timers.Boss()
+        if boss and boss.name ~= sender and not ns.Schedule.IsBossNpc(boss, sender) then return end
+    end
+    -- the client sends '%s goes into a frenzy!': matched as the chat shows it too
+    local shown = (readable and text:find("%s", 1, true)) and text:gsub("%%s", (sender:gsub("%%", "%%%%"))) or text
+    local lower, lowerShown = text:lower(), shown:lower()
     for _, r in ipairs(R.For(state.encounter)) do
         if r.trigger == "emote" and r.enabled ~= false and type(r.arg) == "string"
-            and lower:find(r.arg:lower(), 1, true) then
+            and (lower:find(r.arg:lower(), 1, true) or lowerShown:find(r.arg:lower(), 1, true)) then
+            RetractShown(r.id)                    -- one line per reminder, its hold restarted (the sweep)
             Display(r, 0)
         end
     end
@@ -439,11 +486,20 @@ ns.Timers.Register({
 })
 ns.On("UNIT_SPELLCAST_START", function(unit) R.OnCast(unit) end)
 ns.On("UNIT_SPELLCAST_CHANNEL_START", function(unit) R.OnCast(unit) end)
-ns.On("CHAT_MSG_RAID_BOSS_EMOTE", function(text) R.OnEmote(text) end)
-ns.On("CHAT_MSG_MONSTER_YELL", function(text) R.OnEmote(text) end)
+ns.On("CHAT_MSG_RAID_BOSS_EMOTE", function(text, sender) R.OnEmote(text, sender) end)
+ns.On("CHAT_MSG_MONSTER_YELL", function(text, sender) R.OnEmote(text, sender) end)
+-- vanilla bosses speak in emotes and says too ("%s goes into a frenzy!")
+ns.On("CHAT_MSG_MONSTER_EMOTE", function(text, sender) R.OnEmote(text, sender, true) end)
+ns.On("CHAT_MSG_MONSTER_SAY", function(text, sender) R.OnEmote(text, sender, true) end)
 -- A wipe ends the encounter only when the last player dies; the schedule
 -- must not keep firing at a corpse.
-ns.On("PLAYER_DEAD", function() CancelAll() ClearShown() end)
+-- A countdown still running when you die never reached its moment: it
+-- isn't spent, so a res gets it back.
+ns.On("PLAYER_DEAD", function()
+    UnfireCounting()
+    CancelAll()
+    ClearShown()
+end)
 -- A combat res mid-fight gets the rest of the schedule back: everything
 -- not yet fired is re-armed from the pull, and Arm drops what is past.
 local function Resurrected()
@@ -462,6 +518,7 @@ local function Apply()
     if ns.SetMovableScale(frame, state.preview and 1 or ns.AnchorScale()) and not state.preview then RestorePosition() end
     local unlocked = ns.db and ns.db.unlocked
     if not Enabled() then
+        UnfireCounting()                              -- (back on mid-pull, it comes back: the sweep)
         CancelAll()
         ClearShown()
         frame.unlockBg:Hide(); frame.unlockLabel:Hide(); frame.unlockText:Hide()
@@ -471,6 +528,9 @@ local function Apply()
     frame.unlockBg:SetShown(unlocked and not state.preview)
     frame.unlockLabel:SetShown(unlocked and not state.preview)
     frame.unlockText:SetShown(unlocked and not state.preview)
+    -- Back on mid-pull (it was off, or the module was): the rest of the
+    -- schedule comes back. Arm skips what has fired or is long past.
+    if state.encounter and state.pullAt and next(scheduled) == nil then ScheduleFor(state.pullAt) end
     if unlocked then
         frame:Show()
     elseif #active == 0 and not state.preview then
@@ -529,8 +589,20 @@ end
 -- /sn remind <boss> cast <text>
 -- /sn remind <boss> emote <word> <text>
 ns.Commands.remind = function(rest)
-    local bossText, trigger, tail = rest:match("^(%S+)%s+(%a+)%s*(.*)$")
-    local boss = bossText and ns.BossByName(bossText)
+    -- the boss is everything before the trigger word ("Lord Pythas pull hi"
+    -- went to the first 'Lord' boss: the sweep)
+    local bossText, trigger, tail
+    local low = " " .. rest:lower() .. " "
+    local best
+    for _, tw in ipairs({ "pull", "time", "cast", "emote" }) do
+        local i = low:find(" " .. tw .. " ", 1, true) or (low:sub(-(#tw + 2)) == " " .. tw .. " " and #low - #tw - 1 or nil)
+        if i and (not best or i < best) then best, trigger = i, tw end
+    end
+    if best then
+        bossText = rest:sub(1, best - 2):match("^%s*(.-)%s*$")
+        tail = rest:sub(best - 1 + #trigger + 1):match("^%s*(.-)%s*$") or ""
+    end
+    local boss = bossText and bossText ~= "" and ns.BossByName(bossText)
     if not boss then
         ns.Print("usage: /sn remind <boss> <pull|time N|cast|emote WORD> <text>")
         return
@@ -577,6 +649,7 @@ end
 ns.Commands.test = function(rest)
     local boss = ns.BossByName(rest)
     if not boss then ns.Print("usage: /sn test <boss>") return end
-    ns.Print("simulating pull of " .. boss.name .. " for " .. tostring(boss.avgLength or 30) .. "s")
+    local length = boss.avgLength or math.min(60, ns.Schedule.FightEnd(boss))   -- (what Simulate runs: the sweep)
+    ns.Print(("simulating pull of %s for %ds"):format(boss.name, math.floor(length + 0.5)))
     ns.Timers.Simulate(boss.encounterID)
 end

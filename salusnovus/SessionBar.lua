@@ -285,6 +285,8 @@ function B.Layout()
             if seg.sep then seg.sep:Hide() end
         end
     end
+    -- Nothing left to show (lockouts aged out, XP gone at 60): no empty box.
+    if not any and not (ns.db and ns.db.unlocked) then frame:Hide() return end
     frame:SetWidth(math.max(60, x - GAP + PADX))
     frame:SetHeight(math.max(HEIGHT, Size() + 10))
     if ns.SyncAnchorOrigin then ns.SyncAnchorOrigin(frame, "sessionPos") end
@@ -309,5 +311,14 @@ function B.Refresh()
     B.FillDetail()
 end
 
-ns.Session.OnChanged = function() if frame and frame:IsShown() then B.Layout() B.FillDetail() end end
+-- A change can bring a segment back while the bar is hidden (the first
+-- lockout of a session), so it goes through Refresh, which decides.
+ns.Session.OnChanged = function() B.Refresh() end
+ns.On("PLAYER_LEVEL_UP", function() B.Refresh() end)
+-- Raid saves arrive after login: ask for them, and look again when they do.
+ns.On("PLAYER_ENTERING_WORLD", function()
+    local f = rawget(_G, "RequestRaidInfo")
+    if f then pcall(f) end
+end)
+ns.On("UPDATE_INSTANCE_INFO", function() B.Refresh() end)
 ns.RegisterApply(function() B.Refresh() end, "Session bar")

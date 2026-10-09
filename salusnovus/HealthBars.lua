@@ -58,6 +58,17 @@ local function Origin() return Dir() == "up" and "BOTTOM" or "TOP" end
 local function SavePosition() ns.SaveAnchor(frame, "healthPos") end
 local function RestorePosition()
     if not frame then return end
+    -- the default's origin from one row's size, not the Build or preview size
+    frame.__nominal = frame.__nominal or function()
+        local o = O() or {}
+        local np = o.namePos                          -- (NamePos is defined below)
+        if not (np == "inside" or np == "below" or np == "off" or np == "above") then
+            np = (np == nil and o.showName == false) and "off" or "inside"
+        end
+        local nameH = (np == "above" or np == "below") and ((o.labelSize or 11) + 6) or 0
+        if np == "above" then nameH = nameH * 2 end
+        return o.width or 260, (o.height or 20) + nameH + (o.showIcons and 20 or 0)
+    end
     -- Alex's layout (2026-09-20): top right, above the Bars column.
     ns.RestoreAnchor(frame, "healthPos", "TOP", 425, 235, "CENTER")
 end
@@ -197,10 +208,8 @@ local function Feed(e)
     end)
     state.feeds = state.feeds + 1
     if ok then
-        if e.refused then
-            e.refused = false
-            r.bar:SetAlpha(1)
-        end
+        e.refused = false
+        r.bar:SetAlpha(1)                         -- (read: no longer the dimmed 'no unit' bar)
     else
         state.refusals = state.refusals + 1
         if not e.refused then
@@ -233,6 +242,9 @@ local function Refresh()
     local w, h = opts.width or 260, opts.height or 20
     local namePos = NamePos(opts)
     local nameH = (namePos == "above" or namePos == "below") and ((opts.labelSize or 11) + 6) or 0
+    -- above: the marker labels have the line over the bar, the name the one
+    -- over that (they drew on top of each other: the sweep)
+    if namePos == "above" then nameH = nameH * 2 end
     local iconH = opts.showIcons and 20 or 0
     local rowH = h + nameH + iconH
     local gap = opts.spacing or 20
@@ -243,7 +255,14 @@ local function Refresh()
             for k = 1, MAX_MARKERS do r.markers[k]:Hide() end   -- off, not just under a hidden row
             r:Hide()
         else
+            if state.boss and not state.preview and (e.row ~= r or not e.unit) then
+                -- no unit read yet: full and dimmed, not a fill left from the last
+                -- pull, the preview or the unlock sample (the sweep)
+                r.bar:SetMinMaxValues(0, 1)
+                r.bar:SetValue(1)
+            end
             e.row = r
+            r.bar:SetAlpha(e.refused and 0.3 or ((e.unit or not state.boss or state.preview) and 1 or 0.45))    -- a pooled row keeps its last entry's dimming otherwise
             r:SetSize(w, rowH)
             r:ClearAllPoints()
             local off = (i - 1) * (rowH + gap)
@@ -273,7 +292,7 @@ local function Refresh()
                 r.name:SetPoint("TOPLEFT", r.bar, "BOTTOMLEFT", 0, -(iconH + 2))
                 r.name:Show()
             else
-                r.name:SetPoint("BOTTOMLEFT", r.bar, "TOPLEFT", 0, 2)
+                r.name:SetPoint("BOTTOMLEFT", r.bar, "TOPLEFT", 0, (opts.labelSize or 11) + 8)
                 r.name:Show()
             end
             for k = 1, MAX_MARKERS do
@@ -409,7 +428,8 @@ local function Resolve()
     for _, x in ipairs(state.live) do
         if not x.unit then
             x.unit = FindUnit(x.name, taken)
-            if x.unit then taken[x.unit] = true end
+            if x.unit then taken[x.unit] = true
+            elseif x.row and not x.refused then x.row.bar:SetAlpha(0.45) end   -- lost its unit: the fill is stale (the sweep)
         end
     end
     SetUnits()
@@ -490,6 +510,12 @@ H.Apply = Apply
 -- ability; the units are looked up on the pull and again whenever the
 -- client says a unit id changed (the tank may not have it targeted yet).
 local function OnEncounter(on)
+    -- The options page's preview owns the frame while it runs: only note the
+    -- boss (PreviewStop rebuilds from it) and leave its stage alone.
+    if state.preview then
+        if on then state.boss = ns.Timers.Boss() else Disarm() state.boss = nil end
+        return
+    end
     if not on then
         Disarm()
         state.boss, state.live = nil, {}
@@ -498,8 +524,8 @@ local function OnEncounter(on)
         if frame then
             frame:SetAlpha(1)
             for _, r in ipairs(rows) do r.bar:SetAlpha(1) end
-            frame:Hide()
         end
+        Apply()        -- hidden, or the sample bar while unlocked
         return
     end
     state.boss = ns.Timers.Boss()
@@ -507,7 +533,7 @@ local function OnEncounter(on)
     Mirror()
     if not Enabled() or #state.live == 0 then
         Disarm()
-        if frame then frame:Hide() end
+        if frame then Apply() end
         return
     end
     Build()
@@ -541,6 +567,9 @@ function ns.HealthBarsPreviewStart(stage)
         end
         frame:ClearAllPoints()
         frame:SetPoint("CENTER", stage, "CENTER", 0, -4)
+        -- taller than the stage (name above, icons): shrunk to fit, not clipped (the sweep)
+        local sh, fh = tonumber(stage:GetHeight()) or 0, tonumber(frame:GetHeight()) or 0
+        frame:SetScale((sh > 8 and fh > sh - 8) and (sh - 8) / fh or 1)
     end)
     for _, x in ipairs(state.live) do if x.row then x.row.bar:SetValue(100) end end
 end

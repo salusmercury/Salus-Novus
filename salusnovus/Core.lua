@@ -28,8 +28,8 @@ function ns.IsSecret(v)
     return res and true or false
 end
 
---- Plain (non-secret) number / string, or nil. Shared by the leveling
--- modules and the probe.
+--- Plain (non-secret) number / string, or nil. Shared by the Quality of
+-- Life modules and the probe.
 function ns.Num(v) return type(v) == "number" and not ns.IsSecret(v) end
 function ns.Str(v) return type(v) == "string" and not ns.IsSecret(v) and v or nil end
 
@@ -121,9 +121,6 @@ ns.defaults = {
     -- false (open). A module switch writes it; a click on the heading
     -- overrides it; both stick (Alex, 2026-09-21).
     sidebar = { collapsed = {} },
-    -- Leveling guide: which route ("auto" = best match for the character),
-    -- the client's waypoint pin on the current step, how many next steps.
-    guide = { enabled = true, route = "auto", showNext = 2, size = 14, arrow = true, arrowSize = 48 },
     -- Trainer catalogue (Quality of Life > Trainer): the captured list is
     -- SalusNovusDB.trainers[class] at the top level; these are the switches.
     trainer = { enabled = true },
@@ -138,13 +135,21 @@ ns.defaults = {
     -- campfire kit ready, or within kitMinutes of it, or a campfire in range)
     -- or "always"; alpha = the background's opacity, 0-100.
     camping = { enabled = true, alpha = 90 },
+    -- Auction (Quality of Life): the Snipe tab on the auction house; a scan
+    -- on opening it; the least profit per item worth showing (copper).
+    -- Investing: a budget of investPct% of your gold, commodities with at
+    -- least investMinListed units listed.
+    -- autoScan: no scan on opening the AH by default (Alex)
+    auction = { enabled = true, autoScan = false, minProfit = 5, investPct = 20, investMinListed = 250,
+                investMinProfit = 1,       -- gold: the least total profit worth a buy
+                investMaxShare = 10 },     -- percent: the most of a commodity's supply one buy may take
     -- Wishlist (Quality of Life): lists live in SalusNovusDB.wishlist[character].
     wishlist = {},
     abilities = {},             -- [tostring(spellID)] = Abilities.lua record
     unlocked = false,           -- when false, no anchor can be dragged
     -- Master switches, one per module in the options sidebar. Off: nothing
     -- of that module renders or arms in a fight; its pages stay listed.
-    modules = { bossWarnings = true, qol = true, leveling = true },
+    modules = { bossWarnings = true, qol = true },
 }
 
 function ns.ModuleOn(key)
@@ -200,7 +205,21 @@ function ns.InitDB()
     if type(SalusNovusDB) ~= "table" then SalusNovusDB = {} end
     if type(SalusNovusDB.options) ~= "table" then SalusNovusDB.options = {} end
     MigrateChatFilterOff(SalusNovusDB.options)
+    -- Health Bars 0.4.0-0.4.4 saved only showName; a name turned off there
+    -- stays off (the namePos default came first and turned it back on: the sweep)
+    local hb = SalusNovusDB.options.healthBars
+    -- (once: CopyDefaults had already seeded namePos='inside' for anyone on
+    -- 0.4.5+, so the nil-only test missed them -- the sweep)
+    if type(hb) == "table" and hb.showName == false and (hb.namePos == nil or hb.namePos == "inside") then
+        hb.namePos = "off"
+    end
+    if type(hb) == "table" then hb.showName = nil end   -- no UI writes it now: never read again
+    -- "Scan when the AH opens" went off by default (Alex, 2026-10-06): a save
+    -- from before gets it off once; turned back on, it stays on
+    local au = SalusNovusDB.options.auction
+    if type(au) == "table" and not au.autoScanOff1 then au.autoScan = false end
     CopyDefaults(ns.defaults, SalusNovusDB.options, true)
+    SalusNovusDB.options.auction.autoScanOff1 = true
     ns.db = SalusNovusDB.options
 end
 
@@ -283,7 +302,7 @@ ns.movables = movables            -- SnapMovable aligns against the other anchor
 local UNLOCK_NAMES = {
     barsPos = "Timer Bars", queuePos = "Ability Queue", previewPos = "Ability Preview",
     messagesPos = "Messages", healthPos = "Health Bars", remindersPos = "Reminders",
-    guidePos = "Guide", arrowPos = "Arrow", sessionPos = "Session", campingPos = "Camping", dungeonQuestsPos = "Dungeon Quests",
+    sessionPos = "Session", campingPos = "Camping", dungeonQuestsPos = "Dungeon Quests",
 }
 function ns.UnlockOverlay(frame, name)
     if frame.unlockOverlay then return frame.unlockOverlay end
@@ -331,6 +350,19 @@ function ns.RegisterMovable(frame, saveKey, origin, restore)
     frame:SetMovable(true)
     frame:SetClampedToScreen(true)
     frame:RegisterForDrag("LeftButton")
+    -- know when it's being dragged: a pull locking (and hiding) it mid-drag
+    -- left it moving and unsaved (the sweep)
+    if not frame.__dragWrapped then
+        frame.__dragWrapped = true
+        local sm, st = frame.StartMoving, frame.StopMovingOrSizing
+        frame.StartMoving = function(self, ...) self.__dragging = true return sm(self, ...) end
+        frame.StopMovingOrSizing = function(self, ...) self.__dragging = nil return st(self, ...) end
+        frame:HookScript("OnHide", function(self) ns.EndDrag(self) end)
+    end
+    -- the lock state now: one built after ApplyLocks ran in this pass stayed
+    -- click-through in unlock mode (the sweep)
+    if ns.CombatLocked and ns.CombatLocked(frame) then ns.locksPending = true
+    elseif frame.EnableMouse then frame:EnableMouse(ns.db and ns.db.unlocked and true or false) end
 end
 
 -- A position is stored as the frame's GROWTH ORIGIN point (LEFT for a
@@ -357,11 +389,15 @@ local function OriginXY(frame, point)
 end
 ns.OriginXY = OriginXY
 
+ns._pendingSave = {}
 function ns.SaveAnchor(frame, key)
     -- Only for a frame living on the screen: during an options preview the
     -- frame is parented to a page stage, and saving from there would write a
     -- spot inside that little box and rip the frame off the stage.
     if frame:GetParent() ~= UIParent then return end
+    -- a protected frame (the camp panel) can't be re-anchored in combat: a
+    -- drag that ended in combat is saved when it ends (the sweep)
+    if ns.CombatLocked and ns.CombatLocked(frame) then ns._pendingSave[frame] = key return end
     local point = (frame.__origin and frame.__origin()) or "CENTER"
     local x, y, s = OriginXY(frame, point)
     if not x then return end
@@ -412,6 +448,9 @@ function ns.SyncAnchorOrigin(frame, key)
         return
     end
     if not frame:GetLeft() then return end          -- not laid out yet
+    -- already pinned by this point: kept (re-measured from a stack the screen
+    -- edge had pushed in, the origin crept for the session: the sweep)
+    if frame.__pin and frame.__pin.point == want then return end
     PinFromCentre(frame, want)
 end
 
@@ -422,7 +461,68 @@ end
 -- offset is measured from: the shipped defaults are Alex's own layout, read
 -- from his saved positions and expressed from the screen CENTRE so they
 -- hold at any resolution.
+-- A frame with a secure child (the camping panel's item buttons) is itself
+-- protected: in combat it can't be moved, shown or have its mouse toggled.
+-- Those calls wait here and replay when combat ends (a pcall would not
+-- help: the client blocks the action, it doesn't raise an error).
+local deferredRestore, locksPending = {}, false
+ns._deferredRestore = deferredRestore
+local function CombatLocked(frame)
+    local okC, c = pcall(InCombatLockdown)
+    if not (okC and c) then return false end
+    local okP, p = pcall(frame.IsProtected, frame)
+    return okP and p == true
+end
+ns.CombatLocked = CombatLocked
+function ns.ReplayCombatDeferred()
+    for frame, a in pairs(deferredRestore) do
+        deferredRestore[frame] = nil
+        pcall(ns.RestoreAnchor, frame, a[1], a[2], a[3], a[4], a[5])
+    end
+    if locksPending or ns.locksPending then ns.locksPending = nil ns.ApplyLocks() end
+    for frame, key in pairs(ns._pendingSave) do ns._pendingSave[frame] = nil ns.SaveAnchor(frame, key) end
+end
+
+--- The default's growth origin, from the default point and a FIXED size --
+-- the module's one-row size (frame.__nominal) or the frame's size when first
+-- placed -- never its height now: a stack of placeholders, a preview's
+-- fakes or a Build size moved a never-dragged anchor between sessions and
+-- on every scale change (the sweeps). Pinned centre-relative.
+local function Frac(p)
+    local fx = p:find("LEFT") and 0 or (p:find("RIGHT") and 1 or 0.5)
+    local fy = p:find("BOTTOM") and 0 or (p:find("TOP") and 1 or 0.5)
+    return fx, fy
+end
+local function DefaultPin(frame, defaultPoint, want)
+    if frame:GetParent() ~= UIParent then return end
+    local x, y, s = OriginXY(frame, defaultPoint)      -- where the default point sits (size doesn't move it)
+    if not x then return end
+    local nw, nh
+    if frame.__nominal then nw, nh = frame.__nominal() end
+    if not (nw and nh) then
+        frame.__nominalW = frame.__nominalW or frame:GetWidth()
+        frame.__nominalH = frame.__nominalH or frame:GetHeight()
+        nw, nh = frame.__nominalW, frame.__nominalH
+    end
+    local ax, ay = Frac(defaultPoint)
+    local bx, by = Frac(want)
+    x, y = x + (bx - ax) * nw * s, y + (by - ay) * nh * s
+    local sw, sh = UIParent:GetWidth(), UIParent:GetHeight()
+    local pin = { point = want, dx = x - sw / 2, dy = y - sh / 2 }
+    frame.__pin = pin
+    frame:ClearAllPoints()
+    frame:SetPoint(want, UIParent, "CENTER", pin.dx / s, pin.dy / s)
+end
+
 function ns.RestoreAnchor(frame, key, defaultPoint, dx, dy, relPoint)
+    -- held by an options preview stage: its stop restores it (resetpos tore
+    -- the live preview off the stage: the sweep)
+    if frame:GetParent() ~= UIParent then return end
+    if CombatLocked(frame) then
+        deferredRestore[frame] = { key, defaultPoint, dx, dy, relPoint }
+        return
+    end
+    deferredRestore[frame] = nil
     frame:ClearAllPoints()
     local p = SalusNovusDB and SalusNovusDB[key]
     if p ~= nil and type(p) ~= "table" then     -- hand-edited or downgraded
@@ -452,7 +552,8 @@ function ns.RestoreAnchor(frame, key, defaultPoint, dx, dy, relPoint)
         -- units, so divide by the scale like every other path here.
         local s0 = ScaleRatio(frame)
         frame:SetPoint(defaultPoint, UIParent, relPoint or defaultPoint, (dx or 0) / s0, (dy or 0) / s0)
-        if want and want ~= defaultPoint then PinFromCentre(frame, want) end     -- never an absolute pin at login
+        if want and want ~= defaultPoint then DefaultPin(frame, defaultPoint, want) end     -- never an absolute pin at login
+        
     end
 end
 
@@ -532,6 +633,7 @@ function ns.ShowAlignGrid(show)
     for x = cx - size, 0, -size do Line(true, x, false) end
     for y = cy, h, size do Line(false, y, y == cy) end
     for y = cy - size, 0, -size do Line(false, y, false) end
+    gridFrame.size = size
     gridFrame:Show()
 end
 
@@ -539,8 +641,13 @@ end
 -- the grid. Re-anchors by CENTER; the module's SavePosition then stores the
 -- growth-origin point.
 function ns.SnapMovable(frame)
-    local gridOn, size, snapOn, range = GridOpts()
+    if CombatLocked(frame) then return end                -- a protected frame can't move in combat (the sweep)
+    local _, _, snapOn, range = GridOpts()
     if not snapOn then return end
+    -- the grid that is DRAWN (its options can change while unlocked: a frame
+    -- snapped to lines nobody could see -- the sweep)
+    local gridOn = gridFrame ~= nil and gridFrame:IsShown()
+    local size = gridFrame and gridFrame.size or 32
     local cx, cy = frame:GetCenter()
     if not cx then return end
     local fs = ScaleRatio(frame)
@@ -587,10 +694,25 @@ function ns.SnapMovable(frame)
     frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", nx / fs, ny / fs)
 end
 
+--- A drag still going when the frame locks or hides: stopped, snapped and
+-- saved like a drop.
+function ns.EndDrag(frame)
+    if not frame.__dragging then return end
+    frame:StopMovingOrSizing()
+    local key = movables[frame]
+    if type(key) == "string" and frame:GetParent() == UIParent then
+        ns.SnapMovable(frame)
+        ns.SaveAnchor(frame, key)
+    end
+end
+
 function ns.ApplyLocks()
     local unlocked = ns.db and ns.db.unlocked
+    locksPending = false
+    if not unlocked then for frame in pairs(movables) do ns.EndDrag(frame) end end
     for frame in pairs(movables) do
-        if frame.EnableMouse then frame:EnableMouse(unlocked and true or false) end
+        if CombatLocked(frame) then locksPending = true
+        elseif frame.EnableMouse then frame:EnableMouse(unlocked and true or false) end
     end
 end
 ns.RegisterApply(ns.ApplyLocks, "Frame locks")
@@ -662,6 +784,9 @@ bus:SetScript("OnEvent", function(_, event, ...)
     end
 end)
 
+-- Moves and mouse toggles a protected frame couldn't take in combat.
+ns.On("PLAYER_REGEN_ENABLED", function() ns.ReplayCombatDeferred() end)
+
 --- Modules append to this to run after the DB exists (before ApplyAll).
 ns.OnLoad = {}
 
@@ -726,7 +851,9 @@ local function Relayout()
         relayoutPending = nil
         for f in pairs(ns.movables or {}) do
             f.__pin = nil
-            if f.__restore then pcall(f.__restore) end
+            -- a frame on an options preview stage stays there (it was pulled
+            -- onto the screen: the sweep); its preview's stop restores it
+            if f.__restore and f:GetParent() == UIParent then pcall(f.__restore) end
         end
         if ns.db then ns.ApplyAll() end
     end)

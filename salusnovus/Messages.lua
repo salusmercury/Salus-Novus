@@ -93,6 +93,14 @@ local function Layout()
     ns.SyncAnchorOrigin(frame, "messagesPos")
 end
 
+-- Unlocked, the "Sample message" stands in for an empty stack only: a real
+-- line hides it, and it comes back once the last line retires.
+local function SyncSample()
+    if frame and frame.unlockText then
+        frame.unlockText:SetShown((ns.db and ns.db.unlocked and #active == 0 and not state.preview) and true or false)
+    end
+end
+
 local function Retire(f)
     for i, af in ipairs(active) do
         if af == f then table.remove(active, i) break end
@@ -101,6 +109,7 @@ local function Retire(f)
     f.anim:Stop()
     table.insert(pool, f)
     Layout()
+    SyncSample()
     if #active == 0 and not state.preview and not (ns.db and ns.db.unlocked) and frame then frame:Hide() end
 end
 
@@ -169,6 +178,7 @@ local function Show(text, r, g, b, iconTexture)
     f:Show()
     table.insert(active, 1, f)
     Layout()
+    SyncSample()
     f.fade:SetStartDelay(opts.hold or 2.5)
     f.anim:Stop()
     f.anim:Play()

@@ -174,6 +174,8 @@ function C.Nearby() return C.Aura(C.AURA.nearby) ~= nil end
 
 --- The 1 minute sit: seconds left until benefits, or nil when not sitting.
 function C.SitLeft()
+    -- Combat stands you up and ends the sit: never play that one back.
+    if InCombat() then return nil end
     for _, id in ipairs(C.AURA.sitting) do
         local a = C.Aura(id)
         if a then return a.left or 0, a.dur or 60 end
@@ -212,7 +214,7 @@ local function BenefitsTooltip()
         for i = 1, 40 do
             local ok, aura = pcall(byIndex, "player", i)
             if not ok or type(aura) ~= "table" then break end
-            if aura.spellId == C.AURA.benefits then
+            if Num(aura.spellId) and aura.spellId == C.AURA.benefits then
                 local okT, data = pcall(ti.GetUnitBuff, "player", i)
                 if okT and type(data) == "table" then return data end
                 break

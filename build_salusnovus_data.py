@@ -27,6 +27,8 @@ import re
 import sys
 from collections import defaultdict
 
+from log_time import line_time
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DIR = os.path.join(HERE, "salusnovus", "Data")
 # The raw combat logs the pulls came from: the caster's health at each cast
@@ -40,11 +42,17 @@ HEALTH_MAX_PCT = 90.0     # an opener near full health is a timed ability (Rend 
 
 
 def parse_ts(ts):
-    """'9/19/2026 05:00:46.009-5' -> seconds (within a file; days ignored)."""
-    m = re.match(r"\d+/\d+/\d+ (\d+):(\d+):([\d.]+)", ts)
+    """'9/19/2026 05:00:46.009-5' -> seconds. The SAME clock parse_logs.py
+    uses (log_time.line_time): offsets from the two are rounded to 0.1 s and
+    joined as keys, and a different float path rounded 20.95 to 21.0 here
+    but 20.9 there, losing that cast's health (Durgen, 2026-09-19)."""
+    m = re.match(r"\d+/\d+/\d+ \d+:\d+:[\d.]+(?:[-+]\d+)?", ts)
     if not m:
         return None
-    return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3))
+    t = m.group(0)
+    # no milliseconds ("05:00:46-5"): line_time wants them
+    t = re.sub(r"(\d+:\d+:\d+)(?=[-+]|$)", r"\1.000", t)
+    return line_time(t)
 
 
 def adv_hp(f):

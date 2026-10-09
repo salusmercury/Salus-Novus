@@ -78,7 +78,10 @@ V.ParseTime = ParseTime
 
 -- ----------------------------------------------------------- spell text
 
-local pendingLoads = false
+-- The ids we asked for and haven't heard back on: each answer redraws once.
+-- (One flag for all of them let the first answer use up the redraw, and
+-- the second card read "loading..." for good.)
+local pendingLoads = {}
 local spellEv = CreateFrame("Frame")
 pcall(spellEv.RegisterEvent, spellEv, "SPELL_DATA_LOAD_RESULT")
 
@@ -90,8 +93,8 @@ local function RequestSpell(id)
     if requested[id] then return end
     if C_Spell and C_Spell.RequestLoadSpellData then
         requested[id] = true
+        pendingLoads[id] = true
         pcall(C_Spell.RequestLoadSpellData, id)
-        pendingLoads = true
     end
 end
 
@@ -99,7 +102,7 @@ local function SpellName(id, fallback)
     if not id or ns.IsSecret(id) then return fallback or "?" end
     if C_Spell and C_Spell.GetSpellName then
         local ok, nm = pcall(C_Spell.GetSpellName, id)
-        if ok and type(nm) == "string" and nm ~= "" and not ns.IsSecret(nm) then return nm end
+        if ok and type(nm) == "string" and not ns.IsSecret(nm) and nm ~= "" then return nm end
     end
     if not (C_Spell and C_Spell.IsSpellDataCached and C_Spell.IsSpellDataCached(id)) then RequestSpell(id) end
     return fallback or ("spell " .. id)
@@ -109,7 +112,7 @@ end
 local function SpellDesc(id)
     if not id or ns.IsSecret(id) or not C_Spell then return nil, "none" end
     local ok, d = pcall(C_Spell.GetSpellDescription, id)
-    if ok and type(d) == "string" and d ~= "" and not ns.IsSecret(d) then return d, "ok" end
+    if ok and type(d) == "string" and not ns.IsSecret(d) and d ~= "" then return d, "ok" end
     if C_Spell.IsSpellDataCached and C_Spell.IsSpellDataCached(id) then return nil, "none" end
     RequestSpell(id)
     return nil, "loading"
@@ -140,9 +143,10 @@ end
 local function VisibleSpan(t, len, halfSpread)
     local x = X(t)
     local scale = TrackWidth() / Span()
-    local right = x + math.max(len or 0, halfSpread or 0) * scale
-    local left  = x - (halfSpread or 0) * scale
-    return right >= -2 and left <= TrackWidth() + 2, x
+    -- marks are drawn CENTRED at the cast: half the cast each side (culled
+    -- as if it ran right, a zoomed mark drew over the lane names: the sweep)
+    local half = math.max((len or 0) / 2, halfSpread or 0) * scale
+    return x + half >= -2 and x - half <= TrackWidth() + 2, x
 end
 local function ClampOffset()
     local len = FightEnd(Fight())
@@ -248,6 +252,7 @@ end
 local iconChoices
 ns.On("PLAYER_SPECIALIZATION_CHANGED", function() iconChoices = nil end)
 ns.On("PLAYER_TALENT_UPDATE", function() iconChoices = nil end)
+ns.On("SPELLS_CHANGED", function() iconChoices = nil end)    -- a trainer visit
 
 local function IconChoices()
     if iconChoices then return iconChoices end
@@ -295,6 +300,7 @@ local function BuildForm()
     form:EnableMouse(true)
     form:Hide()
     V.form = form
+    form:HookScript("OnHide", function() if T.DropColorPicker then T.DropColorPicker() end end)
 
     form.title = T.MakeText(form, 14, T.TEXT)
     form.title:SetPoint("TOPLEFT", 14, -12)
@@ -322,7 +328,7 @@ local function BuildForm()
     form.trigger = "time"
     form.triggerButtons = {}
     local prevSeg
-    for i, def in ipairs({ { "pull", "On pull" }, { "time", "At time" }, { "cast", "Boss casts" }, { "emote", "Boss yells" } }) do
+    for i, def in ipairs({ { "pull", "On pull" }, { "time", "At time" }, { "cast", "Any boss cast" }, { "emote", "Boss yells" } }) do
         local b = MakeSegment(form, def[2])
         b:SetHeight(24)
         if prevSeg then b:SetPoint("LEFT", prevSeg, "RIGHT", 2, 0) else b:SetPoint("TOPLEFT", 14, -102) end
@@ -632,8 +638,10 @@ local function OpenForm(t, spellId, abilityName, existing)
         form.delete:Hide()
     end
     form.wordCap:SetText("YELL CONTAINS")
+    form.atNote:SetText("m:ss from pull")      -- a refused Save's red note doesn't outlive it
     form.LayoutTrigger()
     form.picker:Hide()
+    if T.DropColorPicker then T.DropColorPicker() end   -- the last reminder's picker isn't this one's (the sweep)
     form.swatch:Paint()
     form:Show()
     form.text:SetFocus()
@@ -689,6 +697,7 @@ local EDIT_H = 118 -- the open editor under a card
 local function MakeCardEditor(row)
     local A = ns.Abilities
     local ed = CreateFrame("Frame", nil, row)
+    ed:EnableMouse(true)                               -- a click on a gap or a label isn't a click on the card (the sweep)
     ed:SetPoint("TOPLEFT", row, "TOPLEFT", 12, 0)     -- re-pinned per render
     ed:SetPoint("RIGHT", row, "RIGHT", -12, 0)
     ed:SetHeight(EDIT_H)
@@ -708,7 +717,9 @@ local function MakeCardEditor(row)
         local k = key()
         if not k then return end
         local t = (self:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if t == "" or t == row.realName then t = nil end
+        -- The real name as captured with the ability: switching boss rewrites
+        -- row.realName before the focus loss commits.
+        if t == "" or t == ed.realName then t = nil end
         A.Set(k, "rename", t)
         Rerender()
     end
@@ -801,21 +812,27 @@ local function MakeCardEditor(row)
     ed.reset:SetText("Reset")
     ed.reset:SetScript("OnClick", function()
         local k = key()
-        if k then A.Reset(k); Rerender() end
+        if not k then return end
+        -- the name box's own blur would write its text back (the sweep)
+        ed.name:SetText(ed.realName or "")
+        if ed.name:HasFocus() == true then ed.name:ClearFocus() end
+        A.Reset(k); Rerender()
     end)
 
     --- Read the store into the controls.
     function ed:Sync()
-        self.spellID = row.spellID
+        self.spellID, self.realName = row.spellID, row.realName
         local k = key()
         if not k then return end
-        self.name:SetText(A.Rename(k) or row.realName or "")
+        -- not while it's being typed in: a click on another control redrew it
+        -- and the rename was lost on blur (the sweep)
+        if self.name:HasFocus() ~= true then self.name:SetText(A.Rename(k) or row.realName or "") end
         local r, g, b = A.Color(k)
         self.useColor:SetChecked(r ~= nil)
         self.swatch:SetShown(r ~= nil)     -- the swatch only exists for a custom colour
         if r then self.swatch.fill:SetVertexColor(r, g, b, 1) end
         for role, cb in pairs(self.roles) do cb:SetChecked(A.HasRole(k, role)) end
-        local timed = not row.health
+        local timed = row.timed or not row.health
         for anchor, cb in pairs(self.routes) do
             local v = A.Route(k, anchor)
             if v == nil then v = A.ROUTE_DEFAULT[anchor] ~= false end
@@ -825,7 +842,10 @@ local function MakeCardEditor(row)
         local hv = A.Route(k, "health")
         if hv == nil then hv = true end
         self.healthRoute:SetChecked(hv)
-        self.healthRoute:SetShown(not timed)
+        self.healthRoute:SetShown(row.health ~= nil)
+        self.healthRoute:ClearAllPoints()
+        if timed then self.healthRoute:SetPoint("LEFT", self.routes.messages.label, "RIGHT", 18, 0)
+        else self.healthRoute:SetPoint("LEFT", self.showCap, "RIGHT", 10, 0) end
     end
     return ed
 end
@@ -893,7 +913,11 @@ RenderDesc = function(f)
     -- the timed ones, tagged with the health they fire at.
     -- One card per ABILITY: a multi-threshold one comes back from
     -- HealthAbilities as one entry per marker, and its card lists them all.
+    -- (a health ability with timed casts too is ONE card with both kinds of
+    -- route -- it came out twice, and neither card could route its timed
+    -- warnings: the sweep)
     local seen = {}
+    for _, o in ipairs(lanes) do seen[o.a] = true; o.timed = true end
     for _, ha in ipairs(f and ns.Schedule.HealthAbilities(f) or {}) do
         local a = ha.ability or ha
         if not seen[a] then
@@ -922,6 +946,7 @@ RenderDesc = function(f)
         row.name:SetText(mine or real)
         row.real:SetText(mine and real or "")
         row.health = a.health and a.health.pct or nil
+        row.timed = o.timed and true or false
         if row.health then
             local pcts = a.health.pcts
             local label
@@ -961,6 +986,7 @@ RenderDesc = function(f)
             T.SnapCheckBoxes()      -- the editor's rows hang under fractional text
         else
             if row.editor:IsShown() then row.editor.name:ClearFocus() end   -- disarm a mid-edit box
+            if row.editor:IsShown() and T.DropColorPicker then T.DropColorPicker() end   -- its card closed
             row.editor:Hide()
         end
         row:SetHeight(base + (open and EDIT_H or 0))
@@ -969,7 +995,15 @@ RenderDesc = function(f)
         row:Show()
         y = y + row:GetHeight() + 6
     end
-    for i = #lanes + 1, #win.descRows do win.descRows[i]:Hide() end
+    for i = #lanes + 1, #win.descRows do
+        local row = win.descRows[i]
+        if row.editor and row.editor:IsShown() then          -- its card went with the boss (the sweep)
+            if row.editor.name and row.editor.name:HasFocus() == true then row.editor.name:ClearFocus() end
+            if T.DropColorPicker then T.DropColorPicker() end
+            row.editor:Hide()
+        end
+        row:Hide()
+    end
     win.descEmpty:Hide()   -- no wording for an empty boss (Alex)
     content:SetHeight(math.max(1, y))
     T.SnapCheckBoxes()          -- rows hang under fractional text heights
@@ -981,7 +1015,11 @@ local function Build()
     win = shell.frame
     win.shell = shell
     win:SetFrameLevel(120)
-    win:SetScript("OnHide", function() if form then form:Hide() end; if ns.ReturnToOptions then ns.ReturnToOptions() end end)
+    win:SetScript("OnHide", function()
+        if form then form:Hide() end
+        if T.DropColorPicker then T.DropColorPicker() end   -- a card's picker doesn't outlive the window (the sweep)
+        if ns.ReturnToOptions then ns.ReturnToOptions() end
+    end)
     shell.subtitle:SetText("")
 
     -- Sidebar: Raids / Dungeons switch, then instances, then the picked
@@ -1138,11 +1176,10 @@ local function Build()
     win.hover:SetWordWrap(false)
     -- A spell record answering later refreshes the description panel once.
     spellEv:SetScript("OnEvent", function(_, _, spellID, success)
+        if not pendingLoads[spellID] then return end   -- not one of ours
+        pendingLoads[spellID] = nil
         if success == false then return end   -- nothing new to draw
-        if pendingLoads and win:IsShown() then
-            pendingLoads = false
-            RenderDesc(Fight())
-        end
+        if win:IsShown() then RenderDesc(Fight()) end
     end)
     return win
 end
@@ -1167,6 +1204,7 @@ local function MakeLane()
     lane.count = T.MakeText(lane, 11, T.TEXT_MUTE)
     lane.count:SetPoint("TOPRIGHT", lane, "TOPLEFT", LABEL_W - 10, -8)
     lane.track = CreateFrame("Button", nil, lane)
+    if lane.track.SetClipsChildren then lane.track:SetClipsChildren(true) end   -- marks never spill over the names
     lane.track:SetPoint("TOPLEFT", lane, "TOPLEFT", LABEL_W, 0)
     lane.track:SetPoint("BOTTOMRIGHT", lane, "BOTTOMRIGHT", 0, 0)
     lane.track.hl = T.SolidTex(lane.track, "HIGHLIGHT", 1, 1, 1, 0.04)
@@ -1239,8 +1277,10 @@ local function LaneMark(lane, i)
                     and string.format("  |cff888888(seen in %d of %d pulls)|r", self.support, self.pulls) or ""))
             self.tex:SetVertexColor(1, 1, 1, 1)
             ShowCursor(self)
+            self:SetScript("OnUpdate", function(s) ShowCursor(s) end)   -- (across a wide mark it froze: the sweep)
         end)
         m:SetScript("OnLeave", function(self)
+            self:SetScript("OnUpdate", nil)
             self.tex:SetVertexColor(self.r, self.g, self.b, self.alpha or 1)
             HideCursor()
         end)
@@ -1248,7 +1288,7 @@ local function LaneMark(lane, i)
         m:EnableMouseWheel(true)
         m:SetScript("OnMouseWheel", function(self, delta)
             if IsControlKeyDown and IsControlKeyDown() then
-                win.Zoom(delta > 0 and 1.3 or 1 / 1.3, self.t)
+                win.Zoom(delta > 0 and 1.3 or 1 / 1.3, (CursorTime(self)) or self.t)   -- around the pointer
             else
                 local h = win.lanes:GetScript("OnMouseWheel")
                 if h then h(win.lanes, delta) end
@@ -1453,7 +1493,9 @@ Refresh = function(fromSlider)
     -- A boss with nothing logged shows its name and nothing else: no axis,
     -- no lanes, no heading, no note (Alex: "just don't render anything").
     win.empty:Hide()
-    local has = #lanes > 0
+    -- nothing at all: nothing rendered (Alex); reminders or health cards
+    -- still have to be reachable (they couldn't be edited or removed: the sweep)
+    local has = #lanes > 0 or #ns.Reminders.For(state.enc) > 0 or #ns.Schedule.HealthAbilities(f) > 0
     for _, w in ipairs({ win.axis, win.lanes, win.desc, win.pan, win.panCap, win.zoomIn, win.zoomOut, win.zoomNote }) do
         if w then w:SetShown(has) end
     end
@@ -1510,10 +1552,28 @@ Refresh = function(fromSlider)
     local list = ns.Reminders.For(state.enc)
     rl.count:SetText(#list > 0 and ("x" .. #list) or "")
     local mi = 0
+    local fe = FightEnd(Fight())
+    -- Every mark 12 px from the next, in time order (keyed on the exact spot,
+    -- nearby ones still covered each other: the sweep); a run past the right
+    -- edge is pushed back left so all stay on the clipped track.
+    local placed = {}
     for _, r in ipairs(list) do
         local abs = (r.trigger == "time" and tonumber(r.arg)) or 0
-        local vis, x = Visible(abs)
-        if vis then
+        -- past the fight's end (a typed /sn remind, a shorter rebuild): at the
+        -- end, so it can still be opened and removed (the sweep)
+        local vis, x = Visible(math.min(abs, fe))
+        if vis then placed[#placed + 1] = { r = r, abs = abs, x = x } end
+    end
+    table.sort(placed, function(p, q) if p.x == q.x then return p.abs < q.abs end return p.x < q.x end)
+    for i, p in ipairs(placed) do if i > 1 then p.x = math.max(p.x, placed[i - 1].x + 12) end end
+    local edge = TrackWidth() - 6
+    for i = #placed, 1, -1 do
+        local lim = (i == #placed) and edge or (placed[i + 1].x - 12)
+        if placed[i].x > lim then placed[i].x = lim end
+    end
+    for _, p in ipairs(placed) do
+        local r, abs, x = p.r, p.abs, p.x
+        do
             mi = mi + 1
             local m = LaneMark(rl, mi)
             m:SetSize(10, 26)
@@ -1594,6 +1654,11 @@ function V.Shown() return win ~= nil and win:IsShown() end
 function V.Toggle(forceShow, encounterID)
     Build()
     if win:IsShown() and not (encounterID or forceShow) then win:Hide(); return end
+    -- between pulls only: the window covers the warnings (the sweep)
+    if (ns.Timers and ns.Timers.IsActive()) or (InCombatLockdown and InCombatLockdown()) then
+        ns.Print("the Boss Visualizer opens between pulls")
+        return
+    end
     if encounterID then
         local boss = ns.BossByEncounter(encounterID)
         -- Same resets as a sidebar click, and the PRIMARY id: a variant id
@@ -1616,6 +1681,12 @@ function V.Toggle(forceShow, encounterID)
     Refresh()
 end
 ns.VisualizerToggle = function(forceShow) V.Toggle(forceShow) end
+-- A pull puts it away (and the settings don't come back on its close)
+ns.Timers.Register({
+    OnEncounter = function(active)
+        if active and win and win:IsShown() then ns.returnToOptions = nil win:Hide() end
+    end,
+})
 ns.VisualizerShown = V.Shown
 
 function V.ShowBoss(boss)

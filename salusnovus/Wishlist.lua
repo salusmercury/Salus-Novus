@@ -114,7 +114,9 @@ function W.CanEquip(info)
     if not info then return false end
     if info.classID == WEAPON then
         local spell = WEAPON_SKILL[info.subclassID]
-        if spell then return Knows(spell) end
+        -- an off-hand-only weapon needs Dual Wield too (674): a paladin or
+        -- shaman saw off-hand swords (the sweep)
+        if spell then return Knows(spell) and (info.equipLoc ~= "INVTYPE_WEAPONOFFHAND" or Knows(674)) end
         return info.subclassID ~= 20                -- fishing poles are not dungeon loot
     elseif info.classID == ARMOR then
         if RELIC_CLASS[info.subclassID] then return RELIC_CLASS[info.subclassID] == ClassTag() end
@@ -326,13 +328,14 @@ end
 --- Browse: the loot of the chosen dungeons, optionally one slot group,
 -- that the player can equip. { {id, info, dungeon, boss, owned}, ... }
 function W.Browse(pool, slot)
-    local out, seen = {}, {}
+    local out, seen, pending = {}, {}, {}
     for _, d in ipairs(W.catalog and W.catalog.dungeons or {}) do
         if pool[d.key] then
             for _, b in ipairs(d.bosses) do
                 for _, id in ipairs(b.items) do
                     if not seen[id] then
                         local info = W.Info(id)
+                        if not info then pending[#pending + 1] = id end    -- not cached: its answer redraws (the sweep)
                         local group = info and SLOT[info.equipLoc]
                         if group and (not slot or slot == group) and W.CanEquip(info) then
                             seen[id] = true
@@ -343,7 +346,7 @@ function W.Browse(pool, slot)
             end
         end
     end
-    return out
+    return out, pending
 end
 
 -- ------------------------------------------------------------ my list
@@ -418,6 +421,7 @@ function W._ForgetBaseline(id) baseline[id] = nil end   -- test seam
 function W.Wish(id, on)
     local l = List(true)
     if not l then return end
+    if on and W.Owned(id) then return end          -- what you own isn't wished, period (Alex)
     if on then
         l[tostring(id)] = l[tostring(id)] or { spec = {} }
         baseline[id] = W.Owned(id)
@@ -429,11 +433,28 @@ function W.Wish(id, on)
     if W.OnChanged then W.OnChanged() end
 end
 
+--- A wish is a spec AND a want (BIS or Upgrade) -- Alex: never just
+-- "wished". Half made (one of the two) it's kept while you choose, but it
+-- isn't shared, counted or delisted.
+function W.Complete(r)
+    return type(r) == "table" and (r.tag == "bis" or r.tag == "up") and type(r.spec) == "table" and next(r.spec) ~= nil
+end
+
+--- Nothing left picked: no wish at all (as a right-click).
+local function Emptied(id, r)
+    if r.tag == nil and not (type(r.spec) == "table" and next(r.spec)) then
+        local l = List(false)
+        if l then l[tostring(id)] = nil end
+        baseline[id] = nil
+    end
+end
+
 function W.ToggleSpec(id, spec)
     local r = W.Get(id)
     if not r then return end
     r.spec = type(r.spec) == "table" and r.spec or {}
     r.spec[spec] = not r.spec[spec] or nil
+    Emptied(id, r)
     W.Broadcast()                      -- specs travel with the list now
     if W.OnChanged then W.OnChanged() end
 end
@@ -443,16 +464,31 @@ function W.SetTag(id, tag)
     local r = W.Get(id)
     if not r then return end
     r.tag = (r.tag ~= tag) and tag or nil
+    Emptied(id, r)
     W.Broadcast()
     if W.OnChanged then W.OnChanged() end
 end
 
---- My wished ids, sorted.
+--- A wish that counts for the group: complete, and not something you own
+-- (an old flag on an owned item is kept, but hidden -- and never shared,
+-- ranked, or shown on a roll: the sweep).
+function W.Counting(id)
+    return W.Complete(W.Get(id)) and not W.Owned(id)
+end
+
+--- My wished ids that count (see W.Counting), sorted.
+function W.Shared()
+    local out = {}
+    for _, id in ipairs(W.MyItems()) do if not W.Owned(id) then out[#out + 1] = id end end
+    return out
+end
+
+--- My wished ids, sorted: complete wishes only (a spec and a want).
 function W.MyItems()
     local out = {}
     for k, r in pairs(List(false) or {}) do
         local id = tonumber(k)
-        if id and type(r) == "table" then out[#out + 1] = id end
+        if id and W.Complete(r) then out[#out + 1] = id end
     end
     table.sort(out)
     return out
@@ -464,7 +500,8 @@ local function InInstance()
     local f = rawget(_G, "IsInInstance")
     if not f then return false end
     local ok, inside, kind = pcall(f)
-    return ok and inside == true and (kind == "party" or kind == "raid")
+    if not ok or ns.IsSecret(inside) or ns.IsSecret(kind) then return false end
+    return inside == true and (kind == "party" or kind == "raid")
 end
 W.InInstance = InInstance
 
@@ -499,8 +536,17 @@ ns.On("PLAYER_ENTERING_WORLD", function()
     for _, id in ipairs(W.MyItems()) do baseline[id] = W.Owned(id) end
 end)
 -- CheckGained itself returns at once outside an instance (one guard, one place).
-ns.On("BAG_UPDATE_DELAYED", function() W.CheckGained() end)
-ns.On("PLAYER_EQUIPMENT_CHANGED", function() W.CheckGained() end)
+--- Got (or lost) a wished item outside an instance: the group's copy of the
+-- list changes, so it's sent again (the sweep).
+local sharedSig
+local function Reshare()
+    local sig = table.concat(W.Shared(), ",")
+    if sharedSig ~= nil and sig ~= sharedSig then W.Broadcast() if W.OnChanged then W.OnChanged() end end
+    sharedSig = sig
+end
+W.Reshare = Reshare
+ns.On("BAG_UPDATE_DELAYED", function() W.CheckGained() Reshare() end)
+ns.On("PLAYER_EQUIPMENT_CHANGED", function() W.CheckGained() Reshare() end)
 
 -- ------------------------------------------------------------ party
 
@@ -530,11 +576,16 @@ local function Channel()
     return nil
 end
 
+--- One message; true when the client took it. On this client a refused
+-- send (the per-prefix throttle, not in a group) returns a result code
+-- rather than erroring (Enum.SendAddonMessageResult, 0 = success).
 local function Send(msg, ch)
     local ci = rawget(_G, "C_ChatInfo")
-    if not (ci and ci.SendAddonMessage) then return end
-    local ok = pcall(ci.SendAddonMessage, PREFIX, msg, ch)
-    if ok then W.sendOK = W.sendOK + 1 else W.sendFail = W.sendFail + 1 end
+    if not (ci and ci.SendAddonMessage) then return false end
+    local ok, res = pcall(ci.SendAddonMessage, PREFIX, msg, ch)
+    local sent = ok and (res == nil or res == true or res == 0)
+    if sent then W.sendOK = W.sendOK + 1 else W.sendFail = W.sendFail + 1 end
+    return sent
 end
 
 local function Later(fn)
@@ -543,7 +594,7 @@ end
 
 local pendingSend = false
 function W.Broadcast()
-    if pendingSend then return end
+    if pendingSend or not Enabled() then return end
     pendingSend = true
     Later(function()
         pendingSend = false
@@ -553,7 +604,7 @@ function W.Broadcast()
         local head, cont = ("WL|%s|"):format(class), ("WLC|%s|"):format(class)
         local BUDGET = 240
         local chunks, cur = {}, nil
-        for _, id in ipairs(W.MyItems()) do
+        for _, id in ipairs(W.Shared()) do
             local r = W.Get(id)
             -- id, then b/u for BIS/Upgrade, then ".13": the class's specs by index
             local piece = tostring(id) .. ((r and r.tag == "bis" and "b") or (r and r.tag == "up" and "u") or "")
@@ -567,13 +618,27 @@ function W.Broadcast()
         end
         if cur then chunks[#chunks + 1] = cur end
         if #chunks == 0 then chunks[1] = "" end
-        for i = 1, math.min(#chunks, 12) do Send((i == 1 and head or cont) .. chunks[i], ch) end
+        -- Paced under the client's per-prefix throttle (a burst of ~10, then
+        -- ~1 a second); a chunk refused sends the whole list again a little
+        -- later, so nobody keeps a head without its continuations (the sweep)
+        local n, i = math.min(#chunks, 10), 0
+        local function Next()
+            i = i + 1
+            if i > n then W.retries = 0 return end
+            if not Send((i == 1 and head or cont) .. chunks[i], ch) then
+                W.retries = (W.retries or 0) + 1
+                if W.retries <= 3 and C_Timer and C_Timer.After then C_Timer.After(3, W.Broadcast) end
+                return
+            end
+            if C_Timer and C_Timer.After then C_Timer.After(0.3, Next) else Next() end
+        end
+        Next()
     end)
 end
 
 local pendingReq = false
 function W.Request()
-    if pendingReq then return end
+    if pendingReq or not Enabled() then return end
     pendingReq = true
     Later(function()
         pendingReq = false
@@ -610,6 +675,7 @@ end
 local MAX_IDS = 240
 function W.OnAddonMessage(prefix, msg, channel, sender)
     if ns.IsSecret(prefix) or prefix ~= PREFIX or type(msg) ~= "string" then return end
+    if not Enabled() then return end                 -- the module off: no traffic, either way
     if ns.IsSecret(msg) or ns.IsSecret(channel) or ns.IsSecret(sender) then return end
     if channel ~= "PARTY" and channel ~= "RAID" and channel ~= "INSTANCE_CHAT" then return end
     local who = Short(sender or "")
@@ -624,7 +690,10 @@ function W.OnAddonMessage(prefix, msg, channel, sender)
     end
     if not class then return end
     local prev = W.party[who]
-    if append and not prev then return end
+    local now = GetTime and GetTime() or 0
+    -- a continuation belongs to the head just received: one whose head was
+    -- dropped mustn't add to an old list (the sweep)
+    if append and not (prev and prev.headAt and now - prev.headAt < 10) then return end
     local items = (append and prev.items) or {}
     local seen = {}
     for _, it in ipairs(items) do seen[it.id] = true end
@@ -643,8 +712,9 @@ function W.OnAddonMessage(prefix, msg, channel, sender)
             items[#items + 1] = { id = n, tag = (flag == "b" and "bis") or (flag == "u" and "up") or nil, specs = specs }
         end
     end
-    W.party[who] = { classFile = class ~= "" and class or nil, items = items, at = GetTime and GetTime() or 0 }
-    if W.OnChanged then W.OnChanged() end
+    W.party[who] = { classFile = class ~= "" and class or nil, items = items, at = now,
+                     headAt = append and prev.headAt or now }
+    if W.OnPartyChanged then W.OnPartyChanged() end   -- (the party view only: the sweep)
 end
 ns.On("CHAT_MSG_ADDON", function(...) W.OnAddonMessage(...) end)
 
@@ -652,7 +722,7 @@ ns.On("CHAT_MSG_ADDON", function(...) W.OnAddonMessage(...) end)
 ns.On("GROUP_ROSTER_UPDATE", function()
     for name in pairs(W.party) do if not W.InMyGroup(name) then W.party[name] = nil end end
     if Channel() then W.Request() end
-    if W.OnChanged then W.OnChanged() end
+    if W.OnPartyChanged then W.OnPartyChanged() end
 end)
 ns.On("PLAYER_ENTERING_WORLD", function() W.RegisterPrefix() end)
 
@@ -662,7 +732,7 @@ function W.WantersOf(id)
     local out = {}
     id = tonumber(id)
     if not id then return out end
-    local mine = W.Get(id)
+    local mine = W.Counting(id) and W.Get(id)            -- (a half-made or owned one isn't a want: the sweep)
     if mine then
         local specs = {}
         for _, nm in ipairs(W.MySpecs()) do if mine.spec and mine.spec[nm] then specs[#specs + 1] = nm end end
@@ -704,7 +774,7 @@ function W.Rank(sortBy)
     local me = Str(UnitName("player")) or "?"
     local okC, _, myClass = pcall(UnitClass, "player")
     myClass = okC and Str(myClass) or nil
-    for _, id in ipairs(W.MyItems()) do
+    for _, id in ipairs(W.Shared()) do
         local r = W.Get(id)
         local specs = {}
         for _, nm in ipairs(W.MySpecs()) do if r and r.spec and r.spec[nm] then specs[#specs + 1] = nm end end
@@ -752,4 +822,4 @@ function W.Rank(sortBy)
     return out
 end
 
-ns.On("GET_ITEM_INFO_RECEIVED", function() if W.OnItemInfo then W.OnItemInfo() end end)
+ns.On("GET_ITEM_INFO_RECEIVED", function(id) if W.OnItemInfo then W.OnItemInfo(id) end end)

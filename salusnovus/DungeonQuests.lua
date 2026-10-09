@@ -107,6 +107,14 @@ end
 -- What party members said they have: [name] = { key = dungeonKey, quests = { {questID, title} } }.
 D.party = {}
 
+--- A quest you've already turned in (so a share can't land).
+function D.Completed(questID)
+    local f = C_QuestLog and C_QuestLog.IsQuestFlaggedCompleted
+    if not f then return false end
+    local ok, done = pcall(f, questID)
+    return ok and not ns.IsSecret(done) and done == true
+end
+
 --- Everything to act on in this dungeon:
 -- give = { {questID, title, missing = {names}} }, get = { {questID, title, from = {names}} }.
 function D.Check(dungeon)
@@ -129,7 +137,10 @@ function D.Check(dungeon)
     for name, rec in pairs(D.party) do
         if present[name] and rec.key == key then
             for _, q in ipairs(rec.quests) do
-                if not have[q.questID] then
+                -- A quest you've done can't be shared to you. (Their list stays
+                -- current because dropping a quest re-sends it; the client's
+                -- IsUnitOnQuest may not answer for quests outside your log.)
+                if not have[q.questID] and not D.Completed(q.questID) then
                     local e = at[q.questID]
                     if not e then e = { questID = q.questID, title = q.title, from = {} }; at[q.questID] = e; get[#get + 1] = e end
                     e.from[#e.from + 1] = present[name]
@@ -381,7 +392,13 @@ ns.On("QUEST_ACCEPTED", function()
     if dungeon and Enabled() then D.Broadcast(dungeon) end
     Queue()
 end)
-ns.On("QUEST_REMOVED", Queue)
+-- Dropping or turning in a quest changes what we can share: say so, or the
+-- others keep "<name> can share" for a quest we no longer have.
+ns.On("QUEST_REMOVED", function()
+    local dungeon = D.Dungeon()
+    if dungeon and Enabled() then D.Broadcast(dungeon) end
+    Queue()
+end)
 ns.On("UNIT_QUEST_LOG_CHANGED", Queue)
 ns.On("CHAT_MSG_ADDON", function(...) D.OnAddonMessage(...) end)
 ns.RegisterApply(function() D.Refresh() end, "Dungeon quests")

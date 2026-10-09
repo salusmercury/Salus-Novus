@@ -355,7 +355,7 @@ ns.Commands.trainer = function(rest)
     local arg = (rest or ""):match("^(%S*)"):lower()
     if arg == "attach" and ns.TrainerUI then ns.TrainerUI.TryAttach() end
     local st = T.Status()
-    if not st then ns.Print("trainer: no catalogue for this class yet; visit a class trainer once")
+    if not st then ns.Print("trainer: no catalogue for this class yet (at a class trainer: /sn probe trainer capture)")
     else ns.Print(("trainer: %d to learn now (%s), %d later, %d known"):format(#st.now, T.Money(st.cost), #st.later, #st.known)) end
     if ns.TrainerUI and ns.TrainerUI.Report then ns.Print(ns.TrainerUI.Report()) end
 end

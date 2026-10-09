@@ -126,7 +126,7 @@ function T.AbilityName(b)
     end
     if b.spellID and C_Spell and C_Spell.GetSpellName then
         local ok, nm = pcall(C_Spell.GetSpellName, b.spellID)
-        if ok and type(nm) == "string" and nm ~= "" and not ns.IsSecret(nm) then return nm end
+        if ok and type(nm) == "string" and not ns.IsSecret(nm) and nm ~= "" then return nm end
     end
     return ns.S(b.name)
 end

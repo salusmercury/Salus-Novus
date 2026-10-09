@@ -133,7 +133,9 @@ function S.OnXPUpdate()
     if not xp then return end
     if not lastXP then lastXP, lastMax = xp, max return end
     local gain
-    if xp >= lastXP then gain = xp - lastXP
+    -- A level up is the bar's size changing, not the XP going down: a big
+    -- turn-in can leave more over than you had (100/400 + 700 -> 400/900).
+    if max == lastMax and xp >= lastXP then gain = xp - lastXP
     else gain = ((lastMax or 0) - lastXP) + xp end         -- a level up in between
     lastXP, lastMax = xp, max
     if gain <= 0 or not Enabled() then return end
@@ -315,8 +317,11 @@ function S.OnEnterWorld()
     for _, e in ipairs(l.entries) do
         if type(e) == "table" and e.map == map and e.char == who and Num(e.t) and now - e.t < HOUR then seen = true end
     end
-    if seen and not l.reset[map] then return end
-    l.reset[map] = nil
+    -- The reset flag is this character's: another character's reset says
+    -- nothing about the instance this one is walking back into.
+    local rk = who .. ":" .. map
+    if seen and not l.reset[rk] then return end
+    l.reset[rk] = nil
     l.entries[#l.entries + 1] = { t = now, map = map, name = name, char = who, raid = kind == "raid" or nil }
     if S.OnChanged then S.OnChanged() end
 end
@@ -336,8 +341,11 @@ function S.OnSystem(msg)
     local resetPat = Pattern(rawget(_G, "INSTANCE_RESET_SUCCESS") or "%s has been reset.")
     local name = resetPat and msg:match(resetPat)
     if name then
+        local who = CharKey()
         for _, e in ipairs(l.entries) do
-            if type(e) == "table" and e.name == name and Num(e.map) then l.reset[e.map] = true end
+            if type(e) == "table" and e.name == name and Num(e.map) and who and e.char == who then
+                l.reset[who .. ":" .. e.map] = true
+            end
         end
         return
     end
@@ -345,7 +353,9 @@ function S.OnSystem(msg)
     if msg == tooMany or msg:find("too many instances", 1, true) then
         local n = #S.Recent()
         if n > 0 then
-            l.learned = n
+            -- Only ever raised: entries made while the bar was off aren't
+            -- logged, so a low count would cap every character for good.
+            l.learned = math.max(Num(l.learned) and l.learned or 0, n)
             ns.Print(("the instance limit here looks like %d per hour."):format(n))
             if S.OnChanged then S.OnChanged() end
         end

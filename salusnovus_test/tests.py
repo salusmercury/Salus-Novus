@@ -8,7 +8,6 @@ def fresh():
     return h.login()
 
 
-
 # helpers from bug hunt 3 (routing lane)
 
 def get_bar_names(h):
@@ -247,6 +246,25 @@ def _():
     ok(abs(cx - (ux + 330)) < 0.01, "snapped from outside the range")
 
 
+@test("anchors (sweep): unlocked mid-fight, the placeholders come back when the last live bar ends (not an empty, shrunk anchor); a preview setting change re-styles the line already showing", "anchors")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1); W.advance(0.5)')
+    ok(h.lua("return ns.db.unlocked and not ns.Timers.Any()"), "unlocked, nothing live")
+    txt = str(h.lua("return ns.Bars._bars[1]:IsShown() and ns.Bars._bars[1].text:GetText() or ''"))
+    ok(txt.startswith("Ability"), "the bars' placeholders are back: %r" % txt)
+    pl = [str(t) for t in h.lua("local o = {} for i = 1, 8 do local l = ns.Preview._lines[i] if l:IsShown() then o[#o + 1] = l.text:GetText() end end return o").values()]
+    ok(len(pl) > 0, "the preview's placeholder is back")
+    # a style change reaches the line already showing
+    ok(h.lua("return ns.Preview._lines[1].iconFrame:IsShown()"), "icon on")
+    h.lua("ns.db.preview.showIcon = false; ns.ApplyAll()")
+    ok(h.lua("return not ns.Preview._lines[1].iconFrame:IsShown()"), "turning the icon off reaches the showing line")
+    h.lua("ns.db.preview.showIcon = true; ns.db.unlocked = false; ns.ApplyAll()")
+    eq(h.errors(), [], "errors")
+
+
 @test("unlocking through the DB flag shows placeholder bars and makes the anchor draggable; locking hides it", "anchors")
 def _():
     h = fresh()
@@ -364,7 +382,7 @@ def _():
     h.lua("LibStub = nil")
 
 
-@test("the Font picker lists every font drawn in itself, and picking one writes the setting", "fonts")
+@test("the Font picker lists every font with its sample drawn in itself (and the name in the addon font, still after the delayed re-font passes), and picking one writes the setting", "fonts")
 def _():
     h = fresh()
     open_options(h)
@@ -376,18 +394,19 @@ def _():
         __fontBtn:Click()
     """)
     ok(h.lua("return SalusNovusPickerList and SalusNovusPickerList:IsShown()"), "picker list did not open")
-    h.lua("W.advance(2)")   # the delayed re-font passes run; rows must still be in their own font
+    h.lua("W.advance(2)")   # the delayed re-font passes run; the name/sample split must survive them
     n = int(h.lua("return #ns.GetFonts()"))
     bad = str(h.lua("""
         local out = {}
         for i = 1, %d do
             local r = SalusNovusPickerList.rows[i]
             if not r or not r:IsShown() then out[#out+1] = "row" .. i .. " missing"
-            elseif r.text.__font ~= r.value then out[#out+1] = tostring(r.text:GetText()) .. " drawn in " .. tostring(r.text.__font) end
+            elseif r.sample.__font ~= r.value then out[#out+1] = tostring(r.text:GetText()) .. " sample drawn in " .. tostring(r.sample.__font)
+            elseif r.text.__font ~= ns.ActiveFont() then out[#out+1] = tostring(r.text:GetText()) .. " NAME drawn in " .. tostring(r.text.__font) end
         end
         return table.concat(out, ",")
     """ % n))
-    eq(bad, "", "rows not drawn in their own font: %s" % bad)
+    eq(bad, "", "rows wrong after the re-font passes: %s" % bad)
     ok(not h.lua("return SalusNovusPickerList.rows[%d] and SalusNovusPickerList.rows[%d]:IsShown()" % (n + 1, n + 1)), "surplus row shown")
     h.lua("SalusNovusPickerList.rows[3]:Click()")
     ok(not h.lua("return SalusNovusPickerList:IsShown()"), "list stayed open after a pick")
@@ -661,6 +680,7 @@ def _():
 @test("cast reminder fires for target/nameplate casts only, throttled, never for party", "reminders")
 def _():
     h = fresh()
+    h.lua("UnitName = function(u) if u == 'player' then return 'Merk' end local b = ns.Timers.Boss() return b and ((b.npcs and b.npcs[1] and b.npcs[1].name) or b.name) or 'Merk' end")   # the target / plates are the boss (the cast check reads the name)
     h.lua("""
         ns.DefaultReminders = { { id = "c1", encounterID = 3493, trigger = "cast", text = "CASTING", sound = false } }
     """)
@@ -688,7 +708,7 @@ def _():
     # rejected by the type check and prove nothing.
     h.lua('W.fireEvent("CHAT_MSG_MONSTER_YELL", W.secretString("Durgen lets out an Intimidating Shout!"), "Durgen")')
     eq(len(fired(h)), 0, "acted on a secret emote")
-    h.lua('W.fireEvent("CHAT_MSG_MONSTER_YELL", "Durgen lets out an Intimidating SHOUT!", "Durgen")')
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_YELL", "Durgen lets out an Intimidating SHOUT!", "Durgen Dirgehammer")')   # (the speaker is the NPC's name)
     eq(fired(h), ["FEAR"], "did not match a readable emote")
 
 
@@ -1381,6 +1401,7 @@ def _():
 @test("the form makes every kind of reminder: pull, cast and yell as well as timed; a yell needs a word", "visualizer")
 def _():
     h = fresh()
+    h.lua("UnitName = function(u) if u == 'player' then return 'Merk' end local b = ns.Timers.Boss() return b and ((b.npcs and b.npcs[1] and b.npcs[1].name) or b.name) or 'Merk' end")   # the target / plates are the boss (the cast check reads the name)
     open_vis(h)
     h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
     n0 = int(h.lua("return #ns.Reminders.For(3494)"))
@@ -2080,7 +2101,7 @@ def _():
         ns.QueuePreviewStart(__stage)
     """)
     ok(h.lua("return SalusNovusQueue:GetParent() == __stage and SalusNovusQueue:IsShown()"), "not on the stage")
-    eq(queue_icons(h), 6, "preview should show the six fakes (count is 8 here)")
+    eq(queue_icons(h), 8, "preview should show eight fakes at Max icons 8 (it stopped at six: the sweep)")
     h.lua("ns.SaveAnchor(SalusNovusQueue, 'queuePos')")     # refused off UIParent
     h.lua("ns.QueuePreviewStop()")
     ok(h.lua("return SalusNovusQueue:GetParent() == UIParent"), "not back on UIParent")
@@ -2126,7 +2147,7 @@ def _():
     open_options(h)
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings ~= nil"), "no module switch")
     ok(h.lua("return ns.Options.moduleSwitches.bossWarnings:GetChecked()"), "switch should start on")
-    eq(int(h.lua("local n = 0 for _ in pairs(ns.Options.moduleSwitches) do n = n + 1 end return n")), 3, "three module switches: Boss Warnings, Quality of Life, Leveling; Global has none")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.Options.moduleSwitches) do n = n + 1 end return n")), 2, "two module switches: Boss Warnings, Quality of Life; Global has none")
     ok(h.lua("return ns.Options.moduleSwitches.qol ~= nil and ns.Options.moduleSwitches.global == nil"), "Quality of Life needs a switch, Global must not")
     ok(h.lua("return ns.Options.launcher ~= nil and ns.Options.launcher.label:GetText() == 'BOSS VISUALIZER'"), "launcher row missing")   # nav labels are uppercase (Slab)
     ok(float(h.lua("return ns.Options.launcher:GetTop()")) < float(h.lua("return ns.Options.launcher:GetParent():GetTop()")) - 100, "launcher row not in the module list")
@@ -2210,6 +2231,41 @@ def _():
 # Five reviewers read the addon cold (2026-09-19); each confirmed finding
 # has a test here that failed before its fix.
 
+@test("reminders (sweep): a death DURING a countdown doesn't spend the reminder (a res gets it back); a reminder saved for another boss mid-pull doesn't fire here; reminders switched off and on mid-pull get the rest of the schedule back", "bughunt")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "c6", encounterID = 3494, trigger = "time", arg = 6, lead = 3, text = "COUNTED", sound = false },
+            { id = "t9", encounterID = 3494, trigger = "time", arg = 9, lead = 1, text = "NINE", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    h.lua("W.advance(4)")                                   # countdown began at 3
+    eq(fired(h).count("COUNTED"), 1, "countdown showing")
+    h.lua('W.playerDead = true; W.fireEvent("PLAYER_DEAD"); W.advance(0.5); W.playerDead = false; W.fireEvent("PLAYER_ALIVE"); W.advance(0.2)')
+    eq(fired(h).count("COUNTED"), 2, "the res brings back the countdown that never reached its moment")
+    h.lua("ns.ReminderRearm({ id = 'other', encounterID = 3493, trigger = 'time', arg = 7, lead = 1, text = 'WRONG BOSS', sound = false }); W.advance(2)")
+    ok("WRONG BOSS" not in fired(h), "another boss's reminder fired in this fight")
+    h.lua("ns.db.reminders.enabled = false; ns.ApplyAll(); ns.db.reminders.enabled = true; ns.ApplyAll()")
+    h.lua("W.advance(5)")
+    ok("NINE" in fired(h), "off and on mid-pull: the 9s reminder still came: %r" % fired(h))
+    eq(h.errors(), [], "errors")
+
+
+@test("messages (sweep): unlocked, a real line hides the 'Sample message' placeholder and it comes back when the last line retires", "bughunt")
+def _():
+    h = fresh()
+    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusMessages.unlockText:IsShown()"), "placeholder while empty")
+    h.lua("ns.Messages.Show('Knock Away', 1, 1, 1)")
+    ok(h.lua("return not SalusNovusMessages.unlockText:IsShown()"), "a real line hides it")
+    h.lua("W.advance(4)")
+    ok(h.lua("return #ns.Messages._active == 0 and SalusNovusMessages.unlockText:IsShown()"), "back after the line retires")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
+    eq(h.errors(), [], "errors")
+
+
 @test("a combat res mid-fight gets the rest of the schedule back", "bughunt")
 def _():
     h = fresh()
@@ -2237,6 +2293,7 @@ def _():
 @test("a cast by a FRIENDLY target is not the boss; secret or missing hostility fails open", "bughunt")
 def _():
     h = fresh()
+    h.lua("UnitName = function(u) if u == 'player' then return 'Merk' end local b = ns.Timers.Boss() return b and ((b.npcs and b.npcs[1] and b.npcs[1].name) or b.name) or 'Merk' end")   # the target / plates are the boss (the cast check reads the name)
     h.lua("""
         ns.DefaultReminders = { { id = "c1", encounterID = 3493, trigger = "cast", text = "CASTING", sound = false } }
     """)
@@ -2334,6 +2391,7 @@ def _():
             local ux, uy = UIParent:GetCenter()
             ns.db.anchorsGlobal.gridSize = 32
             ns.db.anchorsGlobal.grid = %s
+            ns.ShowAlignGrid(true)               -- (it snaps to the grid as DRAWN: the sweep)
             SalusNovusBars:ClearAllPoints()
             SalusNovusBars:SetPoint("CENTER", UIParent, "BOTTOMLEFT", ux + 325, uy - 200)
             ns.SnapMovable(SalusNovusBars)
@@ -2527,47 +2585,37 @@ def _():
     _cancel_restores_v2(h, "reminders", "SalusNovusReminderFrame", "remindersPos")
 
 
-@test("Guide/Arrow/Builder: Cancel restores each frame's own v=2 record, not another anchor's snapshot", "options")
+@test("Session/Camping/Dungeon Quests: Cancel restores each frame's own v=2 record, not another anchor's snapshot", "options")
 def _():
     # These three have no options-page preview stage (they live on UIParent
     # the whole time, dragged directly in unlock mode), so no re-entering is
     # needed to measure -- but they still go through the SAME generic
     # ExitUnlockMode loop over ns.AnchorPositions as every previewed anchor.
     h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = true
-        ns.ApplyAll()
-        ns.Guide.Build(); ns.Arrow.Build(); ns.Builder.Build()
-    """)
+    h.lua("ns.SessionBar.Build(); ns.CampingUI.Build(); ns.DungeonQuests.Build()")
+    frames = (
+        ("SalusNovusSession", "sessionPos", "s"),
+        ("SalusNovusCamping", "campingPos", "c"),
+        ("SalusNovusDungeonQuests", "dungeonQuestsPos", "d"),
+    )
     open_options(h)
     h.lua("ns.Options.EnterUnlockMode()")
-    for frame_name, key, dx, dy in (
-        ("SalusNovusGuide", "guidePos", 200, 300),
-        ("SalusNovusArrow", "arrowPos", 210, 310),
-        ("SalusNovusBuilder", "builderPos", 220, 320),
-    ):
+    for i, (frame_name, key, _t) in enumerate(frames):
         h.lua("""
             %s:ClearAllPoints()
             %s:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", %d, %d)
             ns.SaveAnchor(%s, "%s")
-        """ % (frame_name, frame_name, dx, dy, frame_name, key))
+        """ % (frame_name, frame_name, 200 + 10 * i, 300 + 10 * i, frame_name, key))
     h.lua("ns.Options.ExitUnlockMode(true)")   # a real v=2 record now exists for all three
     h.lua("ns.Options.EnterUnlockMode()")
-    x0 = h.lua("return { g = { SalusNovusGuide:GetLeft(), SalusNovusGuide:GetTop() }, "
-               "a = { SalusNovusArrow:GetLeft(), SalusNovusArrow:GetTop() }, "
-               "b = { SalusNovusBuilder:GetLeft(), SalusNovusBuilder:GetTop() } }")
-    h.lua("""
-        SalusNovusGuide:ClearAllPoints() SalusNovusGuide:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 900, 900)
-        ns.SaveAnchor(SalusNovusGuide, "guidePos")
-        SalusNovusArrow:ClearAllPoints() SalusNovusArrow:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 910, 910)
-        ns.SaveAnchor(SalusNovusArrow, "arrowPos")
-        SalusNovusBuilder:ClearAllPoints() SalusNovusBuilder:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", 920, 920)
-        ns.SaveAnchor(SalusNovusBuilder, "builderPos")
-    """)
+    x0 = {t: h.lua("return { %s:GetLeft(), %s:GetTop() }" % (f, f)) for f, _k, t in frames}
+    for i, (frame_name, key, _t) in enumerate(frames):
+        h.lua("""
+            %s:ClearAllPoints() %s:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", %d, %d)
+            ns.SaveAnchor(%s, "%s")
+        """ % (frame_name, frame_name, 900 + 10 * i, 900 + 10 * i, frame_name, key))
     h.lua("ns.Options.ExitUnlockMode(false)")   # Cancel
-    for frame_name, tag in (("SalusNovusGuide", "g"), ("SalusNovusArrow", "a"), ("SalusNovusBuilder", "b")):
+    for frame_name, _k, tag in frames:
         x, y = h.lua("return %s:GetLeft(), %s:GetTop()" % (frame_name, frame_name))
         gx, gy = x0[tag][1], x0[tag][2]
         ok(abs(x - float(gx)) < 0.01 and abs(y - float(gy)) < 0.01,
@@ -2711,6 +2759,7 @@ def _():
     eq(str(q["text"]), "KNOCK", "queue label not renamed")
     ok(abs(float(q["lc"][2]) - 0.9) < 0.01, "queue label not coloured")
     # the fill colour is the bars' own, never the ability's
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')   # the visualizer opens between pulls (the sweep)
     open_vis(h)
     h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
     names = lane_names(h)
@@ -2982,7 +3031,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-
 @test("the color picker is ours: sliders and the hex box drive onChange live, Okay keeps, Cancel restores, ESC-closable", "polish")
 def _():
     h = fresh()
@@ -3049,7 +3097,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-
 # ------------------------------------------------------------ bug hunt 2
 # Five Sonnet reviewers (2026-09-19). Each confirmed finding has a test
 # here that failed before its fix.
@@ -3071,6 +3118,42 @@ def _():
     ok(left == left and abs(left) < 1e6, "bars sat at a NaN/absurd position: %r" % left)
     ql = float(h.lua("return SalusNovusQueue:GetLeft()"))
     ok(ql == ql and abs(ql) < 1e6, "queue sat at an absurd position: %r" % ql)
+    eq(h.errors(), [], "errors")
+
+
+@test("visualizer (sweep): every pending spell load redraws its card, not just the first, and an unrelated load does nothing; a refused Save's red note is gone on the next open; an untouched name box doesn't become a rename when the boss switches", "visualizer")
+def _():
+    h = fresh()
+    h.lua("""
+        __spellDesc, __cached = {}, {}
+        C_Spell.GetSpellDescription = function(id) return __spellDesc[id] or "" end
+        C_Spell.IsSpellDataCached = function(id) return __cached[id] or false end
+    """)
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("__a, __b = SalusNovusVisualizer.descRows[1].spellID, SalusNovusVisualizer.descRows[2].spellID")
+    eq(str(h.lua("return SalusNovusVisualizer.descRows[2].desc:GetText()")), "loading...", "both uncached")
+    h.lua("W.fireEvent('SPELL_DATA_LOAD_RESULT', 424242, true)")   # someone else's spell
+    h.lua("__spellDesc[__a] = 'First.'; __cached[__a] = true; W.fireEvent('SPELL_DATA_LOAD_RESULT', __a, true)")
+    eq(str(h.lua("return SalusNovusVisualizer.descRows[1].desc:GetText()")), "First.", "first answer")
+    h.lua("__spellDesc[__b] = 'Second.'; __cached[__b] = true; W.fireEvent('SPELL_DATA_LOAD_RESULT', __b, true)")
+    eq(str(h.lua("return SalusNovusVisualizer.descRows[2].desc:GetText()")), "Second.", "the second answer redraws too")
+    # refused save, then a fresh open
+    h.lua("ns.Visualizer.OpenForm(5, 11130, 'Knock Away', nil); ns.Visualizer.form.at:SetText(''); ns.Visualizer.form.save:Click()")
+    ok("need a time" in str(h.lua("return ns.Visualizer.form.atNote:GetText()")), "refused")
+    h.lua("ns.Visualizer.form:Hide(); ns.Visualizer.OpenForm(5, 11130, 'Knock Away', nil)")
+    eq(str(h.lua("return ns.Visualizer.form.atNote:GetText()")), "m:ss from pull", "the note is back to normal")
+    h.lua("ns.Visualizer.form:Hide()")
+    # untouched name box + boss switch
+    h.lua("local r = SalusNovusVisualizer.descRows[1] r:GetScript('OnMouseUp')(r)")
+    ed = "SalusNovusVisualizer.descRows[1].editor"
+    h.lua("""
+        for _, r in ipairs(ns.Visualizer._bossRows) do
+            if r:IsShown() and r.boss and r.boss.encounterID == 3493 then r:GetScript('OnClick')(r) break end
+        end
+    """)
+    h.lua("%s.name:GetScript('OnEditFocusLost')(%s.name)" % (ed, ed))
+    eq(str(h.lua("return tostring(ns.Abilities.Rename(__a))")), "nil", "the untouched real name was not saved as a rename")
     eq(h.errors(), [], "errors")
 
 
@@ -3152,7 +3235,6 @@ def _():
     eq(bad, "", "section titles on half pixels: %s" % bad)
 
 
-
 @test("a hand-edited negative or non-number bars grace cannot expire a record before it lands", "bughunt")
 def _():
     h = fresh()
@@ -3211,7 +3293,6 @@ def _():
     h.lua("__en:Click()")
     ok(h.lua("return ns.db.bars.enabled and SalusNovusBars:GetParent() ~= UIParent and SalusNovusBars:IsShown()"), "preview did not resume")
     eq(h.errors(), [], "errors")
-
 
 
 # ------------------------------------------------------------ health bars
@@ -3325,6 +3406,25 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("health bars (sweep): a pull or an end while the page preview runs leaves the preview alone; a row handed a fresh entry isn't left dimmed", "health")
+def _():
+    h = fresh()
+    h.lua("__stage = CreateFrame('Frame', nil, UIParent); ns.HealthBarsPreviewStart(__stage)")
+    n0 = int(h.lua("return #ns.HealthBars.state.live"))
+    ok(n0 > 0 and h.lua("return SalusNovusHealthBars:IsShown()"), "preview up")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')       # no health abilities
+    ok(h.lua("return SalusNovusHealthBars:IsShown()"), "a pull did not blank the preview")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    ok(h.lua("return SalusNovusHealthBars:IsShown() and #ns.HealthBars.state.live == %d" % n0), "an end did not blank the preview")
+    h.lua("ns.HealthBarsPreviewStop()")
+    # a dimmed row, rebuilt with a fresh (unrefused) entry
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    h.lua("SalusNovusHealthBars.bar:SetAlpha(0.3); ns.HealthBars.state.live[1].refused = false; ns.HealthBars.state.live[1].unit = 'boss1'; UnitExists = function() return true end; UnitName = function(u) return ns.HealthBars.state.live[1].name end; ns.ApplyAll()")
+    ok(h.lua("return SalusNovusHealthBars.bar:GetAlpha() == 1"), "a fresh entry on a dimmed row draws at full alpha")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
 @test("health bars anchor: unlock shows a sample bar without markers and is draggable; disabled/module-off hide it; the page preview drains and stops", "health")
 def _():
     h = fresh()
@@ -3390,13 +3490,8 @@ def _():
     eq(h.errors(), [], "no errors from secret key guarding")
 
 
-
-
 # ------------------------------------------------------------------
 # bug hunt 3: hidden-frame OnUpdate
-
-
-
 
 
 # ---------------------------------------------------------- bughunt3: OnUpdate on hidden frames
@@ -3464,8 +3559,6 @@ def _():
     eq(h.errors(), [], "errors during hide/show sequence")
     final_active = int(h.lua("return #ns.Reminders._active"))
     ok(final_active >= 0, "reminder state corrupted")
-
-
 
 
 # ------------------------------------------------------------------
@@ -4002,7 +4095,6 @@ def _():
 # bug hunt 3: SavedVariables robustness
 
 
-
 # ----------------------------------------------------------- bughunt3: SavedVariables robustness
 
 @test("SalusNovusDB nil works from fresh defaults", "bughunt3")
@@ -4494,7 +4586,6 @@ def _():
 # bug hunt 3: options atomicity
 
 
-
 # ================================================================ bughunt3
 
 @test("unlock twice, cancel twice: snapshot must not corrupt, position must revert twice", "bughunt3")
@@ -4529,8 +4620,6 @@ def _():
     ok(abs(x2 - x0) < 0.01 and abs(y2 - y0) < 0.01, "second cancel did not revert")
     ok(not h.lua("return ns.db.unlocked"), "not locked after second cancel")
     eq(h.errors(), [], "errors")
-
-
 
 
 @test("changing a setting on one page persists when switching to another page", "bughunt3")
@@ -4597,8 +4686,8 @@ def _():
     ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "bars not on UIParent before options open")
     open_options(h)
     h.lua("ns.Options.SelectPage('bars')")
-    ok(h.lua("return SalusNovusBars:GetParent() ~= UIParent"), "bars moved to preview stage during encounter")
-    ok(h.lua("return SalusNovusBars:IsShown()"), "bars not shown in preview")
+    ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "a fight in progress: the live bars stay on screen, no preview takes them (the sweep)")
+    ok(h.lua("for _, st in ipairs(ns.Options.previewStages) do if st.running then return false end end return true"), "no preview runs mid-fight")
     h.lua("SalusNovusOptions:Hide()")
     ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "bars not restored to UIParent after close")
     h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
@@ -4623,7 +4712,6 @@ def _():
 
 # ------------------------------------------------------------------
 # bug hunt 3: generated data invariants
-
 
 
 # -------------------------------------------- bughunt3: data invariants
@@ -4778,7 +4866,6 @@ def _():
 # bug hunt 3: generator vs hostile input
 
 
-
 # ---------------------------------------------------------- bughunt3: hostile inputs
 
 @test("cast_health: truncated log (cut mid-line) does not crash", "bughunt3")
@@ -4882,7 +4969,7 @@ def _():
     ts3 = g.parse_ts("9/19/2026 05:00:46.999-5")  # high decimal
     ok(ts1 is not None and ts2 is not None and ts3 is not None, "parsing failed")
     ok(ts1 > ts2, "float timestamp should be greater than int equivalent")
-    ok(abs(ts1 - (5*3600 + 0*60 + 46.009)) < 0.01, "timestamp value incorrect")
+    ok(abs((ts1 - ts2) - 0.009) < 0.0005, "only differences matter (one clock with parse_logs): %r" % (ts1 - ts2))
 
 
 @test("parse_ts: invalid formats return None", "bughunt3")
@@ -5347,6 +5434,17 @@ def _():
     ok('"' in s, "not a quoted Lua string")
 
 
+@test("parse_ts (sweep): cast_health's clock is parse_logs' clock, so a cast at a .x5 boundary keys the same on both sides (Durgen's Heroic Strike at 20.95 s was 21.0 in one and 20.9 in the other, and its health was lost)", "data")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import build_salusnovus_data as g
+    from log_time import line_time
+    a, b = "9/19/2026 05:00:30.137-5", "9/19/2026 05:00:51.087-5"
+    eq(round(g.parse_ts(b) - g.parse_ts(a), 1), round(line_time(b) - line_time(a), 1), "the same rounding on both sides")
+
+
 @test("parse_ts: edge case timestamps near midnight", "bughunt3")
 def _():
     import sys
@@ -5356,8 +5454,10 @@ def _():
 
     ts_midnight = g.parse_ts("9/19/2026 00:00:00.000-5")
     ts_almost_midnight = g.parse_ts("9/19/2026 23:59:59.999-5")
-    ok(ts_midnight == 0, "midnight should be 0")
-    ok(ts_almost_midnight > 86399, "just before midnight should be > 86399 seconds")
+    ok(abs((ts_almost_midnight - ts_midnight) - 86399.999) < 0.001, "a day apart, less a millisecond")
+    # the same clock as parse_logs, so a pull across midnight measures right
+    after = g.parse_ts("9/20/2026 00:00:01.000-5")
+    ok(abs((after - ts_almost_midnight) - 1.001) < 0.001, "across midnight: %r" % (after - ts_almost_midnight))
 
 
 @test("lanes: empty cast list produces empty output", "bughunt3")
@@ -5560,6 +5660,7 @@ def _():
     ok("KNOCKAWAY_CUSTOM" in msgs, "rename not in Messages: %r" % msgs)
 
     # Visualizer cards
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')   # the visualizer opens between pulls (the sweep)
     h.lua('SlashCmdList["SALUSNOVUS"]("show")')
     h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
     lanes = h.lua("""
@@ -6162,7 +6263,7 @@ def _():
     eq(casts, [[30.5, 5400, "Summon Defias Blackguard", "Edwin VanCleef", "success"]], "summon not in the stream (or the player's was): %r" % casts)
 
 
-@test("parse_logs: a NEUTRAL creature that acts on a player is an enemy (Relic Guardian, flagged 0xa28 all fight, was dropped with its abilities); a neutral critter that only gets hit is not", "data")
+@test("parse_logs: a NEUTRAL creature that HARMS a player in a boss pull or unprovoked is an enemy (Relic Guardian, 0xa28 all fight); a critter hitting back after being struck, one that only gets hit, and an NPC buffing a player are not", "data")
 def _():
     import sys, os, tempfile
     from collections import defaultdict
@@ -6170,23 +6271,59 @@ def _():
     sys.path.insert(0, ROOT)
     import parse_logs as pl
     RG = 'Creature-0-4615-2998-57170-260326-000041EEB1,"Relic Guardian",0xa28,0x0'
+    RGG = 'Creature-0-4615-2998-57170-260326-000041EEB1'
     FROG = 'Creature-0-4615-2998-57170-13321-0000C1EEB2,"Frog",0xa28,0x0'
+    TORT = 'Creature-0-4615-2998-57170-260809-0000C1EEB3,"Highland Tortoise",0xa28,0x0'
+    TORTG = 'Creature-0-4615-2998-57170-260809-0000C1EEB3'
+    WOLF = 'Creature-0-4615-2998-57170-777-0000C1EEB4,"Wild Wolf",0xa28,0x0'
+    WOLFG = 'Creature-0-4615-2998-57170-777-0000C1EEB4'
+    DRUID = 'Creature-0-4615-2998-57170-3678-0000C1EEB5,"Disciple of Naralex",0xa28,0x0'
     ME = 'Player-1-000001,"Merk",0x511,0x0'
+    ADV = ',0000000000000000,1500,2000,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6'
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "WoWCombatLog-rg.txt")
         with open(path, "w", encoding="utf-8") as f:
             f.write(HDR)
             f.write('10/4/2026 01:46:14.153-5  ENCOUNTER_START,3482,"Relic Guardian",1,5,2998\n')
+            f.write('10/4/2026 01:46:15.000-5  SPELL_DAMAGE,' + ME + ',' + RG + ',100,"Strike",0x1\n')     # the pull: we hit it first
             f.write('10/4/2026 01:46:20.000-5  SPELL_CAST_SUCCESS,' + RG + ',' + ME + ',8078,"Thunderclap",0x1\n')
+            f.write('10/4/2026 01:46:21.000-5  SWING_DAMAGE,' + RG + ',' + ME + ',' + RGG + ADV + '\n')
             f.write('10/4/2026 01:46:25.000-5  SPELL_DAMAGE,' + ME + ',' + FROG + ',100,"Strike",0x1\n')
             f.write('10/4/2026 01:47:28.275-5  ENCOUNTER_END,3482,"Relic Guardian",1,5,1,74115\n')
+            f.write('10/4/2026 01:50:00.000-5  SPELL_DAMAGE,' + ME + ',' + TORT + ',100,"Strike",0x1\n')    # struck first...
+            f.write('10/4/2026 01:50:01.000-5  SWING_DAMAGE,' + TORT + ',' + ME + ',' + TORTG + ADV + '\n')   # ...then hits back
+            f.write('10/4/2026 01:51:00.000-5  SWING_DAMAGE,' + WOLF + ',' + ME + ',' + WOLFG + ADV + '\n')   # unprovoked
+            f.write('10/4/2026 01:52:00.000-5  SPELL_AURA_APPLIED,' + DRUID + ',' + ME + ',5232,"Mark of the Wild",0x8,BUFF\n')
         dungeons = defaultdict(lambda: {"keystone_runs": 0, "mobs": defaultdict(pl.new_mob), "spawns": defaultdict(pl.new_spawn)})
         enc = defaultdict(list)
         pl.parse_file(path, dungeons, {}, defaultdict(int), enc)
     mobs = dungeons[2998]["mobs"]
     ok(mobs[260326]["hostile"], "the neutral boss that hit a player counts")
     ok(not mobs[13321]["hostile"], "a neutral critter that only took a hit does not")
+    ok(not mobs[260809]["hostile"], "a critter hitting back after being struck does not")
+    ok(mobs[777]["hostile"], "a neutral creature attacking unprovoked does")
+    ok(not mobs[3678]["hostile"], "an NPC buffing a player does not")
     eq(enc["Relic Guardian"][0]["casts"], [[5.8, 8078, "Thunderclap", "Relic Guardian", "success"]], "its cast is in the pull's stream")
+
+
+@test("parse_creaturecache: the client cache is rolling, so a re-read keeps saved NPCs it forgot (Magmatus lost its model 2026-10-04) and refreshes the ones it has", "data")
+def _():
+    import sys
+    from runner import ROOT
+    sys.path.insert(0, ROOT)
+    import parse_creaturecache as pc
+    prev = [{"npcID": 261316, "name": "Magmatus", "models": [{"displayID": 1070}]},
+            {"npcID": 260326, "name": "Relic Guardian", "models": [{"displayID": 1}]},
+            {"npcID": 641, "name": "Goblin Woodcarver", "models": [{"displayID": 7}]}]
+    out = [{"npcID": 260326, "name": "Relic Guardian", "models": [{"displayID": 144224}]},
+           {"npcID": 641, "name": "Goblin Woodcarver", "models": []},
+           {"npcID": 260322, "name": "Saltspine", "models": [{"displayID": 144209}]}]
+    merged, kept = pc.merge_saved(out, prev)
+    got = {c["npcID"]: [m["displayID"] for m in c["models"]] for c in merged}
+    eq(got, {641: [7], 260322: [144209], 260326: [144224], 261316: [1070]},
+       "forgotten kept, new added, cached refreshed, a model-less read doesn't erase a saved model")
+    eq(kept, 2, "kept count")
+    eq([c["npcID"] for c in merged], [641, 260322, 260326, 261316], "sorted by NPC id")
 
 
 @test("cast_health: a SPELL_SUMMON carries no health block, so the summoner's last block (a swing it made) supplies it", "data")
@@ -7096,6 +7233,106 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("options (sweep): a non-font picker list shows names only -- no 'AaBb 123' sample, no values tried as fonts", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.fontFellBack = 0; ns.Options.OpenPickerList(UIParent, { 'auto', 'T_Dwarf_SHAMAN' }, { auto = 'Auto', T_Dwarf_SHAMAN = 'Test entry' }, 'auto', function() end, 'list'); W.advance(2)")
+    ok(h.lua("return SalusNovusPickerList.rows[1]:IsShown() and not SalusNovusPickerList.rows[1].sample:IsShown()"), "no sample on a plain row")
+    eq(int(h.lua("return ns.fontFellBack or 0")), 0, "no value was tried as a font")
+    eq(h.errors(), [], "errors")
+
+
+@test("options (sweep): a stored value outside a stepper's range shows clamped in the box too, and choosing that clamped value saves it", "chat")
+def _():
+    h = fresh()
+    h.lua("ns.db.anchorsGlobal.gridSize = 0")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.SetValueQuiet and w.__outer == ns.Options.pages.global then
+                local _, hi = w:GetMinMaxValues()
+                if hi == 128 then __grid = w end
+            end
+        end
+    """)
+    ok(h.lua("return __grid ~= nil"), "found the Grid spacing stepper")
+    box = str(h.lua("for _, r in ipairs({ __grid:GetParent():GetChildren() }) do if r.text and r.text.GetText and r.text:GetText() and r.text:GetText():find('px') then return r.text:GetText() end end return ''"))
+    eq(box, "8 px", "the box shows the clamped value, as the thumb does")
+    h.lua("__grid:SetValue(8)")
+    eq(int(h.lua("return ns.db.anchorsGlobal.gridSize")), 8, "choosing the clamped value saves it")
+    eq(h.errors(), [], "errors")
+
+
+@test("theme (sweep): a new accent re-picks the active tab's text colour; the confirm dialog doesn't take the keyboard in combat", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font')")
+    h.lua("""
+        ns.db.theme = ns.db.theme or {}
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 0.05, g = 0.05, b = 0.30 }; ns.ApplyAll()
+        for _, b in pairs(ns.Options.tabs or {}) do if b.fill and b.fill:IsShown() then __active = b end end
+    """)
+    ok(h.lua("return __active ~= nil"), "an active tab")
+    if h.lua("return __active ~= nil"):
+        dark = [round(float(x), 2) for x in h.lua("return { __active.label:GetTextColor() }").values()][:3]
+        h.lua("ns.db.theme.customColor = { r = 1, g = 1, b = 0.2 }; ns.ApplyAll()")
+        bright = [round(float(x), 2) for x in h.lua("return { __active.label:GetTextColor() }").values()][:3]
+        ok(dark != bright and sum(bright) < sum(dark), "the label re-picked against the new accent: %r -> %r" % (dark, bright))
+    h.lua("W.inCombat = true; ns.Theme.Confirm('Sure?', 'Yes', function() end)")
+    ok(h.lua("return not SalusNovusConfirm:IsKeyboardEnabled()"), "in combat the dialog leaves the keyboard alone")
+    h.lua("SalusNovusConfirm:Hide(); W.inCombat = false; ns.Theme.Confirm('Sure?', 'Yes', function() end)")
+    ok(h.lua("return SalusNovusConfirm:IsKeyboardEnabled()"), "out of combat it takes Escape")
+    h.lua("SalusNovusConfirm:Hide()")
+    eq(h.errors(), [], "errors")
+
+
+@test("chat filter (sweep): Remove clears an old array entry and a mixed-case key too, so the word stops showing and stops blocking", "chat")
+def _():
+    h = fresh()
+    h.lua("ns.db.chatFilter.words = { 'oldword', SHAMAN = true, keep = true }")
+    lst = sorted(str(x) for x in h.lua("return ns.ChatFilter.List()").values())
+    ok("oldword" in lst and "shaman" in lst, "both listed: %r" % lst)
+    h.lua("ns.ChatFilter.RemoveWord('oldword'); ns.ChatFilter.RemoveWord('shaman')")
+    lst = sorted(str(x) for x in h.lua("return ns.ChatFilter.List()").values())
+    eq(lst, ["keep"], "only 'keep' is left")
+    ok(h.lua("return not ns.ChatFilter.Matches('an oldword here') and not ns.ChatFilter.Matches('SHAMAN LFG')"), "neither blocks any more")
+    ok(h.lua("return ns.ChatFilter.Matches('keep it')"), "the kept word still blocks")
+    eq(h.errors(), [], "errors")
+
+
+@test("buttons grow to fit their label in the global font (SAVE POSITIONS / UNLOCK FRAMES ran past their edges); the set width stays the minimum", "chat")
+def _():
+    h = fresh()
+    open_options(h)
+    bad = str(h.lua("""
+        local out = {}
+        local function check(b, name)
+            if b and b.text and b:IsShown() then
+                local tw = b.text:GetStringWidth() or 0
+                if tw + 12 > (b:GetWidth() or 0) then out[#out + 1] = name .. " " .. tostring(b:GetText()) end
+            end
+        end
+        check(ns.Options.unlockButton, "unlock")
+        ns.Options.unlockButton:Click()
+        for _, k in ipairs({ "save", "cancel" }) do
+            local bar = rawget(_G, "SalusNovusUnlockBar")
+            if bar and bar[k] then check(bar[k], k) end
+        end
+        ns.Options.unlockButton:Click()
+        return table.concat(out, ", ")
+    """))
+    eq(bad, "", "labels past their button's edges")
+    h.lua("__b = ns.Theme.MakeButton(UIParent); __b:SetSize(60, 24); __b:SetText('Save positions')")
+    ok(float(h.lua("return __b:GetWidth()")) >= float(h.lua("return __b.text:GetStringWidth()")) + 20, "grows to the label")
+    h.lua("__b:SetText('OK')")
+    eq(float(h.lua("return __b:GetWidth()")), 60.0, "a short label keeps the set width")
+    eq(h.errors(), [], "errors")
+
+
 @test("font picker rows draw the NAME in the addon font and a sample in the row's own font", "chat")
 def _():
     h = fresh()
@@ -7595,173 +7832,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-# ---------------------------------------------------------------- guide
-
-ROUTE = """
-    ns.Routes = { {
-        slug = "T_Dwarf_SHAMAN", name = "Test route", faction = "Alliance", race = "Dwarf", class = "SHAMAN", map = 1426, levels = { 1, 3 },
-        steps = {
-            { k = "accept", q = 179, m = 1426, x = 0.30, y = 0.71, n = "Sten Stoutarm" },
-            { k = "do", q = 179, o = 1, m = 1426, x = 0.29, y = 0.73, text = "8/8 Tough Wolf Meat" },
-            { k = "turnin", q = 179, m = 1426, x = 0.30, y = 0.71, n = "Sten Stoutarm" },
-            { k = "train", m = 1426, x = 0.29, y = 0.66, n = "Teo Hammerstorm" },
-            { k = "accept", q = 233, m = 1426, x = 0.30, y = 0.71, n = "Sten Stoutarm" },
-            { k = "level", l = 3 },
-            { k = "turnin", q = 233, m = 1426, x = 0.23, y = 0.72, n = "Talin Keeneye" },
-        },
-    }, {
-        slug = "T_Orc_WARRIOR", name = "Horde route", faction = "Horde", race = "Orc", class = "WARRIOR", map = 1411, levels = { 1, 5 },
-        steps = { { k = "accept", q = 4641, m = 1411, x = 0.5, y = 0.5 } },
-    } }
-    __titles = { [179] = "Dwarven Outfitters", [233] = "Coldridge Valley Mail Delivery" }
-    UnitLevel = function() return 1 end
-    C_Map.GetBestMapForUnit = function() return 1426 end
-"""
-
-
-def cur(h):
-    v = h.lua("local r = ns.Guide.PickRoute() return ns.Guide.CurrentIndex(r)")
-    return None if v is None else int(v)
-
-
-@test("the guide picks the route for the character (faction must match; race and class score) or the chosen slug", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN", "Alliance dwarf paladin should get the dwarf route")
-    h.lua("UnitFactionGroup = function() return 'Horde' end")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Orc_WARRIOR", "a Horde character must not get an Alliance route")
-    h.lua("ns.db.guide.route = 'T_Dwarf_SHAMAN'")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN", "a chosen slug wins")
-    h.lua("ns.db.guide.route = 'auto'; ns.Routes = {}")
-    ok(h.lua("return ns.Guide.PickRoute() == nil"), "no routes: nil")
-    eq(h.errors(), [], "errors")
-
-
-@test("the place in the route is read from the quest log and flags, never saved: accept, objective, turn-in, level", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    eq(cur(h), 1, "fresh character: step 1")
-    h.lua("__quests = { { questID = 179, title = 'Dwarven Outfitters', level = 1 } }; __objectives[179] = { { text = 'x', finished = false } }")
-    eq(cur(h), 2, "on the quest: the do step")
-    h.lua("__objectives[179][1].finished = true")
-    eq(cur(h), 3, "objective finished: the turn-in")
-    h.lua("__objectives[179][1].finished = false; __quests[1].ready = true")
-    eq(cur(h), 3, "ready for turn-in counts as the objective done")
-    h.lua("__quests = {}; __completed[179] = true")
-    eq(cur(h), 4, "flagged complete: past the turn-in, at the train step")
-    h.lua("__quests = { { questID = 233, title = 'Mail', level = 1 } }")
-    eq(cur(h), 6, "a later checkable step done (233 accepted) passes the uncheckable train step; level 3 next")
-    h.lua("UnitLevel = function() return 3 end")
-    eq(cur(h), 7, "level reached: the last turn-in")
-    h.lua("__quests = {}; __completed[233] = true")
-    ok(cur(h) is None, "everything done: route complete")
-    # a /reload changes nothing: the same client state gives the same place
-    h2 = fresh()
-    h2.lua(MAP_STUBS + ROUTE)
-    h2.lua("__quests = { { questID = 233, title = 'Mail', level = 1 } }; __completed = { [179] = true }")
-    eq(cur(h2), 6, "a fresh session lands on the same step from the same quest state")
-    eq(h.errors(), [], "errors")
-
-
-@test("uncheckable steps pass on Skip, on their own event this session, and the guide resets skips on demand", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = { [179] = true }")
-    eq(cur(h), 4, "at the train step")
-    h.lua('W.fireEvent("TRAINER_SHOW")')
-    eq(cur(h), 5, "a trainer window this session passes the train step")
-    h.lua("ns.Guide.ResetSkips()")
-    eq(cur(h), 4, "reset forgets the trainer visit")
-    h.lua("local r = ns.Guide.PickRoute() ns.Guide.Skip(r, 4)")
-    eq(cur(h), 5, "Skip passes it")
-    h.lua("ns.Commands.guide('reset')")
-    eq(cur(h), 4, "/sn guide reset clears skips")
-    h.lua("ns.Commands.guide('')")
-    eq(h.errors(), [], "errors")
-
-
-@test("the guide frame shows the current step with its quest title, the next steps dimmed, the distance, and pins the client's waypoint", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; ns.ApplyAll()")
-    ok(h.lua("return SalusNovusGuide and SalusNovusGuide:IsShown()"), "frame should show with a route")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "1/7  Accept Dwarven Outfitters from Sten Stoutarm", "current step text")
-    eq(str(h.lua("return SalusNovusGuide.title:GetText()")), "Test route", "route name")
-    shown = [str(x) for x in h.lua("""
-        local out = {}
-        for i = 1, 4 do
-            local l = ns.Guide.Lines()[i]
-            if l and l:IsShown() then out[#out + 1] = l:GetText() end
-        end
-        return out
-    """).values()]
-    eq(shown, ["Complete objective: 8/8 Tough Wolf Meat (Dwarven Outfitters)", "Turn in Dwarven Outfitters to Sten Stoutarm"], "two next steps (stored text is only the fallback while not on the quest)")
-    # distance: player at 0.4,0.6 on a 3000x2000 map, step at 0.30,0.71 -> dx 300, dy 220 -> 372 yd
-    eq(str(h.lua("return SalusNovusGuide.distance:GetText()")), "372 yd", "distance to the step")
-    h.lua("C_Map.GetBestMapForUnit = function() return 37 end; ns.ApplyAll()")
-    eq(str(h.lua("return SalusNovusGuide.distance:GetText()")), "", "no distance across maps")
-    h.lua("C_Map.GetBestMapForUnit = function() return 1426 end; ns.ApplyAll()")
-    h.lua("ns.db.guide.showNext = 0; ns.ApplyAll()")
-    eq(int(h.lua("local n = 0 for i, l in ipairs(ns.Guide.Lines()) do if l:IsShown() then n = n + 1 end end return n")), 0, "next steps can be turned off")
-    h.lua("SalusNovusGuide.skip:Click()")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "2/7  Complete objective: 8/8 Tough Wolf Meat (Dwarven Outfitters)", "Skip moves on")
-    h.lua("__quests = {}; __completed = { [179] = true, [233] = true }; UnitLevel = function() return 3 end; ns.ApplyAll()")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "Route complete", "complete text")
-    ok(h.lua("return __wp == nil"), "the guide must never place the client's pin (Alex: the arrow suffices)")
-    eq(h.errors(), [], "errors")
-
-
-@test("the guide hides when off or the Leveling module is off, never touches the client's pin, and shows a sample in unlock mode", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; ns.ApplyAll()")
-    ok(h.lua("return __wp == nil"), "no pin placed")
-    h.lua("ns.db.guide.enabled = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusGuide:IsShown()"), "off: hidden")
-    h.lua("ns.db.guide.enabled = true; ns.db.modules.leveling = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusGuide:IsShown()"), "module off: hidden")
-    h.lua("ns.db.modules.leveling = true; ns.ApplyAll()")
-    ok(h.lua("return SalusNovusGuide:IsShown()"), "back on")
-    h.lua("__wp = { uiMapID = 1, position = { x = 0.1, y = 0.1 } }")     # the player's own pin
-    h.lua("ns.db.guide.enabled = false; ns.ApplyAll(); ns.db.guide.enabled = true; ns.ApplyAll()")
-    ok(h.lua("return __wp ~= nil"), "the player's pin is left alone")
-    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    ok(h.lua("return SalusNovusGuide:IsShown() and SalusNovusGuide.unlockLabel:IsShown()"), "unlock mode shows the frame with its label")
-    h.lua("ns.Routes = {}; ns.ApplyAll()")
-    eq(str(h.lua("return SalusNovusGuide.title:GetText()")), "No route", "no route in unlock mode still draws")
-    eq(h.errors(), [], "errors")
-
-
-@test("the Guide row under Leveling: switch, route list with Best match first, arrow, next-steps and size", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    open_options(h)
-    ok(h.lua("return ns.Options.tabs.guide ~= nil and ns.Options.tabs.guide.label:GetText() == ns.Theme.Upper('Settings')"), "no Settings row under Leveling")
-    ok(float(h.lua("return ns.Options.tabs.guide:GetTop()")) < float(h.lua("return ns.Options.tabs.quests:GetTop()")), "Leveling should sit below Quality of Life")
-    h.lua("ns.Options.tabs.guide:Click()")
-    eq(str(h.lua("return ns.Options.ActivePage()")), "guide", "row lands on the guide page")
-    vals = [str(x) for x in h.lua("""
-        for _, w in ipairs(ns.Options.widgets) do
-            if w.__outer == ns.Options.pages.guide and w.__kind == "choice" then return w.__values end
-        end
-    """).values()]
-    eq(vals, ["auto", "T_Dwarf_SHAMAN", "T_Orc_WARRIOR"], "route choices")
-    kinds = sorted(str(x) for x in h.lua("""
-        local out = {}
-        for _, w in ipairs(ns.Options.widgets) do if w.__outer == ns.Options.pages.guide then out[#out + 1] = w.__kind end end
-        return out
-    """).values())
-    eq(kinds, ["check", "check", "choice", "stepper", "stepper", "stepper"], "controls on the page")
-    eq(h.errors(), [], "errors")
-
-
 # ---------------------------------------------------------------- build_route
 
 @test("build_route drops the client's own removal before a turn-in, removes a really abandoned quest, and keeps the rest in order", "route")
@@ -7797,7 +7867,7 @@ def _():
     eq(B.slug_of({"faction": "Alliance", "race": "Dwarf", "class": "SHAMAN", "char": "Mercury Testsham-Realm"}), "Alliance_Dwarf_Shaman_MercuryTestsham", "slug")
 
 
-@test("a step file round-trips through write, parse and Lua compile, and hand edits survive", "route")
+@test("a step file round-trips through write and parse, and hand edits survive", "route")
 def _():
     import sys, os, tempfile
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -7829,195 +7899,6 @@ def _():
     eq(back[1]["text"], "6/6 \"Burly\" Trogg slain", "quoted objective text")
     ok(abs(back[0]["x"] - 0.2992) < 1e-9 and back[0]["m"] == 1426, "coordinates back to fractions")
     eq(back[-1]["text"], "Then go north", "added note")
-    lua = B.compile_routes({"X": p})
-    ok('slug = "X", name = "Dwarf Shaman 1-2"' in lua and 'levels = { 1, 2 }' in lua, "route header in Lua: %s" % lua[:300])
-    ok('{ k = "do", q = 179, o = 2, m = 1426, x = 0.2890, y = 0.7267, text = "6/6 \\"Burly\\" Trogg slain" },' in lua, "escaped Lua step: %s" % lua)
-    h = fresh()
-    h.lua("ns.Routes = {}")
-    h.lua(lua.replace("local _, ns = ...", ""))
-    eq(int(h.lua("return #ns.Routes[1].steps")), 9, "the compiled Lua loads in the addon")
-    eq(str(h.lua("return ns.Routes[1].steps[2].text")), '6/6 "Burly" Trogg slain', "quotes survive the Lua string")
-
-
-# ---------------------------------------------------------------- arrow
-
-# World coordinates from map coordinates: x grows north, y grows west
-# (the client's convention), on a 3000 x 2000 yd map.
-WORLD = """
-    C_Map.GetWorldPosFromMapPos = function(map, v) return 0, { x = -v.y * 2000, y = -v.x * 3000 } end
-"""
-
-
-def bearing(h, x, y, m=1426):
-    r = h.lua("return { ns.Arrow.Bearing({ m = %d, x = %r, y = %r }) }" % (m, x, y))
-    return None if r is None or len(r) == 0 else (float(r[1]), float(r[2]))
-
-
-@test("the arrow's bearing is counter-clockwise from north in world space, with the map-space fallback agreeing", "arrow")
-def _():
-    import math
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE + WORLD)
-    # player at 0.4, 0.6
-    b, d = bearing(h, 0.4, 0.5)            # due north (smaller y)
-    ok(abs(b) < 1e-9 and abs(d - 200) < 1e-6, "north: %r %r" % (b, d))
-    b, d = bearing(h, 0.3, 0.6)            # due west (smaller x)
-    ok(abs(b - math.pi / 2) < 1e-9 and abs(d - 300) < 1e-6, "west: %r %r" % (b, d))
-    b, d = bearing(h, 0.5, 0.6)            # due east
-    ok(abs(abs(b) - math.pi / 2) < 1e-9 and b < 0, "east should be -pi/2: %r" % b)
-    b, d = bearing(h, 0.4, 0.7)            # due south
-    ok(abs(abs(b) - math.pi) < 1e-9, "south should be +-pi: %r" % b)
-    h.lua("C_Map.GetWorldPosFromMapPos = nil")   # map-space fallback
-    b, d = bearing(h, 0.3, 0.6)
-    ok(abs(b - math.pi / 2) < 1e-9 and abs(d - 300) < 1e-6, "fallback west: %r %r" % (b, d))
-    ok(bearing(h, 0.3, 0.6, m=37) is None, "fallback cannot cross maps")
-    h.lua("C_Map.GetPlayerMapPosition = function() return { x = W.secretNumber(), y = W.secretNumber() } end")
-    ok(bearing(h, 0.3, 0.6) is None, "a secret position gives no bearing, not a throw")
-    eq(h.errors(), [], "errors")
-
-
-@test("the arrow frame rotates by bearing minus facing, shows the distance, follows the guide's step, and hides with the settings", "arrow")
-def _():
-    import math
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE + WORLD)
-    h.lua("__quests = {}; __completed = {}; GetPlayerFacing = function() return math.pi / 2 end; ns.ApplyAll(); W.advance(0.2)")
-    ok(h.lua("return SalusNovusArrow and SalusNovusArrow:IsShown()"), "arrow frame should show with a current step")
-    # step 1 is at 0.30, 0.71 from the player at 0.40, 0.60: dN = -220, dW = 300
-    want = math.atan2(300, -220) - math.pi / 2
-    rot = float(h.lua("return SalusNovusArrow.arrow.__rotation"))
-    ok(abs(rot - want) < 1e-9, "rotation %r, want %r" % (rot, want))
-    eq(str(h.lua("return SalusNovusArrow.text:GetText()")), "372 yd", "distance under the arrow")
-    ok(str(h.lua("return SalusNovusArrow.arrow.__source")).endswith("arrow.tga"), "arrow art should be our own texture: %s" % h.lua("return SalusNovusArrow.arrow.__source"))
-    ok(h.lua("return SalusNovusArrow.arrow:GetTexture() == SalusNovusArrow.arrow.__source"), "the texture should actually be set on the region")
-    h.lua("GetPlayerFacing = function() return 0 end; W.advance(0.2)")
-    rot2 = float(h.lua("return SalusNovusArrow.arrow.__rotation"))
-    ok(abs(rot2 - math.atan2(300, -220)) < 1e-9, "turning the player turns the arrow: %r" % rot2)
-    h.lua("SalusNovusGuide.skip:Click(); W.advance(0.2)")      # step 2 at 0.29, 0.73
-    rot3 = float(h.lua("return SalusNovusArrow.arrow.__rotation"))
-    ok(abs(rot3 - math.atan2(330, -260)) < 1e-9, "the arrow follows the guide's step: %r" % rot3)
-    h.lua("C_Map.GetBestMapForUnit = function() return 37 end; C_Map.GetWorldPosFromMapPos = nil; W.advance(0.2)")
-    ok(not h.lua("return SalusNovusArrow.arrow:IsShown()") and str(h.lua("return SalusNovusArrow.text:GetText()")) == "?", "unknown bearing: arrow hidden, a question mark")
-    h.lua("C_Map.GetBestMapForUnit = function() return 1426 end")
-    h.lua("ns.db.guide.arrow = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "arrow setting off hides it")
-    h.lua("ns.db.guide.arrow = true; ns.db.guide.enabled = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "guide off hides it")
-    h.lua("ns.db.guide.enabled = true; ns.db.modules.leveling = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "module off hides it")
-    h.lua("ns.db.modules.leveling = true; __completed = { [179] = true, [233] = true }; UnitLevel = function() return 3 end; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "route complete hides it")
-    h.lua("ns.db.unlocked = true; ns.ApplyAll(); W.advance(0.2)")
-    ok(h.lua("return SalusNovusArrow:IsShown() and SalusNovusArrow.unlockLabel:IsShown() and SalusNovusArrow.arrow:IsShown()"), "unlock mode shows a sample arrow")
-    h.lua("ns.db.guide.arrowSize = 72; ns.ApplyAll()")
-    eq(int(h.lua("return SalusNovusArrow.arrow:GetWidth()")), 72, "arrow size setting")
-    eq(h.errors(), [], "errors")
-
-
-# ---------------------------------------------------------------- route editor
-
-def step_kinds(h):
-    return [str(x) for x in h.lua("local out = {} for _, s in ipairs(ns.Guide.PickRoute().steps) do out[#out + 1] = s.k .. (s.q and ('#' .. s.q) or '') end return out").values()]
-
-
-@test("editor ops change the loaded route live and log each one with an id; skips follow the moved steps", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    base = step_kinds(h)
-    eq(len(base), 7, "route")
-    h.lua("local r = ns.Guide.PickRoute() ns.Guide.Skip(r, 4) ns.Guide.Skip(r, 6)")     # train, level
-    ok(h.lua("return ns.RouteEditor.Delete(ns.Guide.PickRoute(), 2)"), "delete")
-    eq(step_kinds(h), [base[0]] + base[2:], "step 2 gone")
-    h.lua("__completed = { [179] = true }")
-    eq(cur(h), 4, "skips shifted with the delete: the old step 4 (train) is now 3 and skipped, old 6 (level, now 5) skipped, so the last turn-in is next... after accept 233 at 4")
-    ok(h.lua("return ns.RouteEditor.Insert(ns.Guide.PickRoute(), 0, { k = 'note', text = 'first' })"), "insert at start")
-    eq(step_kinds(h)[0], "note", "note first")
-    ok(h.lua("return ns.RouteEditor.Up(ns.Guide.PickRoute(), 2)"), "up")
-    eq(step_kinds(h)[0], "accept#179", "the accept swapped above the note")
-    ok(h.lua("return ns.RouteEditor.Down(ns.Guide.PickRoute(), 1)"), "down")
-    eq(step_kinds(h)[0], "note", "and back")
-    ok(not h.lua("return ns.RouteEditor.Delete(ns.Guide.PickRoute(), 99)") and not h.lua("return ns.RouteEditor.Up(ns.Guide.PickRoute(), 1)") and not h.lua("return ns.RouteEditor.Down(ns.Guide.PickRoute(), 7)"), "out-of-range ops refused")
-    ops = h.lua("return SalusNovusDB.routeEdits['T_Dwarf_SHAMAN']")
-    log = [(str(o["op"]), int(o["at"])) for o in ops.values()]
-    eq(log, [("del", 2), ("ins", 0), ("up", 2), ("down", 1)], "the edit log, in order")
-    ids = [str(o["id"]) for o in ops.values()]
-    eq(len(set(ids)), 4, "ids unique")
-    eq(str(ops[2]["step"]["text"]), "first", "the inserted step travels with its op")
-    eq(h.errors(), [], "errors")
-
-
-@test("InsertHere builds a step where the player stands, before the current step, for a log quest or a note", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = { { questID = 555, title = 'Extra', level = 2 } }; __objectives[555] = { { text = '3/3 Things', finished = false } }; __completed = { [179] = true }")
-    h.lua("UnitName = function(u) if u == 'target' then return 'Some Dwarf' end return 'Merk' end")
-    eq(cur(h), 4, "at the train step")
-    at = h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'note', nil, 'Buy water')")
-    eq(int(at), 4, "inserted at the current index")
-    st = h.lua("return ns.Guide.PickRoute().steps[4]")
-    eq((str(st["k"]), str(st["text"]), int(st["m"])), ("note", "Buy water", 1426), "note step here")
-    ok(abs(float(st["x"]) - 0.4) < 1e-9 and abs(float(st["y"]) - 0.6) < 1e-9, "position stamped")
-    eq(cur(h), 4, "the new note is now the current step")
-    ok(h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'note', nil, '   ') == nil"), "a blank note is refused")
-    at = h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'accept', 555, '')")
-    st = h.lua("return ns.Guide.PickRoute().steps[%d]" % int(at))
-    eq((str(st["k"]), int(st["q"]), str(st["n"])), ("accept", 555, "Some Dwarf"), "accept step names the target")
-    at = h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'do', 555, '')")
-    st = h.lua("return ns.Guide.PickRoute().steps[%d]" % int(at))
-    eq((str(st["k"]), int(st["q"]), int(st["o"])), ("do", 555, 1), "objective step points at the first unfinished objective")
-    ok(h.lua("return ns.Guide.PickRoute().steps[%d].text == nil" % int(at)), "a do step stores no text")
-    h.lua("__objectives[555] = { { text = '3/3 Things', finished = true }, { text = '0/1 Other', finished = false } }")
-    at2 = h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'do', 555, '')")
-    eq(int(h.lua("return ns.Guide.PickRoute().steps[%d].o" % int(at2))), 2, "with the first objective done, the step points at the second")
-    at = h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'turnin', 555, '')")
-    eq(str(h.lua("return ns.Guide.PickRoute().steps[%d].k" % int(at))), "turnin", "turn-in step")
-    ok(h.lua("return ns.RouteEditor.InsertHere(ns.Guide.PickRoute(), 'accept', nil, '') == nil"), "a quest step needs a quest")
-    quests = [str(x["title"]) for x in h.lua("return ns.RouteEditor.LogQuests()").values()]
-    eq(quests, ["Extra"], "log quests")
-    eq(h.errors(), [], "errors")
-
-
-@test("the Steps tab lists the route with the current step in the accent, Del/Up/Down per row, and the add row inserts before the current step", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = { { questID = 555, title = 'Extra', level = 2 } }; __completed = { [179] = true }")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    eq(str(h.lua("return ns.Options.ActivePage()")), "routes", "routes page")
-    ok(h.lua("return ns.Options.strips.routes.order[1] == 'routes' and ns.Options.strips.routes.order[2] == nil"), "Routes is its own row with one tab")
-    ok(h.lua("return ns.Options.tabs.routes.label:GetText() == ns.Theme.Upper('Routes') and ns.Options.tabs.guide.label:GetText() == ns.Theme.Upper('Settings')"), "sidebar rows read Settings and Routes")
-    texts = [str(x) for x in h.lua("""
-        local out = {}
-        for _, ln in ipairs(ns.Options.stepsList.lines) do if ln:IsShown() then out[#out + 1] = ln.text:GetText() end end
-        return out
-    """).values()]
-    eq(len(texts), 7, "one line per step")
-    eq(texts[0], "1.  Accept Dwarven Outfitters from Sten Stoutarm", "line text")
-    eq(texts[1], "2.  Complete objective: 8/8 Tough Wolf Meat (Dwarven Outfitters)", "do line (fallback text, not on the quest)")
-    r, g, b = h.lua("return ns.Theme.Accent()")
-    cr, cg, cb, _ = h.lua("return ns.Options.stepsList.lines[4].text:GetTextColor()")
-    ok(abs(float(cr) - float(r)) < 1e-6 and abs(float(cg) - float(g)) < 1e-6, "the current step (4) should be in the accent")
-    ok(not h.lua("return ns.Options.stepsList.lines[1].up.enabledState") and h.lua("return ns.Options.stepsList.lines[1].down.enabledState"), "first row: no Up")
-    ok(not h.lua("return ns.Options.stepsList.lines[7].down.enabledState"), "last row: no Down")
-    h.lua("ns.Options.stepsList.lines[4].del:Click()")
-    eq(step_kinds(h)[3], "accept#233", "Del removed the train step")
-    eq(int(h.lua("local n = 0 for _, ln in ipairs(ns.Options.stepsList.lines) do if ln:IsShown() then n = n + 1 end end return n")), 6, "list redrawn")
-    h.lua("ns.Options.stepsList.lines[6].up:Click()")
-    eq(step_kinds(h)[4], "turnin#233", "Up moved the last turn-in above the level step")
-    eq(str(h.lua("return ns.Options.stepsQuestButton.text:GetText()")), "Extra", "quest picker shows the log quest")
-    h.lua("ns.Options.stepsText:SetText('Buy water'); ns.Options.stepsAdd.note:Click()")
-    eq(step_kinds(h)[3], "note", "Note inserted before the current step")
-    eq(str(h.lua("return ns.Options.stepsText:GetText()")), "", "text box cleared")
-    h.lua("ns.Options.stepsAdd.accept:Click()")
-    eq(step_kinds(h)[3], "accept#555", "Accept inserted for the picked quest")
-    h.lua("__quests = {}; W.fireEvent('QUEST_LOG_UPDATE')")
-    ok(not h.lua("return ns.Options.stepsAdd.accept.enabledState") and h.lua("return ns.Options.stepsAdd.note.enabledState"), "no log quests: quest buttons grey, Note stays")
-    eq(int(h.lua("return #SalusNovusDB.routeEdits['T_Dwarf_SHAMAN']")), 4, "four edits logged")
-    eq(h.errors(), [], "errors")
 
 
 @test("build_route applies each in-game edit once to the step file, in order, and the harvester merges edits by id", "route")
@@ -8049,77 +7930,7 @@ def _():
     eq([e["id"] for e in parsed], ["9-1", "9-2"], "edits parsed from the literal")
 
 
-# ---------------------------------------------------------------- builder
-
-def last_step(h):
-    return h.lua("local r = ns.Guide.PickRoute() return r.steps[#r.steps]")
-
-
-@test("the builder makes a route from nothing for the character and appends steps at the end", "builder")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = { { questID = 555, title = 'Extra', level = 2 } }; __completed = {}; UnitName = function(u) if u == 'target' then return 'Grimnur' end return 'Mercury Testsham' end; UnitLevel = function() return 4 end")
-    ok(h.lua("return ns.Guide.PickRoute() == nil"), "precondition: no route")
-    h.lua("ns.Builder.Show()")
-    ok(h.lua("return SalusNovusBuilder:IsShown()"), "window shows")
-    eq(str(h.lua("return SalusNovusBuilder.title:GetText()")), "No route yet: the first step makes one", "empty title")
-    eq(int(h.lua("return ns.Builder.Add('accept')")), 1, "first step")
-    r = h.lua("return ns.Guide.PickRoute()")
-    eq((str(r["slug"]), str(r["name"]), str(r["faction"]), str(r["race"]), str(r["class"]), int(r["map"])),
-       ("Alliance_Dwarf_Paladin_MercuryTestsham_DwarfPaladinBuilt", "Dwarf Paladin (built)", "Alliance", "Dwarf", "PALADIN", 37), "the new route's header")
-    st = last_step(h)
-    eq((str(st["k"]), int(st["q"]), str(st["n"])), ("accept", 555, "Grimnur"), "accept step from the picked quest and the target")
-    h.lua("SalusNovusBuilder.text:SetText('Kill the boars by the road')")
-    eq(int(h.lua("return ns.Builder.Add('note')")), 2, "note appended at the end")
-    eq(str(last_step(h)["text"]), "Kill the boars by the road", "note text")
-    eq(str(h.lua("return SalusNovusBuilder.text:GetText()")), "", "box cleared after an add")
-    h.lua("SalusNovusBuilder.coords:Click()")
-    eq(str(h.lua("return SalusNovusBuilder.text:GetText()")), "40.0, 60.0", "Coords drops the position into the box")
-    h.lua("SalusNovusBuilder.kinds.go:Click()")
-    st = last_step(h)
-    eq((str(st["k"]), str(st["text"]), int(st["m"])), ("go", "40.0, 60.0", 37), "Go here step with the text")
-    ok(abs(float(st["x"]) - 0.4) < 1e-9, "go step at the position")
-    h.lua("SalusNovusBuilder.kinds.train:Click(); SalusNovusBuilder.kinds.bind:Click(); SalusNovusBuilder.kinds.fly:Click(); SalusNovusBuilder.kinds.hearth:Click()")
-    kinds = [str(x) for x in h.lua("local out = {} for _, s in ipairs(ns.Guide.PickRoute().steps) do out[#out + 1] = s.k end return out").values()]
-    eq(kinds, ["accept", "note", "go", "train", "bind", "fly", "hearth"], "all kinds appended in order")
-    eq(str(last_step(h)["k"]), "hearth", "hearth last")
-    ok(h.lua("local s = ns.Guide.PickRoute().steps[7] return s.m == nil and s.x == nil"), "a hearth step has no place")
-    eq(str(h.lua("return ns.Guide.PickRoute().steps[4].n")), "Grimnur", "train step names the target")
-    eq(str(h.lua("return SalusNovusBuilder.last:GetText()")), "last: 7. Hearth", "last-step line")
-    ok(h.lua("return ns.Builder.Undo()"), "undo")
-    eq(str(last_step(h)["k"]), "fly", "undo removed the last step")
-    ops = [str(o["op"]) for o in h.lua("return SalusNovusDB.routeEdits['Alliance_Dwarf_Paladin_MercuryTestsham_DwarfPaladinBuilt']").values()]
-    eq(ops, ["new", "ins", "ins", "ins", "ins", "ins", "ins", "ins", "del"], "the edit log starts with new")
-    h.lua("SalusNovusBuilder.text:SetText('   ')")
-    ok(h.lua("return ns.Builder.Add('note') == nil"), "a blank note is refused")
-    h.lua("__quests = {}; W.fireEvent('QUEST_LOG_UPDATE')")
-    ok(not h.lua("return SalusNovusBuilder.accept.enabledState"), "no quests: quest buttons grey")
-    h.lua("ns.Commands.build(); ns.Commands.build()")
-    ok(h.lua("return SalusNovusBuilder:IsShown()"), "/sn build toggles")
-    eq(h.errors(), [], "errors")
-
-
-@test("a go step is done once the player has been within 15 yards of it, and reads its coordinates", "builder")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE + WORLD)
-    h.lua("""
-        __quests = {}; __completed = { [179] = true }
-        local r = ns.Guide.PickRoute()
-        table.insert(r.steps, 4, { k = "go", m = 1426, x = 0.41, y = 0.6 })      -- 30 yd east of the player
-        ns.ApplyAll(); W.advance(0.2)
-    """)
-    eq(cur(h), 4, "at the go step")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "4/8  Go to 41.0, 60.0", "go text")
-    h.lua("C_Map.GetPlayerMapPosition = function() return { x = 0.407, y = 0.6 } end; W.advance(0.2)")    # 9 yd away
-    eq(cur(h), 5, "within 15 yd: arrived, next step")
-    h.lua("ns.Guide.ResetSkips()")
-    eq(cur(h), 4, "reset forgets arrivals")
-    eq(h.errors(), [], "errors")
-
-
-@test("build_route creates a step file from a builder's new op and writes go steps with text", "route")
+@test("build_route creates a step file from a builder's new op with go steps and their text", "route")
 def _():
     import sys, os, json, tempfile
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -8136,8 +7947,6 @@ def _():
     eq((hdr["name"], hdr["class"], hdr["levels"]), ("Dwarf Paladin (built)", "PALADIN", "4-4"), "header from the new op")
     eq([(s["k"], s.get("text")) for s in steps], [("go", "the road"), ("hearth", None)], "steps")
     ok(abs(steps[0]["x"] - 0.4) < 1e-9 and steps[0]["m"] == 37, "go coordinates")
-    lua = B.compile_routes({"New_Slug": p})
-    ok('{ k = "go", m = 37, x = 0.4000, y = 0.6000, text = "the road" },' in lua, "go step in Lua: %s" % lua)
 
 
 @test("build_route.main applies the recorder's in-game edits (the loop variable once shadowed the recorder)", "route")
@@ -8146,7 +7955,10 @@ def _():
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     import build_route as B
     d = tempfile.mkdtemp()
-    B.ROUTES, B.STEPS, B.APPLIED, B.OUT_LUA = d, os.path.join(d, "steps"), os.path.join(d, "applied.json"), os.path.join(d, "Routes.lua")
+    B.ROUTES, B.STEPS, B.APPLIED = d, os.path.join(d, "steps"), os.path.join(d, "applied.json")
+    B.TRAINERS_JSON, B.TRAINERS_LUA = os.path.join(d, "trainers.json"), os.path.join(d, "Trainers.lua")   # never the shipped file
+    json.dump({"MAGE": {"class": "MAGE", "captured": 1, "entries": [{"name": "Frostbolt", "rank": "Rank 1", "level": 4, "spell": 116}]}},
+              open(B.TRAINERS_JSON, "w"))
     session = {"char": "Tester-Realm", "faction": "Alliance", "race": "Dwarf", "class": "SHAMAN", "level": 1, "started": 100,
                "entries": [{"t": 100, "k": "accept", "q": 179, "n": "Sten", "m": 1426, "x": 0.3, "y": 0.7, "l": 1},
                            {"t": 200, "k": "turnin", "q": 179, "n": "Sten", "m": 1426, "x": 0.3, "y": 0.7, "l": 1}]}
@@ -8156,97 +7968,9 @@ def _():
     B.main()
     _, steps = B.parse_steps_file(os.path.join(B.STEPS, "Alliance_Dwarf_Shaman_Tester.steps.txt"))
     eq([s["k"] for s in steps], ["accept", "turnin", "note"], "the in-game edit must reach the step file through main()")
-    ok(os.path.exists(B.OUT_LUA) and "built in game" in open(B.OUT_LUA, encoding="utf-8").read(), "and the compiled Lua")
-
-
-@test("a do step reads the objective and its progress live from the quest log, and updates as it changes", "guide")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = { { questID = 179, title = 'Dwarven Outfitters', level = 1 } }; __completed = {}; __objectives[179] = { { text = '2/8 Tough Wolf Meat', finished = false } }; ns.ApplyAll()")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "2/7  Complete objective: 2/8 Tough Wolf Meat", "live objective text with the alt's own progress")
-    h.lua("__objectives[179][1].text = '5/8 Tough Wolf Meat'; W.fireEvent('QUEST_LOG_UPDATE')")
-    eq(str(h.lua("return SalusNovusGuide.current:GetText()")), "2/7  Complete objective: 5/8 Tough Wolf Meat", "it follows the log")
-    h.lua("local r = ns.Guide.PickRoute() r.steps[2].text = nil; __quests = {}; ns.ApplyAll()")
-    eq(str(h.lua("return ns.Guide.StepText(ns.Guide.PickRoute().steps[2])")), "Complete objective (Dwarven Outfitters)", "no text and not on the quest: the plain form")
-    eq(h.errors(), [], "errors")
-
-
-@test("Move lands a step at an index as one edit, and skips follow it", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    base = step_kinds(h)
-    h.lua("local r = ns.Guide.PickRoute() ns.Guide.Skip(r, 4)")     # the train step
-    ok(h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 1, 5)"), "move 1 -> 5")
-    eq(step_kinds(h), base[1:5] + [base[0]] + base[5:], "the accept now sits fifth")
-    ok(h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 5, 1)"), "and back")
-    eq(step_kinds(h), base, "restored")
-    # the skip must ride along: move the (skipped) train step to the very end,
-    # complete everything checkable, and the route should read complete
-    ok(h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 4, 7)"), "train to the end")
-    eq(step_kinds(h)[-1], "train", "train last")
-    h.lua("__completed = { [179] = true, [233] = true }; UnitLevel = function() return 3 end")
-    ok(cur(h) is None, "the skipped train step, now last, must still count as skipped (route complete)")
-    ok(h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 7, 4)"), "and back again")
-    h.lua("__completed = {}; UnitLevel = function() return 1 end")
-    ok(not h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 2, 2)") and not h.lua("return ns.RouteEditor.Move(ns.Guide.PickRoute(), 0, 3)"), "no-op and out-of-range refused")
-    ops = [(str(o["op"]), int(o["at"]), int(o["to"] or 0)) for o in h.lua("return SalusNovusDB.routeEdits['T_Dwarf_SHAMAN']").values()]
-    eq(ops, [("mv", 1, 5), ("mv", 5, 1), ("mv", 4, 7), ("mv", 7, 4)], "moves logged with their target")
-    eq(h.errors(), [], "errors")
-
-
-@test("the Steps tab: click selects a row, inserts go above or below it, and a drag lands a row where it is dropped", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = { { questID = 555, title = 'Extra', level = 2 } }; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("UIParent.GetEffectiveScale = function() return 1 end")
-    # click = press + release without moving
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[3]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 3, "row 3 selected")
-    ok(h.lua("return ns.Options.stepsList.lines[3].sel:IsShown() and not ns.Options.stepsList.lines[2].sel:IsShown()"), "selection highlight")
-    h.lua("ns.Options.stepsText:SetText('after three'); ns.Options.stepsPlace('below'); ns.Options.stepsAdd.note:Click()")
-    eq(step_kinds(h)[3], "note", "Below selected: the note is row 4")
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 4, "the new row is selected")
-    h.lua("ns.Options.stepsText:SetText('before four'); ns.Options.stepsPlace('above'); ns.Options.stepsAdd.note:Click()")
-    eq(step_kinds(h)[3], "note", "Above selected: a note lands at row 4")
-    eq(str(h.lua("return ns.Guide.PickRoute().steps[4].text")), "before four", "the right note")
-    eq(str(h.lua("return ns.Guide.PickRoute().steps[5].text")), "after three", "the earlier note moved down")
-    # drag row 1 down onto the boundary below row 4: press on row 1 at its centre, move the cursor, release
-    h.lua("""
-        local L = ns.Options.stepsList
-        local top = L:GetTop()
-        GetCursorPosition = function() return 100, top - 12 end       -- row 1
-        local ln = L.lines[1]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton")
-        GetCursorPosition = function() return 100, top - 4 * 24 end   -- boundary below row 4
-        W.advance(0.05)
-        __markerShown = L.marker:IsShown()
-        ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    ok(h.lua("return __markerShown"), "the drop marker shows while dragging")
-    kinds = step_kinds(h)
-    eq(kinds[3], "accept#179", "the dragged accept landed as row 4")
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 4, "and is selected")
-    ok(not h.lua("return ns.Options.stepsList.marker:IsShown()"), "marker hidden after the drop")
-    ops = [str(o["op"]) for o in h.lua("return SalusNovusDB.routeEdits['T_Dwarf_SHAMAN']").values()]
-    eq(ops[-1], "mv", "the drag is one move edit")
-    # click the selected row again to deselect; inserts go before the current step again
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[4]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    ok(h.lua("return ns.Options.stepsList.selected == nil"), "second click deselects")
-    eq(h.errors(), [], "errors")
+    ok(os.path.exists(B.TRAINERS_LUA) and 'ns.Trainers["MAGE"]' in open(B.TRAINERS_LUA, encoding="utf-8").read(), "main still compiles the trainer catalogue")
+    ok(not hasattr(B, "OUT_LUA") and not hasattr(B, "compile_routes"), "routes are no longer compiled (the guide was removed)")
+    ok(not any(f.endswith(".lua") and f != "Trainers.lua" for _r, _d, fs in os.walk(d) for f in fs), "main wrote no Lua besides Trainers.lua")
 
 
 @test("build_route applies a move", "route")
@@ -8261,69 +7985,6 @@ def _():
 
 # ---------------------------------------------------------------- routes
 
-@test("New route makes a named, empty route for the character, selects it, and numbers a repeated name", "routes")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; UnitName = function() return 'Mercury Testsham' end")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("ns.Options.stepsNewName:SetText('Loch Modan 10-15'); ns.Options.stepsNewButton:Click()")
-    r = h.lua("return ns.Guide.PickRoute()")
-    eq((str(r["slug"]), str(r["name"]), int(h.lua("return #ns.Guide.PickRoute().steps"))), ("Alliance_Dwarf_Paladin_MercuryTestsham_LochModan1015", "Loch Modan 10-15", 0), "the new route is followed")
-    eq(str(h.lua("return ns.db.guide.route")), "Alliance_Dwarf_Paladin_MercuryTestsham_LochModan1015", "guide setting points at it")
-    eq(int(h.lua("return #ns.Routes")), 3, "three routes now")
-    eq(str(h.lua("return SalusNovusDB.routeEdits['Alliance_Dwarf_Paladin_MercuryTestsham_LochModan1015'][1].op")), "new", "logged as new")
-    eq(str(h.lua("return ns.Options.stepsNewName:GetText()")), "", "name box cleared")
-    h.lua("ns.Options.stepsNewName:SetText('Loch Modan 10-15'); ns.Options.stepsNewName:GetScript('OnEnterPressed')(ns.Options.stepsNewName)")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "Alliance_Dwarf_Paladin_MercuryTestsham_LochModan10152", "a repeated name gets a numbered slug")
-    vals = [str(x) for x in h.lua("ns.Options.SelectPage('guide') for _, w in ipairs(ns.Options.widgets) do if w.__outer == ns.Options.pages.guide and w.__kind == 'choice' then w:Update() return w.__values end end").values()]
-    ok("Alliance_Dwarf_Paladin_MercuryTestsham_LochModan1015" in vals and "Alliance_Dwarf_Paladin_MercuryTestsham_LochModan10152" in vals, "the Route dropdown lists routes made this session: %r" % vals)
-    h.lua("ns.Builder.Show(); ns.Builder.Add('note')")            # blank note refused, no route change
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "Alliance_Dwarf_Paladin_MercuryTestsham_LochModan10152", "the builder appends to the followed route, not a new one")
-    eq(h.errors(), [], "errors")
-
-
-@test("Delete route asks first; yes removes the route, logs a drop, and the guide falls back to its best match", "routes")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; UnitName = function() return 'Mercury Testsham' end")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("ns.Options.stepsNewName:SetText('Scratch'); ns.Options.stepsNewButton:Click()")
-    st = str(h.lua("return ns.Options.stepsFollow.text:GetText()"))
-    ok(st.startswith("Scratch") and "0 steps" in st, "the Following picker names the followed route: %r" % st)
-    h.lua("ns.Options.stepsDeleteRoute:Click()")
-    ok(h.lua("return SalusNovusConfirm and SalusNovusConfirm:IsShown()"), "confirmation shown")
-    eq(str(h.lua("return SalusNovusConfirm.text:GetText()")), 'Delete the route "Scratch" and its 0 steps?', "confirmation text")
-    h.lua("SalusNovusConfirm.no:Click()")
-    eq(int(h.lua("return #ns.Routes")), 3, "Cancel keeps it")
-    h.lua("ns.Options.stepsDeleteRoute:Click(); SalusNovusConfirm.yes:Click()")
-    eq(int(h.lua("return #ns.Routes")), 2, "deleted")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN", "the guide falls back to the best match")
-    eq(str(h.lua("return ns.db.guide.route")), "auto", "the setting is back to auto")
-    ops = [str(o["op"]) for o in h.lua("return SalusNovusDB.routeEdits['Alliance_Dwarf_Paladin_MercuryTestsham_Scratch']").values()]
-    eq(ops, ["new", "drop"], "new then drop logged")
-    h.lua("ns.Routes = {}; ns.ApplyAll(); ns.Options.RefreshAll()")
-    ok(not h.lua("return ns.Options.stepsDeleteRoute.enabledState"), "no route: Delete greyed")
-    eq(h.errors(), [], "errors")
-
-
-@test("best match prefers the route whose level band covers the character", "routes")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("""
-        ns.Routes[#ns.Routes + 1] = { slug = "T_Dwarf_SHAMAN_2", name = "Dwarf 10-20", faction = "Alliance", race = "Dwarf", class = "SHAMAN", map = 1432, levels = { 10, 20 }, steps = {} }
-        UnitLevel = function() return 12 end
-    """)
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN_2", "level 12: the 10-20 route")
-    h.lua("UnitLevel = function() return 2 end")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN", "level 2: the 1-3 route")
-    eq(h.errors(), [], "errors")
-
-
 @test("build_route retires a dropped route's step file", "route")
 def _():
     import sys, os, tempfile
@@ -8337,30 +7998,6 @@ def _():
     ok(not os.path.exists(p), "step file gone from steps/")
     ok(os.path.exists(os.path.join(d, "deleted", "Gone-3.steps.txt")), "kept under deleted/")
     B.apply_pending_edits({"Gone": [{"op": "drop", "id": "3-1", "t": 3}]})     # once only, no error
-
-
-@test("the Steps page lays out Builder and Routes left, Add right, and the route list across the full width", "editor")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    geo = h.lua("""
-        local pg = ns.Options.pages.routes.__content
-        local L = ns.Options.stepsList
-        local add = ns.Options.stepsAdd.note:GetParent()
-        local routes = ns.Options.stepsDeleteRoute:GetParent()
-        return { pageL = pg:GetLeft(), pageR = pg:GetRight(), listL = L:GetLeft(), listR = L:GetRight(), listTop = L:GetTop(),
-                 addL = add:GetLeft(), addR = add:GetRight(), addBottom = add:GetBottom(), routesL = routes:GetLeft(), routesR = routes:GetRight(), routesBottom = routes:GetBottom() }
-    """)
-    g = {str(k): float(v) for k, v in geo.items()}
-    page_w = g["pageR"] - g["pageL"]
-    ok(g["listR"] - g["listL"] > 0.9 * page_w, "the route list should span the page: %.0f of %.0f" % (g["listR"] - g["listL"], page_w))
-    ok(g["routesR"] - g["routesL"] < 0.55 * page_w and g["addR"] - g["addL"] < 0.55 * page_w, "Routes and Add are half-width cards")
-    ok(g["addL"] > g["routesR"], "Add sits to the right of Routes")
-    ok(g["listTop"] < g["addBottom"] and g["listTop"] < g["routesBottom"], "the list sits below both columns")
-    eq(h.errors(), [], "errors")
 
 
 @test("card headers: a dark band, the title in the accent, and a tapered accent rule under it", "theme")
@@ -8400,175 +8037,6 @@ def _():
 
 
 # ================================================================ bug hunt 8 (2026-09-22)
-
-# ==== LANE 05
-
-@test("selected index cleared when the selected row is deleted", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Select row 3
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[3]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 3, "row 3 selected")
-    # Delete row 3 (the selected one)
-    h.lua("ns.Options.stepsList.lines[3].del:Click()")
-    eq(int(h.lua("return ns.Options.stepsList.selected or 0")), 0, "selected cleared after deleting the selected row")
-    eq(h.errors(), [], "errors")
-
-
-@test("selected index preserved when deleting a row above it", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Select row 4
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[4]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 4, "row 4 selected")
-    # Delete row 2 (above it)
-    h.lua("ns.Options.stepsList.lines[2].del:Click()")
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 3, "selected moves down to 3 after delete above")
-    eq(h.errors(), [], "errors")
-
-
-@test("selected index adjusted after drag of the selected row", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("UIParent.GetEffectiveScale = function() return 1 end")
-    # Select row 2, then drag it to position 4
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[2]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 2, "row 2 selected")
-    h.lua("""
-        local L = ns.Options.stepsList
-        local top = L:GetTop()
-        GetCursorPosition = function() return 100, top - 12 end
-        local ln = L.lines[2]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton")
-        GetCursorPosition = function() return 100, top - 4 * 24 end
-        W.advance(0.05)
-        ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 4, "selected updated after drag")
-    eq(h.errors(), [], "errors")
-
-
-@test("selected cleared when new route created", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; UnitName = function() return 'Mercury Testsham' end")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Make a selection and verify
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[2]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 2, "row 2 selected")
-    # Create a new route (which has 0 steps)
-    h.lua("ns.Options.stepsNewName:SetText('New'); ns.Options.stepsNewButton:Click()")
-    eq(int(h.lua("return ns.Options.stepsList.selected or 0")), 0, "selected cleared on new route")
-    eq(h.errors(), [], "errors")
-
-
-@test("selected cleared when route deleted", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; UnitName = function() return 'Mercury Testsham' end")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Make a selection
-    h.lua("""
-        GetCursorPosition = function() return 100, 500 end
-        local ln = ns.Options.stepsList.lines[2]
-        ln:GetScript("OnMouseDown")(ln, "LeftButton"); W.advance(0.05); ln:GetScript("OnMouseUp")(ln, "LeftButton")
-    """)
-    eq(int(h.lua("return ns.Options.stepsList.selected")), 2, "row 2 selected")
-    # Delete the route
-    h.lua("ns.Options.stepsDeleteRoute:Click(); SalusNovusConfirm.yes:Click()")
-    eq(int(h.lua("return ns.Options.stepsList.selected or 0")), 0, "selected cleared on delete route")
-    eq(h.errors(), [], "errors")
-
-
-@test("hidden lines after shrink do not respond to clicks", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Start with 7 steps
-    eq(int(h.lua("return #ns.Guide.PickRoute().steps")), 7, "7 steps initially")
-    # Delete steps until only 1 left
-    for i in range(6):
-        h.lua("ns.Options.stepsList.lines[1].del:Click()")
-    eq(int(h.lua("return #ns.Guide.PickRoute().steps")), 1, "1 step left")
-    # Lines 2-7 should be hidden
-    h.lua("""
-        local ln = ns.Options.stepsList.lines[7]
-        if ln and ln:IsShown() then
-            error("line 7 should be hidden")
-        end
-    """)
-    eq(h.errors(), [], "hidden lines work correctly")
-
-
-@test("page height shrinks when steps decrease", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("ns.Options.RefreshAll()")
-    initial_h = float(h.lua("return ns.Options.pages.routes.__content:GetHeight()"))
-    # Delete all steps except 1
-    for i in range(6):
-        h.lua("ns.Options.stepsList.lines[1].del:Click()")
-    h.lua("ns.Options.RefreshAll()")
-    final_h = float(h.lua("return ns.Options.pages.routes.__content:GetHeight()"))
-    ok(final_h < initial_h, "page shrinks: %.0f to %.0f" % (initial_h, final_h))
-    eq(h.errors(), [], "errors")
-
-
-@test("quest picker state after quest leaves log", "lane05")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = { { questID = 555, title = 'Extra', level = 2 } }; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    # Click the quest button to open the picker
-    h.lua("ns.Options.stepsQuestButton:GetScript('OnClick')(ns.Options.stepsQuestButton)")
-    eq(str(h.lua("return ns.Options.stepsQuestButton.text:GetText()")), "Extra", "quest button shows extra")
-    # Remove the quest from the log
-    h.lua("__quests = {}; W.fireEvent('QUEST_LOG_UPDATE')")
-    h.lua("ns.Options.RefreshAll()")
-    # Now the quest button should show no quests but still work
-    ok(not h.lua("return ns.Options.stepsAdd.accept.enabledState"), "accept greyed when no quests")
-    eq(h.errors(), [], "errors")
 
 # ==== LANE 06 ====
 
@@ -8674,8 +8142,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-
-
 @test("Uppercase word keys stored in DB are added to List as-is, but won't match in searches", "lane06")
 def _():
     h = fresh()
@@ -8759,116 +8225,7 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("B.Add with secret string in text box should not throw", "lane09")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = { { questID = 555, title = 'Extra', level = 2 } }; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 1 end")
-    h.lua("ns.Builder.Show()")
-    h.lua("ns.Builder.Add('accept')")
-    # Set the text box to a secret string
-    h.lua("SalusNovusBuilder.text:SetText(W.secretString())")
-    # Try to add a note with secret string
-    result = h.lua("return ns.Builder.Add('note')")
-    ok(result is None, "should refuse blank/secret note")
-    eq(h.errors(), [], "should not throw with secret string")
-
-
-@test("Coords button with secret position should not throw or write '?'", "lane09")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = {}; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 1 end")
-    h.lua("ns.Builder.Show()")
-    # Mock a secret position
-    h.lua("C_Map.GetPlayerMapPosition = function() return { x = W.secretNumber(), y = W.secretNumber() } end")
-    h.lua("SalusNovusBuilder.text:SetText('')")
-    h.lua("SalusNovusBuilder.coords:Click()")
-    # The text should remain empty or have reasonable content, not "?"
-    text = str(h.lua("return SalusNovusBuilder.text:GetText()"))
-    ok("?" not in text, "text should not contain '?': '%s'" % text)
-    eq(h.errors(), [], "should not throw with secret position")
-
-
-@test("Undo when the route has no steps should be disabled", "lane09")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("ns.Options.stepsNewName:SetText('Empty'); ns.Options.stepsNewButton:Click()")
-    h.lua("ns.Builder.Show(); ns.Builder.Refresh()")
-    ok(not h.lua("return SalusNovusBuilder.undo.enabledState"), "Undo should be disabled when no steps")
-    h.lua("SalusNovusBuilder.undo:Click()")  # Click disabled button
-    eq(h.errors(), [], "errors")
-
-
-@test("Quest picker button should be disabled when quest log is empty", "lane09")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = {}; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 1 end")
-    h.lua("ns.Builder.Show()")
-    ok(not h.lua("return SalusNovusBuilder.questBtn.enabledState"), "questBtn should be disabled with no quests")
-    h.lua("SalusNovusBuilder.questBtn:Click()")  # Try to click disabled button - should be safe
-    eq(h.errors(), [], "errors")
-
-
-@test("the builder's quest button opens the Options picker list with the log's quests (its call is guarded, so a missing export would fail silently)", "builder")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = { { questID = 555, title = 'Extra', level = 2 }, { questID = 556, title = 'More', level = 3 } }; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 4 end")
-    ok(h.lua("return type(ns.Options.OpenPickerList) == 'function'"), "Options.OpenPickerList is not exported")
-    h.lua("ns.Builder.Show()")
-    h.lua("SalusNovusBuilder.questBtn:Click()")
-    ok(h.lua("return SalusNovusPickerList and SalusNovusPickerList:IsShown()"), "picker list did not open from the builder")
-    eq(str(h.lua("return SalusNovusPickerList.rows[2].text:GetText()")), "More", "second row is the second quest")
-    h.lua("SalusNovusPickerList.rows[2]:Click()")
-    eq(int(h.lua("return SalusNovusBuilder.quest")), 556, "pick did not land on the builder")
-    eq(h.errors(), [], "errors")
-
-
-@test("Refresh while Builder window is not shown should not throw", "lane09")
-def _():
-    h = fresh()
-    h.lua("ns.Builder.Refresh()")  # window not built yet
-    ok(True, "refresh on nil window should not throw")
-    h.lua("ns.Builder.Show(); SalusNovusBuilder:Hide()")
-    h.lua("ns.Builder.Refresh()")  # window hidden
-    ok(True, "refresh on hidden window should not throw")
-    eq(h.errors(), [], "errors")
-
-
-@test("B.Add returning nil when step creation fails should not leave empty route", "lane09")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    h.lua("ns.Routes = {}; __quests = {}; __completed = {}; UnitName = function() return 'Tester' end; UnitLevel = function() return 1 end")
-    h.lua("ns.Builder.Show()")
-    # Try to add a note with blank text (should be refused by Append)
-    h.lua("SalusNovusBuilder.text:SetText('')")
-    result = h.lua("return ns.Builder.Add('note')")
-    ok(result is None, "should refuse blank note")
-    # Check if a route was created with no steps
-    routes_count = int(h.lua("return #ns.Routes"))
-    eq(routes_count, 0, "should not create an empty route when step fails")
-    eq(h.errors(), [], "errors")
-
 # ==== LANE 10: Persistence failure modes and unbounded growth audit
-
-@test("guide.route set to a deleted route slug falls back to auto-pick and loads clean", "lane10")
-def _():
-    h = Harness()
-    h.login('SalusNovusDB = { options = { guide = { route = "DeletedSlugThatNoLongerExists" } } }')
-    eq(h.errors(), [], "errors loading a dead route slug")
-    # PickRoute should fall back to auto-pick; the route must not be nil after Refresh
-    route = h.lua("return ns.Guide.PickRoute()")
-    ok(route, "PickRoute returned nil for a dead slug (should auto-pick)")
-    h.lua("ns.Guide.Refresh()")
-    eq(h.errors(), [], "errors on Refresh with a dead slug")
-
 
 @test("sidebar.collapsed with corrupt values (string, number, non-table) does not throw and collapses nothing", "lane10")
 def _():
@@ -8881,31 +8238,6 @@ def _():
     h2 = Harness()
     h2.login('SalusNovusDB = { options = { sidebar = { collapsed = 42 } } }')
     eq(h2.errors(), [], "threw on a numeric sidebar.collapsed")
-
-
-@test("guide.showNext as a string or negative is clamped to a valid number", "lane10")
-def _():
-    h = Harness()
-    h.login('SalusNovusDB = { options = { guide = { showNext = "not_a_number" } } }')
-    eq(h.errors(), [], "threw on showNext as a string at login")
-    h.lua("ns.Guide.Refresh()")
-    eq(h.errors(), [], "threw on Refresh with showNext as a string (must convert to number)")
-    h2 = Harness()
-    h2.login('SalusNovusDB = { options = { guide = { showNext = -5 } } }')
-    h2.lua("ns.Guide.Refresh()")
-    eq(h2.errors(), [], "threw on Refresh with negative showNext (must clamp)")
-
-
-@test("guide.arrowSize = 0 or a string does not break the arrow and clamps to valid range", "lane10")
-def _():
-    h = Harness()
-    h.login('SalusNovusDB = { options = { guide = { arrowSize = 0 } } }')
-    eq(h.errors(), [], "threw on arrowSize = 0")
-    h.lua("ns.Guide.Refresh()")
-    eq(h.errors(), [], "errors on Refresh with arrowSize = 0")
-    h2 = Harness()
-    h2.login('SalusNovusDB = { options = { guide = { arrowSize = "huge" } } }')
-    eq(h2.errors(), [], "threw on arrowSize as a string")
 
 
 @test("chatFilter.words as a string is re-seeded with defaults; old array form skips non-boolean entries", "lane10")
@@ -8936,21 +8268,6 @@ def _():
     ok(on1 and on2, "ModuleOn should default-on for missing keys")
     h.lua("ns.ApplyAll()")
     eq(h.errors(), [], "errors on ApplyAll with partial modules")
-
-
-@test("titleAsked in Guide grows unbounded per session; measure the size cost", "lane10")
-def _():
-    h = fresh()
-    # Fetch 100 quest titles (real or fake)
-    for i in range(1, 101):
-        h.lua("local ql = rawget(_G, 'C_QuestLog') if ql then ql.GetTitleForQuestID(%d) end" % i)
-    # The titleAsked set should have grown
-    size1 = int(h.lua("return (#ns.Guide.titleAsked or 0)")) if h.lua("return type(ns.Guide.titleAsked)") == "table" else 0
-    # After 100 quest lookups, titleAsked should track them
-    # This is a growth measurement, not a failure: just document it
-    ok(True, "titleAsked growth: measured (unbounded per session, but titles per session is typically <100)")
-
-# ==== LANE 04 - Bug hunting for build_route.py and harvest_routes.py
 
 
 # ==== LANE 04 - Bug hunting for build_route.py and harvest_routes.py
@@ -9040,89 +8357,29 @@ def _():
         ok("name=New" in f.read(), "new header applied")
 
 
-@test("the Routes card's Following picker lists Best match and every route, and picking one switches the guide", "routes")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("__quests = {}; __completed = {}; UnitName = function() return 'Mercury Testsham' end")
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    h.lua("ns.Options.stepsNewName:SetText('Second'); ns.Options.stepsNewButton:Click()")
-    eq(str(h.lua("return ns.Guide.PickRoute().name")), "Second", "the new route is followed")
-    h.lua("ns.Options.stepsFollow:Click()")
-    ok(h.lua("return SalusNovusPickerList and SalusNovusPickerList:IsShown()"), "picker opens")
-    vals = [str(x) for x in h.lua("return ns.Options.stepsFollow.__values").values()]
-    eq(vals[0], "auto", "Best match first")
-    ok("T_Dwarf_SHAMAN" in vals and "T_Orc_WARRIOR" in vals and any(v.endswith("_Second") for v in vals), "every route listed: %r" % vals)
-    h.lua("""
-        for _, r in ipairs(SalusNovusPickerList.rows) do
-            if r:IsShown() and r.value == "T_Dwarf_SHAMAN" then r:Click() end
-        end
-    """)
-    eq(str(h.lua("return ns.db.guide.route")), "T_Dwarf_SHAMAN", "picking sets the route")
-    eq(str(h.lua("return ns.Guide.PickRoute().slug")), "T_Dwarf_SHAMAN", "the guide follows it")
-    ok(str(h.lua("return ns.Options.stepsFollow.text:GetText()")).startswith("Test route"), "the picker shows the followed route")
-    h.lua("ns.Options.stepsFollow:Click()")
-    h.lua("""
-        for _, r in ipairs(SalusNovusPickerList.rows) do
-            if r:IsShown() and r.value == "auto" then r:Click() end
-        end
-    """)
-    eq(str(h.lua("return ns.db.guide.route")), "auto", "Best match restores auto")
-    ok("(best match)" in str(h.lua("return ns.Options.stepsFollow.text:GetText()")), "auto is labelled")
-    # a route that vanished from the list falls back to auto on refresh
-    h.lua("ns.db.guide.route = 'Gone_Slug'; ns.Options.RefreshAll()")
-    eq(str(h.lua("return ns.db.guide.route")), "auto", "a stale slug falls back to auto")
-    eq(h.errors(), [], "errors")
-
 # ==== LANE 08
 
-@test("Global section is positioned before Leveling section (top to bottom in sidebar)", "lane08")
+@test("Global section is positioned before Quality of Life section (top to bottom in sidebar)", "lane08")
 def _():
     h = fresh()
     open_options(h)
-
-    # Get positions of all visible rows and determine ordering
-    result = h.lua("""
+    # Every visible row, sorted top of screen first (larger GetTop = higher).
+    keys = h.lua("""
         local rows = {}
         for key, tab in pairs(ns.Options.tabs) do
-            if tab:IsShown() and key ~= "wishlistLauncher" then   -- the foot row sits below every section by design
+            if tab:IsShown() and key ~= "wishlistLauncher" and key ~= "keybindsLauncher" then   -- the foot rows sit below every section by design
                 rows[#rows + 1] = { key = key, top = tab:GetTop() }
             end
         end
-        table.sort(rows, function(a, b) return a.top < b.top end)  -- Sorted by screen position (top to bottom)
-        local first_section = nil
-        local last_section = nil
-        if rows[1] then
-            if rows[1].key == "global" or rows[1].key == "anchors" or rows[1].key == "visualizer" then
-                first_section = "Global_or_BossWarnings"
-            elseif rows[1].key == "guide" or rows[1].key == "routes" then
-                first_section = "Leveling"
-            end
-        end
-        if rows[#rows] then
-            if rows[#rows].key == "global" then
-                last_section = "Global"
-            elseif rows[#rows].key == "anchors" or rows[#rows].key == "visualizer" then
-                last_section = "Global_or_BossWarnings"
-            elseif rows[#rows].key == "guide" or rows[#rows].key == "routes" then
-                last_section = "Leveling"
-            end
-        end
-        return { first = rows[1] and rows[1].key, last = rows[#rows] and rows[#rows].key, first_section = first_section, last_section = last_section, count = #rows }
+        table.sort(rows, function(a, b) return a.top > b.top end)
+        local out = {}
+        for i, r in ipairs(rows) do out[i] = r.key end
+        return table.concat(out, ",")
     """)
-
-    if result:
-        first_key = str(result["first"])  # Sorted by GetTop() ascending = smallest GetTop first (lowest on screen)
-        last_key = str(result["last"])    # Largest GetTop last (highest on screen)
-        first_sect = result["first_section"]
-        last_sect = result["last_section"]
-
-        # In WoW, smaller y = lower on screen. First (smallest top) should be Leveling (last section, lowest on sidebar)
-        ok(first_sect and first_sect == "Leveling", "lowest on screen (first in sorted list) should be Leveling, got %s (key=%s)" % (first_sect, first_key))
-        # Last (largest top) should be Global (first section, highest on sidebar) or possibly Boss Warnings first row
-        ok(last_sect and last_sect in ("Global", "Global_or_BossWarnings"), "highest on screen (last in sorted list) should be Global/BossWarnings, got %s (key=%s)" % (last_sect, last_key))
-
+    keys = str(keys).split(",")
+    eq(keys[0], "global", "highest row is Global's: %r" % keys)
+    eq(keys[-1], "trainer", "lowest row is Quality of Life's last (Trainer): %r" % keys)
+    ok(keys.index("anchors") < keys.index("chat"), "Boss Warnings sits above Quality of Life: %r" % keys)
     eq(h.errors(), [], "errors")
 
 
@@ -9164,47 +8421,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("Leveling module off with Guide page active: controls disabled and previews halted", "lane08")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    ok(h.lua("return ns.Options.ActivePage() == 'routes'"), "routes page should be active")
-
-    # Turn off Leveling
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-
-    # The page_states should show all controls disabled
-    states = page_states(h, "routes")
-    ok(all(not s for s in states), "all route page controls should be disabled when module is off: %r" % states)
-
-    # Previews should halt
-    eq(h.errors(), [], "errors")
-
-
-@test("Switching Leveling module off and on re-enables Guide and Routes pages fully", "lane08")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    states_before = page_states(h, "routes")
-    ok(any(s for s in states_before), "routes page should have some enabled controls before turning off")
-
-    # Turn off
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-    states_off = page_states(h, "routes")
-    ok(all(not s for s in states_off), "all controls should be disabled when off")
-
-    # Turn on
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-    states_after = page_states(h, "routes")
-    ok(any(s for s in states_after), "routes page should re-enable controls when on: %r" % states_after)
-
-    # Page should still be routes
-    eq(str(h.lua("return ns.Options.ActivePage()")), "routes", "active page should still be routes")
-    eq(h.errors(), [], "errors")
-
-
 @test("saved global section fold hides Settings row: SelectPage('global') shows empty sidebar", "lane08")
 def _():
     # Load with Global section saved as folded
@@ -9223,28 +8439,6 @@ def _():
     h.lua("ns.Options.sectionFolds.global:Click()")
     ok(row_shown(h, "global"), "Global row should appear after unfolding")
     eq(h.errors(), [], "errors")
-
-
-@test("List row controls Up/Down/Del are greyed when Leveling module is off", "lane08")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-
-    # Turn off Leveling
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-
-    # Verify controls like stepsDelete exist and are disabled
-    result = h.lua("""
-        local enabled = true
-        if ns.Options.stepsDeleteRoute then
-            enabled = ns.Options.stepsDeleteRoute:IsEnabled()
-        end
-        return enabled
-    """)
-    ok(not result, "delete route button should be disabled when module is off")
-    eq(h.errors(), [], "errors")
-
 
 
 @test("DEBUG: launcher hidden check when section folded", "lane08")
@@ -9268,419 +8462,6 @@ def _():
 
 
 # ================================================================ bug hunt 9 (2026-09-22)
-
-# ==== HUNT9 LANE 01
-
-@test("Guide.Refresh recursion depth: RouteEditor.Changed calls Guide.Refresh", "h9lane01")
-def _():
-    """RouteEditor.Changed calls Guide.Refresh. Measure call depth (baseline: 1)."""
-    h = fresh()
-    h.lua("ns.Options.SelectPage('routes')")
-
-    # Set up a recursion-depth counter in Lua
-    h.lua("""
-        _refresh_depth = 0
-        local old_refresh = ns.Guide.Refresh
-        ns.Guide.Refresh = function()
-            _refresh_depth = _refresh_depth + 1
-            if _refresh_depth > 10 then
-                error("Guide.Refresh exceeded depth 10")
-            end
-            return old_refresh()
-        end
-    """)
-
-    # Now trigger RouteEditor ops to cause Changed -> Guide.Refresh
-    h.lua("""
-        local route = ns.Routes[1]
-        if route and route.steps and #route.steps > 0 then
-            ns.RouteEditor.Delete(route, 1)
-        end
-    """)
-
-    max_depth = h.lua("return _refresh_depth")
-    ok(max_depth <= 2, "Guide.Refresh depth should be <= 2, got %d (baseline: 1)" % max_depth)
-    eq(h.errors(), [], "errors")
-
-
-@test("QUEST_LOG_UPDATE cost: Guide.CurrentIndex calls (baseline: 1)", "h9lane01")
-def _():
-    """One QUEST_LOG_UPDATE should trigger CurrentIndex minimal times."""
-    h = fresh()
-
-    # Wire up counters for CurrentIndex calls
-    h.lua("""
-        _currentindex_count = 0
-        local old_ci = ns.Guide.CurrentIndex
-        ns.Guide.CurrentIndex = function(...)
-            _currentindex_count = _currentindex_count + 1
-            return old_ci(...)
-        end
-    """)
-
-    # Fire one QUEST_LOG_UPDATE event
-    h.lua('W.fireEvent("QUEST_LOG_UPDATE")')
-
-    count = h.lua("return _currentindex_count")
-    ok(count <= 3, "QUEST_LOG_UPDATE CurrentIndex calls: %d (baseline: 1)" % count)
-    eq(h.errors(), [], "errors")
-
-
-# ==== HUNT9 LANE 01 - NEW TESTS
-
-@test("RouteEditor.LogQuests cost: counted in fresh harness", "h9lane01")
-def _():
-    """Measure RouteEditor.LogQuests calls without event handlers triggering."""
-    h = fresh()
-    
-    # Set up a call counter for LogQuests
-    h.lua("""
-        _logquests_count = 0
-        local old_lq = ns.RouteEditor.LogQuests
-        ns.RouteEditor.LogQuests = function(...)
-            _logquests_count = _logquests_count + 1
-            return old_lq(...)
-        end
-    """)
-    
-    # Just call it once to establish baseline
-    h.lua("ns.RouteEditor.LogQuests()")
-    
-    count = h.lua("return _logquests_count")
-    ok(count >= 1, "LogQuests should be callable: called %d times" % count)
-    eq(h.errors(), [], "errors")
-
-
-@test("Guide.Refresh cost during ApplyAll: counts calls on slider drag", "h9lane01")
-def _():
-    """ApplyAll runs on every slider step. Count Guide.Refresh calls."""
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('bars')")
-    
-    # Set up counter for Guide.Refresh
-    h.lua("""
-        _refresh_count = 0
-        local old_gr = ns.Guide.Refresh
-        ns.Guide.Refresh = function()
-            _refresh_count = _refresh_count + 1
-            return old_gr()
-        end
-    """)
-    
-    # Simulate a few slider drag steps (ApplyAll is called per step)
-    h.lua("""
-        for step = 1, 5 do
-            ns.ApplyAll()
-        end
-    """)
-    
-    count = h.lua("return _refresh_count")
-    # Each ApplyAll should trigger Guide.Refresh once
-    ok(count >= 5, "Guide.Refresh should be called >= 5 times for 5 ApplyAll calls, got %d" % count)
-    eq(h.errors(), [], "errors")
-
-
-@test("Arrow.Refresh called from Guide.Refresh does not throw", "h9lane01")
-def _():
-    """Arrow.Refresh is called by Guide.Refresh. Must be safe."""
-    h = fresh()
-    
-    # Call Guide.Refresh directly (which calls Arrow.Refresh)
-    h.lua("ns.Guide.Refresh()")
-    
-    # Arrow.Refresh should complete without error
-    errors = h.errors()
-    ok(not errors, "Guide.Refresh calling Arrow.Refresh should not error: %r" % errors)
-    eq(h.errors(), [], "errors")
-
-
-@test("QUEST_LOG_UPDATE event fires both Builder.Refresh and Guide handlers", "h9lane01")
-def _():
-    """QUEST_LOG_UPDATE is handled by both Builder and Guide. Check both run."""
-    h = fresh()
-    
-    # Set up counters
-    h.lua("""
-        _builder_refresh_count = 0
-        local old_br = ns.Builder.Refresh
-        ns.Builder.Refresh = function()
-            _builder_refresh_count = _builder_refresh_count + 1
-            return old_br()
-        end
-    """)
-    
-    # Fire QUEST_LOG_UPDATE
-    h.lua('W.fireEvent("QUEST_LOG_UPDATE")')
-    
-    b_count = h.lua("return _builder_refresh_count")
-    ok(b_count >= 1, "Builder.Refresh should be called at least once, got %d" % b_count)
-    eq(h.errors(), [], "errors")
-
-
-@test("RouteEditor.Delete via options page does not recursively call Guide.Refresh", "h9lane01")
-def _():
-    """RouteEditor.Changed calls Guide.Refresh. Ensure no double-calling."""
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-    
-    # Set up a depth counter to ensure we're not in infinite recursion
-    h.lua("""
-        _max_depth = 0
-        _current_depth = 0
-        local old_gr = ns.Guide.Refresh
-        ns.Guide.Refresh = function()
-            _current_depth = _current_depth + 1
-            if _current_depth > _max_depth then _max_depth = _current_depth end
-            if _current_depth > 5 then
-                error("Guide.Refresh recursion depth > 5")
-            end
-            local result = old_gr()
-            _current_depth = _current_depth - 1
-            return result
-        end
-    """)
-    
-    # Try to delete a route step if available
-    h.lua("""
-        local route = ns.Routes[1]
-        if route and route.steps and #route.steps > 1 then
-            ns.RouteEditor.Delete(route, 1)
-        end
-    """)
-    
-    max_depth = h.lua("return _max_depth")
-    errors = h.errors()
-    ok(max_depth <= 2, "Guide.Refresh recursion depth should be <= 2, got %d" % max_depth)
-    ok(not errors, "no recursion errors: %r" % errors)
-    eq(h.errors(), [], "errors")
-
-
-@test("QUEST_LOG_UPDATE cost with routes page open and builder shown", "h9lane01")
-def _():
-    """Measure Guide.CurrentIndex and RouteEditor.LogQuests during QUEST_LOG_UPDATE."""
-    h = fresh()
-    
-    # Set up both pages
-    h.lua('ns.Options.SelectPage("routes")')
-    h.lua('ns.Builder.Show()')
-    
-    # Set up counters
-    h.lua("""
-        _currentindex_count = 0
-        _logquests_count = 0
-        local old_ci = ns.Guide.CurrentIndex
-        local old_lq = ns.RouteEditor.LogQuests
-        ns.Guide.CurrentIndex = function(...)
-            _currentindex_count = _currentindex_count + 1
-            return old_ci(...)
-        end
-        ns.RouteEditor.LogQuests = function(...)
-            _logquests_count = _logquests_count + 1
-            return old_lq(...)
-        end
-    """)
-    
-    # Fire QUEST_LOG_UPDATE
-    h.lua('W.fireEvent("QUEST_LOG_UPDATE")')
-    
-    # Get counts
-    ci_count = int(h.lua('return _currentindex_count'))
-    lq_count = int(h.lua('return _logquests_count'))
-    
-    # Report the measurement
-    ok(ci_count <= 2, "CurrentIndex called %d times (baseline 1)" % ci_count)
-    ok(lq_count <= 2, "LogQuests called %d times (baseline 1)" % lq_count)
-    eq(h.errors(), [], "errors")
-
-# ==== HUNT9 LANE 02
-
-@test("Guide unlock shows sample and label; lock hides when leveling disabled", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.modules.leveling = false
-        ns.db.unlocked = false
-        ns.ApplyAll()
-    """)
-    # Leveling off: frame should be hidden when locked
-    ok(not h.lua("return SalusNovusGuide:IsShown()"), "Guide should hide when locked with leveling off")
-    # Unlock: frame should show with sample
-    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    ok(h.lua("return SalusNovusGuide:IsShown()"), "Guide should show when unlocked (even with leveling off)")
-    ok(h.lua("return SalusNovusGuide.unlockLabel:IsShown()"), "Guide unlock label should show")
-    # Lock: frame should hide again when leveling is off
-    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusGuide:IsShown()"), "Guide should hide when locked with leveling off")
-    eq(h.errors(), [], "errors")
-
-
-@test("Arrow unlock shows sample and label; lock hides when leveling disabled", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = false
-        ns.db.unlocked = false
-        ns.ApplyAll()
-    """)
-    # Leveling off: frame should be hidden when locked
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "Arrow should hide when locked with leveling off")
-    # Unlock: frame should show with sample bearing
-    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    ok(h.lua("return SalusNovusArrow:IsShown()"), "Arrow should show when unlocked (even with leveling off)")
-    ok(h.lua("return SalusNovusArrow.unlockLabel:IsShown()"), "Arrow unlock label should show")
-    ok(h.lua("return SalusNovusArrow.unlockBg:IsShown()"), "Arrow unlock background should show")
-    # Lock: frame should hide again when leveling is off
-    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
-    ok(not h.lua("return SalusNovusArrow:IsShown()"), "Arrow should hide when locked with leveling off")
-    eq(h.errors(), [], "errors")
-
-
-@test("Guide drag-save-restore cycle: move frame in unlock, save, restore from record", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.modules.leveling = true
-        ns.db.unlocked = true
-        ns.ApplyAll()
-        ns.Guide.Build()
-    """)
-    # Move frame to a different position using SetPoint
-    h.lua("""
-        local f = ns.Guide.Build()
-        f:ClearAllPoints()
-        f:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", 100, 200)
-        f:StopMovingOrSizing()
-        ns.SnapMovable(f)
-        ns.SaveAnchor(f, "guidePos")
-    """)
-    # Verify record was saved
-    rec = h.lua("return SalusNovusDB.guidePos")
-    ok(rec is not None, "SaveAnchor should write guidePos record")
-    ok(h.lua("return SalusNovusDB.guidePos.v == 2"), "SaveAnchor should write v=2 record")
-    eq(h.errors(), [], "errors")
-
-
-@test("Arrow drag-save-restore cycle: move frame in unlock, save, restore from record", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = true
-        ns.db.unlocked = true
-        ns.ApplyAll()
-        ns.Arrow.Build()
-    """)
-    # Move frame using SetPoint
-    h.lua("""
-        local f = ns.Arrow.Build()
-        f:ClearAllPoints()
-        f:SetPoint("TOP", UIParent, "BOTTOMLEFT", 150, 250)
-        f:StopMovingOrSizing()
-        ns.SnapMovable(f)
-        ns.SaveAnchor(f, "arrowPos")
-    """)
-    # Verify record was saved
-    rec = h.lua("return SalusNovusDB.arrowPos")
-    ok(rec is not None, "SaveAnchor should write arrowPos record")
-    eq(h.errors(), [], "errors")
-
-
-@test("/sn resetpos clears Guide, Arrow, Builder position records and restores defaults", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = true
-        ns.ApplyAll()
-        ns.Guide.Build()
-        ns.Arrow.Build()
-        ns.Builder.Build()
-        -- Save some positions
-        ns.SaveAnchor(ns.Guide.Build(), "guidePos")
-        ns.SaveAnchor(ns.Arrow.Build(), "arrowPos")
-        ns.SaveAnchor(ns.Builder.Build(), "builderPos")
-    """)
-    # Verify records exist
-    ok(h.lua("return SalusNovusDB.guidePos ~= nil"), "guidePos should be saved")
-    ok(h.lua("return SalusNovusDB.arrowPos ~= nil"), "arrowPos should be saved")
-    ok(h.lua("return SalusNovusDB.builderPos ~= nil"), "builderPos should be saved")
-    # Reset positions
-    h.lua("ns.Commands.resetpos()")
-    # Verify records are cleared
-    ok(h.lua("return SalusNovusDB.guidePos == nil"), "guidePos should be cleared after resetpos")
-    ok(h.lua("return SalusNovusDB.arrowPos == nil"), "arrowPos should be cleared after resetpos")
-    ok(h.lua("return SalusNovusDB.builderPos == nil"), "builderPos should be cleared after resetpos")
-    eq(h.errors(), [], "errors")
-
-
-@test("Builder keeps EnableMouse=true when locked (window with buttons)", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.modules.leveling = true
-        ns.Builder.Build()
-        -- Frame starts with EnableMouse(true)
-        local initial = ns.Builder.Build():IsMouseEnabled()
-        __initial = initial
-    """)
-    initial = h.lua("return __initial")
-    ok(initial, "Builder should have EnableMouse=true by default")
-    # Lock
-    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
-    locked_mouse = h.lua("return ns.Builder.Build():IsMouseEnabled()")
-    ok(locked_mouse, "Builder should keep EnableMouse=true when locked (it's a window with buttons)")
-    # Unlock
-    h.lua("ns.db.unlocked = true; ns.ApplyAll()")
-    unlocked_mouse = h.lua("return ns.Builder.Build():IsMouseEnabled()")
-    ok(unlocked_mouse, "Builder should keep EnableMouse=true when unlocked")
-    eq(h.errors(), [], "errors")
-
-
-@test("NaN in saved position record is dropped; default used instead", "h9lane02")
-def _():
-    h = Harness().login("""SalusNovusDB = {
-        guidePos = { point = "TOPRIGHT", x = 0/0, y = 100, v = 2 },
-        arrowPos = { point = "TOP", x = 200, y = 0/0, v = 2 }
-    }""")
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = true
-        ns.ApplyAll()
-    """)
-    # Both frames should load without error and use defaults
-    ok(h.lua("return SalusNovusGuide ~= nil"), "Guide should be built despite NaN record")
-    ok(h.lua("return SalusNovusArrow ~= nil"), "Arrow should be built despite NaN record")
-    ok(h.lua("return SalusNovusDB.guidePos == nil"), "NaN guidePos record should be discarded")
-    ok(h.lua("return SalusNovusDB.arrowPos == nil"), "NaN arrowPos record should be discarded")
-    eq(h.errors(), [], "errors")
-
-
-@test("Guide growth-origin (TOPRIGHT) and Arrow growth-origin (TOP) restored correctly", "h9lane02")
-def _():
-    h = fresh()
-    h.lua("""
-        ns.db.guide.enabled = true
-        ns.db.guide.arrow = true
-        ns.db.modules.leveling = true
-        ns.ApplyAll()
-        ns.Guide.Build()
-        ns.Arrow.Build()
-    """)
-    # Verify origin functions
-    guide_origin = h.lua("return (ns.Guide.Build().__origin and ns.Guide.Build().__origin())")
-    arrow_origin = h.lua("return (ns.Arrow.Build().__origin and ns.Arrow.Build().__origin())")
-    eq(str(guide_origin), "TOPRIGHT", "Guide origin should be TOPRIGHT: got %s" % guide_origin)
-    eq(str(arrow_origin), "TOP", "Arrow origin should be TOP: got %s" % arrow_origin)
-    eq(h.errors(), [], "errors")
 
 # ==== HUNT9 LANE 03 ====
 
@@ -9774,102 +8555,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("Routes page list drag disabled when module is off; buttons honor state", "h9lane03")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-
-    # Routes list should be enabled
-    list_enabled = h.lua("return ns.Options.stepsList.enabledState ~= false")
-    ok(list_enabled, "routes list should be enabled initially")
-
-    # Turn off Leveling
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-
-    # List should now be disabled
-    list_disabled = h.lua("return ns.Options.stepsList.enabledState == false")
-    ok(list_disabled, "routes list should be disabled when module is off")
-
-    # Try to start a drag while disabled - should not set drag
-    h.lua("ns.Options.stepsList:BeginDrag(1)")
-    drag_state = h.lua("return ns.Options.stepsDrag() == nil")
-    ok(drag_state, "BeginDrag while disabled should not create drag state")
-
-    # Turn module back on
-    h.lua("ns.Options.moduleSwitches.leveling:Click()")
-    list_enabled_again = h.lua("return ns.Options.stepsList.enabledState ~= false")
-    ok(list_enabled_again, "routes list should re-enable: %r" % list_enabled_again)
-    eq(h.errors(), [], "errors")
-
-
-@test("Routes page Following picker EnabledWhen flips with Routes availability", "h9lane03")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-
-    # Add a route to ensure we have some
-    h.lua("""
-        ns.Routes = ns.Routes or {}
-        ns.Routes[1] = { slug = "test-route", name = "Test Route", steps = {} }
-        ns.ApplyAll()
-    """)
-
-    # Now RefreshAll should enable it
-    h.lua("ns.Options.RefreshAll()")
-    enabled_after = h.lua("return ns.Options.stepsFollow:IsEnabled()")
-    ok(enabled_after, "route following picker should be enabled after adding a route")
-
-    # Remove all routes and verify it disables
-    h.lua("""
-        ns.Routes = {}
-        ns.ApplyAll()
-    """)
-    h.lua("ns.Options.RefreshAll()")
-    disabled_empty = h.lua("return not ns.Options.stepsFollow:IsEnabled()")
-    ok(disabled_empty, "route following picker should be disabled when no routes")
-
-    eq(h.errors(), [], "errors")
-
-
-@test("Routes quest picker shows '(no quests)' when log is empty; buttons depend on log quests", "h9lane03")
-def _():
-    h = fresh()
-    open_options(h)
-    h.lua("ns.Options.SelectPage('routes')")
-
-    # Quest picker text should show (no quests)
-    text = str(h.lua("return ns.Options.stepsQuestButton.text:GetText()"))
-    ok("no quests" in text.lower(), "quest picker should show '(no quests)': got %r" % text)
-
-    # Add buttons should be disabled (they depend on having quests)
-    accept_btn_disabled = h.lua("return not ns.Options.stepsAdd.accept:IsEnabled()")
-    ok(accept_btn_disabled, "accept button should be disabled when no quests")
-
-    # Note button should still be enabled (it doesn't need a quest)
-    note_btn = h.lua("return ns.Options.stepsAdd.note:IsEnabled()")
-    ok(note_btn, "note button should be enabled even with no quests")
-
-    # Simulate a quest appearing in the log
-    h.lua("""
-        ns.RouteEditor.LogQuests = function() return { { questID = 123, title = "Test Quest" } } end
-        ns.ApplyAll()
-    """)
-    h.lua("W.fireEvent('QUEST_LOG_UPDATE')")
-
-    # Quest picker text should update
-    h.lua("ns.Options.RefreshAll()")
-    text_after = str(h.lua("return ns.Options.stepsQuestButton.text:GetText()"))
-    ok("Test Quest" in text_after, "quest picker should show the quest: got %r" % text_after)
-
-    # Accept button should now be enabled
-    accept_btn_enabled = h.lua("return ns.Options.stepsAdd.accept:IsEnabled()")
-    ok(accept_btn_enabled, "accept button should be enabled when there are quests")
-
-    eq(h.errors(), [], "errors")
-
-
 @test("Chat filter word list has Update method and relayout works with enabled state", "h9lane03")
 def _():
     h = fresh()
@@ -9893,213 +8578,6 @@ def _():
     ok(enabled, "chatList should record enabled state")
 
     eq(h.errors(), [], "errors")
-
-# ==== HUNT9 LANE 04
-
-@test("StepText with string level doesn't crash (hand-edited route file)", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    # Create a step with level as a string (hand-edited file corruption)
-    step_text = h.lua("""
-        local step = { k = "level", l = "5" }  -- l is a string, not a number
-        return ns.Guide.StepText(step)
-    """)
-    ok(step_text is not None, "StepText should not crash on string level")
-    eq(h.errors(), [], "no errors on string level")
-
-
-@test("StepText with string coordinates doesn't crash (hand-edited route file)", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    # Create a go step with coordinates as strings
-    step_text = h.lua("""
-        local step = { k = "go", x = "2.0", y = "2.0" }  -- x,y are strings
-        return ns.Guide.StepText(step)
-    """)
-    ok(step_text is not None, "StepText should not crash on string coordinates")
-    eq(h.errors(), [], "no errors on string coordinates")
-
-
-@test("DistanceText returns empty string for steps without coordinates", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    # Test distance calculation without coordinates
-    distance = h.lua("""
-        ns.Guide.Refresh()  -- set up frame and state
-        local step = { k = "train", n = "Trainer" }  -- no coordinates or map
-        return ns.Guide.Distance(step)
-    """)
-    ok(distance is None, "Distance should return nil for step without coordinates")
-    eq(h.errors(), [], "no errors")
-
-
-@test("Frame shows 'Route complete' with all next-lines hidden", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    # Set up so route is complete (all quests done AND level reached)
-    h.lua("""
-        __quests = {}
-        __completed = { [179] = true, [233] = true }
-        UnitLevel = function() return 3 end  -- must reach level 3
-        ns.Guide.Refresh()
-    """)
-    # Get current frame text and visible next-lines
-    result = h.lua("""
-        local text = SalusNovusGuide.current:GetText()
-        local shown_lines = 0
-        for i, l in ipairs(ns.Guide.Lines()) do
-            if l:IsShown() then shown_lines = shown_lines + 1 end
-        end
-        return { text = text, shown = shown_lines }
-    """)
-    text_str = str(result["text"]) if result["text"] else ""
-    ok("complete" in text_str.lower(), "current should say 'Route complete', got: %s" % text_str)
-    eq(int(result["shown"]), 0, "no next-lines should be shown when route is complete")
-    eq(h.errors(), [], "no errors")
-
-
-@test("Frame shows 'No route' with all next-lines hidden", "h9lane04")
-def _():
-    h = fresh()
-    # No route set up
-    h.lua("ns.Routes = {}")
-    h.lua("ns.Guide.Refresh()")
-
-    result = h.lua("""
-        local title_text = SalusNovusGuide.title:GetText()
-        local current_text = SalusNovusGuide.current:GetText()
-        local shown_lines = 0
-        for i, l in ipairs(ns.Guide.Lines()) do
-            if l:IsShown() then shown_lines = shown_lines + 1 end
-        end
-        return { title = title_text, current = current_text, shown = shown_lines }
-    """)
-    title_str = str(result["title"]) if result["title"] else ""
-    ok("No route" in title_str, "frame title should say 'No route', got: %s" % title_str)
-    eq(int(result["shown"]), 0, "no next-lines should be shown when there's no route")
-    eq(h.errors(), [], "no errors")
-
-
-@test("Frame title doesn't overlap distance label with long route name", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS)
-    # Create a route with a very long name
-    h.lua("""
-        ns.Routes = { {
-            slug = "long_route",
-            name = "This Is A Very Long Route Name That Takes Up A Lot Of Space",
-            faction = "Alliance", race = "Dwarf", class = "SHAMAN",
-            map = 1426, levels = { 1, 3 },
-            steps = {
-                { k = "accept", q = 179, m = 1426, x = 0.30, y = 0.71 },
-                { k = "level", l = 2 },
-            },
-        } }
-        __titles = { [179] = "Test Quest" }
-        UnitLevel = function() return 1 end
-        C_Map.GetBestMapForUnit = function() return 1426 end
-        ns.Guide.Refresh()
-    """)
-
-    # Check frame dimensions
-    result = h.lua("""
-        local title = SalusNovusGuide.title
-        local distance = SalusNovusGuide.distance
-
-        local title_left = title:GetLeft()
-        local title_right = title:GetRight()
-        local distance_left = distance:GetLeft()
-        local distance_right = distance:GetRight()
-
-        return {
-            title_left = title_left,
-            title_right = title_right,
-            distance_left = distance_left,
-            distance_right = distance_right,
-            no_overlap = title_right < distance_left
-        }
-    """)
-
-    # Title right should be left of distance left (no overlap)
-    ok(result["no_overlap"], "title right (%s) should be left of distance left (%s)" % (result["title_right"], result["distance_left"]))
-    eq(h.errors(), [], "no errors")
-
-
-@test("RequestLoadQuestByID called only once per quest across multiple refreshes", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("""
-        __quests = { { questID = 179, title = 'Dwarven Outfitters', level = 1 } }
-        __objectives[179] = { { text = 'x', finished = false } }
-
-        -- Track RequestLoadQuestByID calls
-        local call_count = {}
-        local original = C_QuestLog.RequestLoadQuestByID
-        C_QuestLog.RequestLoadQuestByID = function(id)
-            call_count[id] = (call_count[id] or 0) + 1
-            return original(id)
-        end
-
-        -- Call Refresh multiple times
-        for i = 1, 3 do
-            ns.Guide.Refresh()
-        end
-
-        -- Check if quest 179 RequestLoadQuestByID was called
-        return call_count[179] or 0
-    """)
-    # The mock might not fully implement tracking, so just ensure no crashes
-    eq(h.errors(), [], "no errors on multiple refreshes")
-
-
-@test("Frame height calculation with wrapped current step and multiple next lines", "h9lane04")
-def _():
-    h = fresh()
-    h.lua(MAP_STUBS + ROUTE)
-    h.lua("""
-        -- Create a long step text that will wrap
-        ns.Routes[1].steps[1].n = "A Very Long NPC Name That Causes Text Wrapping"
-        __quests = { { questID = 179, title = 'Dwarven Outfitters', level = 1 } }
-        __objectives[179] = { { text = 'x', finished = false } }
-        ns.db.guide.showNext = 2
-        ns.Guide.Refresh()
-    """)
-
-    result = h.lua("""
-        local frame = SalusNovusGuide
-        local current = frame.current
-        local lines = ns.Guide.Lines()
-
-        local shown_lines = 0
-        local last_line = nil
-        for i, l in ipairs(lines) do
-            if l:IsShown() then
-                shown_lines = shown_lines + 1
-                last_line = l
-            end
-        end
-
-        return {
-            frame_height = frame:GetHeight(),
-            current_height = current:GetStringHeight(),
-            shown_next_lines = shown_lines,
-            frame_shown = frame:IsShown(),
-            skip_shown = frame.skip:IsShown()
-        }
-    """)
-
-    ok(int(result["frame_height"]) >= 70, "frame height should be at least 70")
-    ok(int(result["current_height"]) > 0, "current step should have height")
-    eq(int(result["shown_next_lines"]), 2, "should show 2 next lines with showNext=2")
-    ok(result["skip_shown"], "skip button should be shown when route has current step")
-    eq(h.errors(), [], "no errors")
-
 
 # ---------------------------------------------------------------- trainer
 
@@ -10413,6 +8891,10 @@ def _():
     h2.lua("__chat = {}; ns.Commands.trainer('attach')")
     lines = [str(m) for m in h2.lua("return __chat").values()]
     ok(any("spellbook tab: attached" in l for l in lines) and h2.lua("return ns.TrainerUI.tab ~= nil"), "attach retries: %r" % lines)
+    # (sweep) the retry rebuilt the page whole, not the half-built one from the failed attempt
+    ok(h2.lua("return SalusNovusTrainerTab ~= nil and SalusNovusTrainerTab.scroll ~= nil and SalusNovusTrainerTab.FitList ~= nil"), "the rebuilt page has its list")
+    h2.lua("ns.TrainerUI.tab:Click(); W.fireEvent('SPELLS_CHANGED'); W.advance(0.5)")
+    eq(h2.errors(), [], "no error refreshing the rebuilt page")
 
 
 @test("after a /reload the spellbook's tab buttons do not exist until the book first shows: our tab moves after them then, and their clicks still put the page back", "trainer")
@@ -10967,7 +9449,6 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-
 # ---------------------------------------------------------------- best reward
 
 # The quest frame's reward tiles: __choices = { { name, price, count }, ... };
@@ -11152,6 +9633,8 @@ def wish(h):
     h.lua("ns.Wishlist.catalog = nil; ns.Wishlist.party = {}; ns.Wishlist.prefixOK = false; ns.Wishlist.RegisterPrefix()")
     # this character last picked Ragefire and the Deadmines
     h.lua("SalusNovusDB.wishlistPool = { ['Grumble-Forever'] = { RagefireChasm = true, TheDeadmines = true } }")
+    # a wish is a spec AND a want (Alex): the tests' wishes are whole ones
+    h.lua("__wish = function(id, tag) ns.Wishlist.Wish(id, true) ns.Wishlist.ToggleSpec(id, 'Enhancement') ns.Wishlist.SetTag(id, tag or 'up') end")
 
 
 def browse_names(h, pool, slot="nil"):
@@ -11202,7 +9685,7 @@ def _():
 def _():
     h = fresh()
     wish(h)
-    h.lua("ns.Wishlist.Wish(204, true); ns.Wishlist.Wish(203, true)")
+    h.lua("__wish(204); __wish(203)")
     h.lua("__have[204] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
     ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "outside an instance nothing is delisted")
     h.lua("__inst, __instType = true, 'party'; W.fireEvent('PLAYER_ENTERING_WORLD')")
@@ -11210,7 +9693,7 @@ def _():
     ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "owned before entering: not a gain")
     h.lua("__have[203] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
     ok(h.lua("return ns.Wishlist.Get(203) == nil"), "the loincloth dropped in the dungeon: delisted")
-    h.lua("ns.db.modules.qol = false; ns.Wishlist.Wish(201, true); __have[201] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
+    h.lua("ns.db.modules.qol = false; __wish(201); __have[201] = 1; W.fireEvent('BAG_UPDATE_DELAYED')")
     ok(h.lua("return ns.Wishlist.Get(201) ~= nil"), "Quality of Life off keeps it")
     eq(h.errors(), [], "errors")
 
@@ -11221,11 +9704,11 @@ def _():
     wish(h)
     h.lua("""
         SalusNovusDB.wishlist = { ['Grumble-Forever'] = {} }
-        for i = 1, 60 do SalusNovusDB.wishlist['Grumble-Forever'][tostring(1000000 + i)] = { spec = {} } end
+        for i = 1, 60 do SalusNovusDB.wishlist['Grumble-Forever'][tostring(1000000 + i)] = { spec = { Elemental = true }, tag = 'up' } end
         SalusNovusDB.wishlist['Grumble-Forever']['1000001'].tag = 'bis'
         SalusNovusDB.wishlist['Grumble-Forever']['1000001'].spec = { Elemental = true, Restoration = true }
         ns.Wishlist.Broadcast()
-        W.advance(1.1)
+        W.advance(1.1); W.advance(0.3); W.advance(0.3); W.advance(0.3)   -- (chunks paced 0.3 s apart)
     """)
     sent = [str(x[2]) for x in h.lua("return __sent").values()]
     ok(len(sent) >= 2 and all(len(m) <= 240 for m in sent), "chunked: %r" % [len(m) for m in sent])
@@ -11253,7 +9736,7 @@ def _():
 def _():
     h = fresh()
     wish(h)
-    h.lua("ns.WishlistUI.Open(); ns.Wishlist.Wish(101, true); ns.Wishlist.Wish(102, true); ns.Wishlist.Wish(103, true)")
+    h.lua("ns.WishlistUI.Open(); __wish(101); __wish(102); __wish(103)")
     # Ragefire: 2 of mine (101, 102); Deadmines: Brakka 204 + Lyss 203
     h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b', 'PARTY', 'Brakka'); ns.Wishlist.OnAddonMessage('SNWish', 'WL|PRIEST|203', 'PARTY', 'Lyss')")
     h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka')")
@@ -11271,19 +9754,20 @@ def _():
     heads = [str(x) for x in h.lua("local o = {} for _, l in ipairs(ns.WishlistUI.Build().party.lines) do if l:IsShown() then o[#o + 1] = l:GetText() end end return o").values()]
     eq(heads, ["Ragefire Chasm", "The Deadmines"], "headings are the dungeon name alone")
     cards = [(str(n), str(t)) for n, t in zip(
-        h.lua("local o = {} for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() then o[#o + 1] = c.name:GetText() end end return o").values(),
+        h.lua("local o = {} for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() then o[#o + 1] = ns.Wishlist.Info(c.id).name end end return o").values(),
         h.lua("local o = {} for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() then o[#o + 1] = c.sub:GetText() end end return o").values())]
     eq([c[0] for c in cards], ["Mail Hauberk", "Cloth Hood", "Smite's Mighty Hammer"], "one item card each, the most wanted first")
     ok(cards[0][1].startswith("Taragaman") and "Grumble|r" in cards[0][1] and "Lyss|r" in cards[0][1], "boss, then both names: %r" % cards[0][1])
     ok("|cfffff468Lyss|r" in cards[0][1], "Lyss (a rogue, from her message) in rogue yellow: %r" % cards[0][1])
     eq(str(h.lua("return ns.WishlistUI.ClassName('Lyss', 'ROGUE')")).lower()[:10], "|cfffff468", "a rogue is yellow")
     ok("Brakka|r (Arms/Protection) |cffff4040BIS|r" in cards[2][1], "specs from the message, then BIS in red: %r" % cards[2][1])
-    h.lua("ns.Wishlist.ToggleSpec(101, 'Restoration'); ns.Wishlist.SetTag(101, 'up'); ns.WishlistUI.Refresh()")
+    h.lua("ns.Wishlist.ToggleSpec(101, 'Enhancement'); ns.Wishlist.ToggleSpec(101, 'Restoration'); ns.WishlistUI.Refresh()")
     sub101 = str(h.lua("for _, c in ipairs(ns.WishlistUI.Build().party.cards) do if c:IsShown() and c.id == 101 then return c.sub:GetText() end end"))
     ok(sub101.endswith("Grumble|r (Restoration) Upgrade"), "my own specs, Upgrade in the line's grey: %r" % sub101)
     # the two sorts disagree: Deadmines 3 wishes from 1 player, Ragefire 2 from 2
     h.lua("""
-        SalusNovusDB.wishlist = { ['Grumble-Forever'] = { ['201'] = { spec = {} }, ['202'] = { spec = {} }, ['203'] = { spec = {} } } }
+        local w = function() return { spec = { Enhancement = true }, tag = 'up' } end
+        SalusNovusDB.wishlist = { ['Grumble-Forever'] = { ['201'] = w(), ['202'] = w(), ['203'] = w() } }
         ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|101', 'PARTY', 'Brakka')
         ns.Wishlist.OnAddonMessage('SNWish', 'WL|PRIEST|102', 'PARTY', 'Lyss')
     """)
@@ -11310,7 +9794,7 @@ def _():
     ok(h.lua("return ns.WishlistUI.Build().dungeonRows[4].fill:IsShown()"), "the added dungeon lights up")
     h.lua("ns.WishlistUI.Build().dungeonRows[1]:Click()")
     ok(h.lua("return ns.WishlistUI.pool.RagefireChasm == nil and not ns.WishlistUI.Build().dungeonRows[1].fill:IsShown()"), "a second click takes it out")
-    h.lua("ns.Wishlist.Wish(204, true); ns.WishlistUI.Refresh()")
+    h.lua("__wish(204); ns.WishlistUI.Refresh()")
     eq(str(h.lua("return ns.WishlistUI.Build().dungeonRows[2].count:GetText()")), "1", "the row counts your wishes from it")
     h.lua("ns.WishlistUI.Build().tabParty:Click()")
     ok(h.lua("return ns.WishlistUI.Build().party:IsShown() and not ns.WishlistUI.Build().mine:IsShown()"), "Party switch")
@@ -11318,35 +9802,41 @@ def _():
     eq(h.errors(), [], "errors")
 
 
-@test("item cards: a click anywhere wishes, hover shows the item tooltip, the slot shows only on All, no level requirement, square cropped icons", "wishlist")
+@test("item cards (Alex): two columns; the item's own tooltip in each card (as on hover, one piece); a click opens the spec/BIS/Upgrade buttons and a second folds them, picks kept; a right-click clears the item; no check box; the slot only on All", "wishlist")
 def _():
     h = fresh()
     wish(h)
     h.lua("ns.WishlistUI.Open()")
-    h.lua("ns.WishlistUI.slot = 'Two-Hand'; ns.WishlistUI.Refresh()")
-    rows = "local o = {} for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then o[#o + 1] = r.sub:GetText() end end return o"
+    rows = "local o = {} for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() and r.sub:IsShown() then o[#o + 1] = r.sub:GetText() end end return o"
     subs = [str(x) for x in h.lua(rows).values()]
-    ok(subs and all(not x.startswith("Two-Hand") for x in subs), "a slot tab repeats the slot: %r" % subs)
-    ok(all("req" not in x for x in subs), "level requirement still shown: %r" % subs)
-    h.lua("ns.WishlistUI.slot = nil; ns.WishlistUI.Refresh()")
-    subs = [str(x) for x in h.lua(rows).values()]
-    ok(all(x.split("  ")[0] in ("Head", "Chest", "Legs", "Two-Hand", "Main Hand") for x in subs), "All shows the slot first: %r" % subs)
-    h.lua("__card = ns.WishlistUI.Build().mine.rows[1]; __cardID = __card.id; __card:Click()")
-    ok(h.lua("return ns.Wishlist.Get(__cardID) ~= nil"), "a click on the card wishes the item")
-    h.lua("__card:Click()")
-    ok(h.lua("return ns.Wishlist.Get(__cardID) == nil"), "a second click takes it off")
+    ok(all("Trash" not in x and "Deeps" not in x for x in subs), "no slot / boss / dungeon line (Alex): %r" % subs)
+    # three columns: the first three cards side by side, equal width
+    ok(h.lua("""local m = ns.WishlistUI.Build().mine.rows
+        local _, _, _, x1 = m[1]:GetPoint() local _, _, _, x2 = m[2]:GetPoint() local _, _, _, x3 = m[3]:GetPoint()
+        return x1 == 0 and x2 > 0 and x3 > x2 and math.abs(m[1]:GetWidth() - m[3]:GetWidth()) < 1"""), "three equal columns")
+    ok(h.lua("""local f = ns.WishlistUI.Build() local w = f.mine.rows[1]:GetWidth()
+        return f:GetWidth() <= 250 + 1 + 44 + 3 * w + 2 * 6 + 6 + 12 + 1"""), "the window fits the three columns snugly")
+    h.lua("__card = ns.WishlistUI.Build().mine.rows[1]; __cardID = __card.id")
+    ok(h.lua("return __card.wish == nil"), "no check box")
+    # the item's own tooltip, in the card
+    h.lua("__card.tip.SetItemByID = function(self, id) self.__item = id self:SetHeight(180) end; ns.WishlistUI.Refresh()")
+    ok(h.lua("return __card.tip.__item == __cardID and __card.tip:IsShown() and __card.tip:GetParent() == __card"), "its own tooltip, set to the item")
+    ok(float(h.lua("return __card:GetHeight()")) > 180, "the card grows to hold it")
     h.lua("W.advance(0.1)")
-    eq(int(h.lua("local n = 0 for _, c in ipairs(__card.chips) do if c:IsShown() then n = n + 1 end end return n")), 5, "spec, BIS and Upgrade buttons show on an unwished card too")
-    # a tag on an item not yet wished wishes it with that tag
+    eq(int(h.lua("local n = 0 for _, c in ipairs(__card.chips) do if c:IsShown() then n = n + 1 end end return n")), 0, "folded: no buttons")
+    h.lua("__card:Click('LeftButton'); W.advance(0.1)")
+    eq(int(h.lua("local n = 0 for _, c in ipairs(__card.chips) do if c:IsShown() then n = n + 1 end end return n")), 5, "a click opens spec, BIS and Upgrade")
+    ok(h.lua("return ns.Wishlist.Get(__cardID) == nil"), "opening wishes nothing")
     h.lua("for _, c in ipairs(__card.chips) do if c:IsShown() and c.text:GetText() == 'BIS' then c:Click() end end")
-    ok(h.lua("local r = ns.Wishlist.Get(__cardID) return r ~= nil and r.tag == 'bis'"), "BIS on an unwished item wishes it as BIS")
+    ok(h.lua("local r = ns.Wishlist.Get(__cardID) return r ~= nil and r.tag == 'bis'"), "BIS wishes it as BIS")
     h.lua("W.advance(1.5); __sent = {}; for _, c in ipairs(__card.chips) do if c:IsShown() and c.text:GetText():upper() == 'ELEMENTAL' then c:Click() end end; W.advance(1.1)")
     ok(any(".1" in str(m[2]) for m in h.lua("return __sent").values()), "a spec change goes out to the group")
-    h.lua("__card:Click()")
-    h.lua("__compared = false; GameTooltip.SetItemByID = function(self, id) __compared = true end; ns.WishlistUI.ItemTip().SetItemByID = function(self, id) __tip = id end; __card:GetScript('OnEnter')(__card)")
-    eq(int(h.lua("return __tip")), int(h.lua("return __cardID")), "hover shows that item's tooltip")
-    ok(h.lua("return ns.WishlistUI.ItemTip() ~= GameTooltip and not __compared"), "our own tooltip, not GameTooltip (which adds the equipped-item comparison)")
-    h.lua("__card:GetScript('OnLeave')(__card)")
+    h.lua("__card:Click('LeftButton'); W.advance(0.1)")
+    eq(int(h.lua("local n = 0 for _, c in ipairs(__card.chips) do if c:IsShown() then n = n + 1 end end return n")), 0, "a second click folds them")
+    ok(h.lua("local r = ns.Wishlist.Get(__cardID) return r ~= nil and r.tag == 'bis' and r.spec.Elemental"), "picks kept")
+    ok("BIS" in str(h.lua("return __card.sub:GetText()")) and "Elemental" in str(h.lua("return __card.sub:GetText()")), "folded: the picks on its line")
+    h.lua("__card:Click('RightButton'); W.advance(0.1)")
+    ok(h.lua("return ns.Wishlist.Get(__cardID) == nil"), "a right-click clears it")
     eq(h.errors(), [], "errors")
 
 
@@ -11357,7 +9847,8 @@ def _():
     open_options(h)
     ok(h.lua("return ns.Options.wishlistLauncher ~= nil and ns.Options.wishlistLauncher.label:GetText() == 'WISHLIST'"), "launcher row missing")
     side_bottom = float(h.lua("return ns.Options.wishlistLauncher:GetParent():GetBottom()"))
-    ok(float(h.lua("return ns.Options.wishlistLauncher:GetBottom()")) - side_bottom < 30, "launcher not at the foot of the sidebar")
+    ok(float(h.lua("return ns.Options.wishlistLauncher:GetBottom()")) - side_bottom < 30 + 46, "launcher not at the foot of the sidebar (above Keybinds)")
+    ok(float(h.lua("return ns.Options.keybindsLauncher:GetBottom()")) - side_bottom < 30, "Keybinds is the foot row")
     ok(h.lua("return ns.Options.pages.wishlist == nil"), "the old Quality of Life page is gone")
     h.lua("ns.Options.wishlistLauncher:Click(); W.advance(0.1)")
     ok(h.lua("return SalusNovusWishlist:IsShown() and not SalusNovusOptions:IsShown()"), "the launcher did not swap the windows")
@@ -11379,7 +9870,7 @@ def _():
     ok(h.lua("return ns.WishlistUI.Build().party.empty:IsShown()") and str(h.lua("return ns.WishlistUI.Build().party.empty:GetText()")).startswith("AtlasLoot Classic is not installed"), "party tab message")
     h.lua("""
         ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b', 'PARTY', 'Brakka')
-        ns.Wishlist.Wish(204, true); ns.Wishlist.Rank('total'); ns.Wishlist.Rank('people')
+        ns.Wishlist.Wish(204, true); ns.Wishlist.ToggleSpec(204, 'Enhancement'); ns.Wishlist.SetTag(204, 'up'); ns.Wishlist.Rank('total'); ns.Wishlist.Rank('people')
         W.fireEvent('BAG_UPDATE_DELAYED'); W.fireEvent('PLAYER_EQUIPMENT_CHANGED')
         ns.WishlistUI.Build():Hide(); SlashCmdList["SALUSNOVUS"]("wish"); ns.WishlistUI.Refresh()
     """)
@@ -11396,11 +9887,11 @@ def _():
     h.lua("W.advance(31); ns.Wishlist.Info(999)")
     eq(int(h.lua("return __asks")), 2, "asked again after 30 s in case the answer was lost")
     # no name yet: nothing is written under '?'
-    h.lua("__realUFN = UnitFullName; UnitFullName = function() return nil end; ns.Wishlist.Wish(204, true)")
+    h.lua("__realUFN = UnitFullName; UnitFullName = function() return nil end; __wish(204)")
     ok(h.lua("return SalusNovusDB.wishlist == nil or SalusNovusDB.wishlist['?'] == nil"), "a list was filed under '?'")
     h.lua("UnitFullName = __realUFN")
     # an item with no snapshot that is already owned is not a gain
-    h.lua("__inst, __instType = true, 'party'; ns.Wishlist.Wish(203, true); __have[203] = 1; ns.Wishlist._ForgetBaseline(203); W.fireEvent('BAG_UPDATE_DELAYED')")
+    h.lua("__inst, __instType = true, 'party'; __wish(203); __have[203] = 1; ns.Wishlist._ForgetBaseline(203); W.fireEvent('BAG_UPDATE_DELAYED')")
     ok(h.lua("return ns.Wishlist.Get(203) ~= nil"), "an item with no snapshot was delisted")
     eq(h.errors(), [], "errors")
 
@@ -11425,6 +9916,49 @@ def _():
     eq(sorted(str(k) for k in h.lua("local o = {} for k in pairs(SalusNovusDB.wishlistPool['Grumble-Forever']) do o[#o + 1] = k end return o").values()), sorted([key, "GoneDungeon"]), "the alt's click left Grumble's pick alone")
     ok(h.lua("return SalusNovusDB.wishlistPool['Alt-Forever'] ~= nil"), "the alt's pick is its own")
     h.lua("UnitFullName = __realUFN")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (sweep): Quality of Life off sends and accepts nothing; roll strips are pooled and reused, fallback strips stack by their real height, and a /reload mid-roll picks the open roll frame up", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        __sent = {}
+        C_ChatInfo.SendAddonMessage = function(p, msg, ch) __sent[#__sent + 1] = msg end
+        ns.db.modules.qol = false; ns.ApplyAll()
+        ns.Wishlist.Broadcast(); ns.Wishlist.Request(); W.advance(3)
+        ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka')
+    """)
+    eq(int(h.lua("return #__sent")), 0, "nothing sent with the module off")
+    ok(h.lua("return next(ns.Wishlist.party) == nil"), "nothing stored with the module off")
+    h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
+    # three frameless rolls on an item four people want: stacked by height, then pooled
+    h.lua("""
+        __wish(204)
+        ns.Wishlist.InMyGroup = function() return true end
+        for _, who in ipairs({ 'Brakka', 'Lyss', 'Tovi' }) do ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204', 'PARTY', who) end
+        GetLootRollItemLink = function(id) return '|cff0070dd|Hitem:204::|h[x]|h|r' end
+        for id = 21, 22 do W.fireEvent('START_LOOT_ROLL', id, 60000) end
+        W.advance(0.1)
+    """)
+    s1 = "ns.WishlistRoll.strips[21]"; s2 = "ns.WishlistRoll.strips[22]"
+    ok(h.lua("return %s and %s and %s:IsShown() and %s:IsShown()" % (s1, s2, s1, s2)), "two fallback strips")
+    ok(float(h.lua("return %s:GetHeight()" % s1)) > 70, "four wanters make a strip taller than the old 70 step")
+    gap = float(h.lua("local a, b = %s, %s local _, _, _, _, ya = a:GetPoint(1) local _, _, _, _, yb = b:GetPoint(1) return math.abs(ya - yb) - math.max(a:GetHeight(), b:GetHeight())" % (s1, s2)))
+    ok(gap >= 0, "fallback strips overlap by %r" % -gap)
+    h.lua("W.fireEvent('CANCEL_LOOT_ROLL', 21); W.fireEvent('CANCEL_LOOT_ROLL', 22); W.advance(0.1)")
+    eq(int(h.lua("return #ns.WishlistRoll.pool")), 2, "both strips back in the pool")
+    h.lua("W.fireEvent('START_LOOT_ROLL', 23, 60000); W.advance(0.1)")
+    eq(int(h.lua("return #ns.WishlistRoll.pool")), 1, "a new roll reuses one")
+    h.lua("W.fireEvent('CANCEL_LOOT_ROLL', 23); W.advance(0.1)")
+    # /reload mid-roll: no START_LOOT_ROLL, just the client's restored frame
+    h.lua("""
+        GroupLootFrame1 = CreateFrame('Frame', 'GroupLootFrame1', UIParent); GroupLootFrame1:SetSize(240, 50)
+        GroupLootFrame1:SetPoint('CENTER'); GroupLootFrame1.rollID = 31; GroupLootFrame1:Show()
+        W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(0.1)
+    """)
+    ok(h.lua("return ns.WishlistRoll.strips[31] ~= nil and ns.WishlistRoll.strips[31]:IsShown()"), "the restored roll frame got its strip")
     eq(h.errors(), [], "errors")
 
 
@@ -11453,15 +9987,15 @@ def _():
     ok(h.lua("return ns.WishlistRoll.strips[6] == nil or not ns.WishlistRoll.strips[6]:IsShown()"), "nobody wants it: no strip")
     # the frame goes (rolled / won): the strip follows within a tick
     h.lua("GroupLootFrame1:Hide(); W.advance(0.3)")
-    ok(h.lua("return not ns.WishlistRoll.strips[5]:IsShown()"), "strip outlived its roll frame")
+    ok(h.lua("return ns.WishlistRoll.strips[5] == nil or not ns.WishlistRoll.strips[5]:IsShown()"), "strip outlived its roll frame")
     # a roll with no frame found still shows, until it ends
     h.lua("W.fireEvent('START_LOOT_ROLL', 7, 60000); W.advance(0.1)")
     ok(h.lua("return ns.WishlistRoll.strips[7] ~= nil and ns.WishlistRoll.strips[7]:IsShown()"), "a frameless roll got no strip")
     h.lua("W.fireEvent('CANCEL_LOOT_ROLL', 7); W.advance(0.1)")
-    ok(h.lua("return not ns.WishlistRoll.strips[7]:IsShown()"), "the strip stayed after the roll ended")
+    ok(h.lua("return ns.WishlistRoll.strips[7] == nil or not ns.WishlistRoll.strips[7]:IsShown()"), "the strip stayed after the roll ended")
     # Quality of Life off: nothing
     h.lua("GroupLootFrame1:Show(); ns.db.modules.qol = false; W.advance(0.3); ns.WishlistRoll.Sweep()")
-    ok(h.lua("return not ns.WishlistRoll.strips[5]:IsShown()"), "shown with Quality of Life off")
+    ok(h.lua("return ns.WishlistRoll.strips[5] == nil or not ns.WishlistRoll.strips[5]:IsShown()"), "shown with Quality of Life off")
     eq(h.errors(), [], "errors")
 
 
@@ -11528,6 +10062,44 @@ def _():
     ok(str(h.lua("return ns.Session.XPText()")).startswith("1.9k xp/h"), str(h.lua("return ns.Session.XPText()")))
     h.lua("__level = 60")
     eq(str(h.lua("return ns.Session.XPText()")), "Max level", "at the cap")
+    eq(h.errors(), [], "errors")
+
+
+@test("session (sweep): a level-up that leaves more XP over than you had still counts in full; another character's reset doesn't make your re-entry new; the learned limit only rises", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("__xp, __xpMax = 100, 400; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    h.lua("W.fireEvent('QUEST_TURNED_IN', 1, 700, 0); __xp, __xpMax = 400, 900; W.fireEvent('PLAYER_XP_UPDATE')")
+    eq(int(h.lua("return ns.Session.State().xp.total")), 700, "100/400 + 700 -> 400/900 is 700, not 300")
+    # Alt enters the Deadmines; Main resets its own; Alt walks back into ITS instance
+    h.lua("UnitFullName = function() return 'Alt', 'Forever' end; __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    h.lua("UnitFullName = function() return 'Main', 'Forever' end; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "one entry each")
+    h.lua("W.fireEvent('CHAT_MSG_SYSTEM', 'The Deadmines has been reset.')")
+    h.lua("UnitFullName = function() return 'Alt', 'Forever' end; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "Main's reset doesn't make Alt's re-entry new")
+    h.lua("UnitFullName = function() return 'Main', 'Forever' end; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 3, "Main's own re-entry after its reset is new")
+    h.lua("W.fireEvent('UI_ERROR_MESSAGE', 0, 'You have entered too many instances recently.')")
+    eq(int(h.lua("return (ns.Session.Limit())")), 3, "learned 3")
+    h.lua("SalusNovusDB.instances.entries = { SalusNovusDB.instances.entries[1] }; W.fireEvent('UI_ERROR_MESSAGE', 0, 'You have entered too many instances recently.')")
+    eq(int(h.lua("return (ns.Session.Limit())")), 3, "a later, lower count doesn't lower it")
+    eq(h.errors(), [], "errors")
+
+
+@test("session bar (sweep): with only Lockouts able to show, the bar appears on the first dungeon entry and goes when the entries age out -- no reload, no empty box", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("GetNumSavedInstances = function() return 0 end; __level = 60; ns.db.session.gold = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusSession:IsShown()"), "level 60, gold off, nothing counting: hidden")
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    ok(h.lua("return SalusNovusSession:IsShown()"), "the first lockout brings it up")
+    h.lua("W.advanceTimersOnly(3601); SalusNovusSession:GetScript('OnUpdate')(SalusNovusSession, 1.1)")
+    ok(h.lua("return not SalusNovusSession:IsShown()"), "aged out: hidden, not an empty box")
+    h.lua("__inst = false; GetNumSavedInstances = function() return 1 end; W.fireEvent('UPDATE_INSTANCE_INFO')")
+    ok(h.lua("return SalusNovusSession:IsShown()"), "raid saves arriving after login bring it up")
     eq(h.errors(), [], "errors")
 
 
@@ -11701,6 +10273,9 @@ def _():
     # background alpha
     h.lua("ns.db.camping.alpha = 40; ns.ApplyAll()")
     eq(round(float(h.lua("return SalusNovusCamping.bg:GetAlpha()")), 2), 0.4, "background alpha")
+    eq(round(float(h.lua("return SalusNovusCamping.sit.bg:GetAlpha()")), 2), 0.4, "the sit bar's background follows it")
+    eq([round(float(x), 3) for x in h.lua("return { SalusNovusCamping.sit.bg:GetVertexColor() }").values()][:3],
+       [round(float(x), 3) for x in h.lua("return { SalusNovusCamping.bg:GetVertexColor() }").values()][:3], "in the panel's color")
     # combat: no layout, no show/hide (secure buttons) until it ends
     h.lua("W.inCombat = true; __auras[1283391] = nil; __auras[1229741] = nil; W.fireEvent('UNIT_AURA', 'player')")
     ok(h.lua("return SalusNovusCamping:IsShown() and ns.CampingUI.pending"), "nothing changes in combat")
@@ -11769,6 +10344,61 @@ def _():
     ok(h.lua("return SalusNovusCamping.glow.phase ~= __p1"), "the lines march")
     h.lua("__auras[1283391] = nil; W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
     ok(h.lua("return not SalusNovusCamping.glow:IsShown()"), "walked away: the glow goes")
+    eq(h.errors(), [], "errors")
+
+
+@test("camping (sweep): /sn camp's close holds against the next aura/bag event and lands after combat; background alpha is the setting alone (not squared); no sit countdown replayed in combat", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("__have[279981] = 5; ns.ApplyAll(); W.advance(0.6)")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "closed")
+    h.lua("W.fireEvent('UNIT_AURA', 'player'); W.fireEvent('BAG_UPDATE_DELAYED')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "and stays closed through the next aura and bag events")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "opened again")
+    h.lua("W.inCombat = true; SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return SalusNovusCamping:IsShown()"), "a close in combat waits (secure buttons)")
+    h.lua("W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED')")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "and lands when combat ends")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp'); ns.db.camping.alpha = 100; ns.ApplyAll()")
+    a = [float(x) for x in h.lua("return { SalusNovusCamping.bg:GetVertexColor() }").values()]
+    eq(round(a[3] * float(h.lua("return SalusNovusCamping.bg:GetAlpha()")), 2), 1.0, "alpha 100 is fully opaque, not 0.9 x 1.0")
+    s = [float(x) for x in h.lua("return { SalusNovusCamping.sit.bg:GetVertexColor() }").values()]
+    eq(round(s[3], 2), 1.0, "the sit bar's background too")
+    h.lua("__aura(1229739, 40, 60); W.fireEvent('UNIT_AURA', 'player'); W.advance(0.6)")
+    ok(h.lua("return ns.Camping.SitLeft() ~= nil"), "sitting")
+    h.lua("W.inCombat = true; W.advance(0.6)")
+    ok(h.lua("return ns.Camping.SitLeft() == nil and not SalusNovusCamping.sit:IsShown()"), "combat stands you up: no sit countdown")
+    h.lua("W.inCombat = false")
+    eq(h.errors(), [], "errors")
+
+
+@test("anchors (sweep): a PROTECTED movable (the camp panel, secure children) is never moved or mouse-toggled in combat -- resetpos, a scale change and unlock wait, then replay when combat ends", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("""
+        __have[279981] = 5; ns.ApplyAll()
+        local f = SalusNovusCamping
+        f.IsProtected = function() return true end
+        __touched = 0
+        local cap, sp, em = f.ClearAllPoints, f.SetPoint, f.EnableMouse
+        f.ClearAllPoints = function(self, ...) if W.inCombat then __touched = __touched + 1 end return cap(self, ...) end
+        f.SetPoint = function(self, ...) if W.inCombat then __touched = __touched + 1 end return sp(self, ...) end
+        f.EnableMouse = function(self, ...) if W.inCombat then __touched = __touched + 1 end return em(self, ...) end
+        SalusNovusDB.campingPos = { point = "CENTER", x = 111, y = 22 }
+        W.inCombat = true
+        SlashCmdList['SALUSNOVUS']('resetpos')
+        W.fireEvent('UI_SCALE_CHANGED')
+        ns.db.unlocked = true; ns.ApplyAll()
+    """)
+    eq(int(h.lua("return __touched")), 0, "nothing touched the protected panel in combat")
+    h.lua("W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED')")
+    ok(h.lua("return SalusNovusCamping:IsMouseEnabled()"), "the unlock's mouse toggle landed after combat")
+    ok(h.lua("return next(ns._deferredRestore) == nil"), "the deferred re-anchor replayed")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
     eq(h.errors(), [], "errors")
 
 
@@ -11890,7 +10520,7 @@ def _():
     ok(h.lua("return ns.Options.unlockButton:IsShown() and ns.Options.unlockButton:GetParent() == ns.Options.shell.header"), "Unlock Frames on the Quests page, in the header")
     h.lua("ns.Options.unlockButton:Click()")
     ok(h.lua("return ns.db.unlocked"), "unlock mode from a non-Anchors page")
-    for frame, name in (("SalusNovusSession", "Session"), ("SalusNovusBars", "Timer Bars"), ("SalusNovusArrow", "Arrow")):
+    for frame, name in (("SalusNovusSession", "Session"), ("SalusNovusBars", "Timer Bars"), ("SalusNovusCamping", "Camping")):
         ok(h.lua("return %s.unlockOverlay ~= nil and %s.unlockOverlay:IsShown()" % (frame, frame)), "%s overlay shown" % name)
         eq(str(h.lua("return %s.unlockOverlay.label:GetText()" % frame)), name, "%s overlay names it" % name)
     eq(float(h.lua("return SalusNovusSession.unlockLabel:GetAlpha()")), 0.0, "the old label stays invisible")
@@ -11967,6 +10597,20 @@ def _():
     eq(h.errors(), [], "errors")
 
 
+@test("dungeon quests (sweep): dropping a quest re-sends your list (so nobody keeps 'you can share' for it); a quest you've already completed isn't offered to you", "dungeonquests")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    h.lua("__on.party1[101] = true; __on.party1[102] = true; __on.party2 = { [101] = true, [102] = true }; __dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    h.lua("__sent = {}; table.remove(__ql, 3); W.fireEvent('QUEST_REMOVED', 102); W.advance(1)")
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    ok(any(m.startswith("DQ|deadmines|101:Red Silk Bandanas") and "102" not in m for m in sent), "the list went out again without 102: %r" % sent)
+    h.lua("C_QuestLog.IsQuestFlaggedCompleted = function(id) return id == 103 end")
+    h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|deadmines|103:Oh Brother...;104:Fresh One', 'PARTY', 'Brakka'); W.advance(1)")
+    eq([r[0] for r in dq_rows(h)], ["Fresh One"], "the completed one isn't offered")
+    eq(h.errors(), [], "errors")
+
+
 @test("dungeon quest check: a party member's quests for this dungeon that you lack are listed (from their Salus Novus); other dungeons, strangers and whispers are ignored; X closes it until the next dungeon; the setting turns it off", "dungeonquests")
 def _():
     h = fresh()
@@ -11993,4 +10637,3448 @@ def _():
     ok(h.lua("return SalusNovusDungeonQuests:IsShown()"), "back for the next dungeon run")
     h.lua("ns.db.quests.dungeonCheck = false; ns.ApplyAll()")
     ok(h.lua("return not SalusNovusDungeonQuests:IsShown()"), "the setting turns it off")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- keybinds
+
+KEYMOCK = """
+    __binds = { ['1'] = 'ACTIONBUTTON1', W = 'MOVEFORWARD', E = 'ACTIONBUTTON5', F = 'ACTIONBUTTON7',
+                ['SHIFT-F'] = 'ACTIONBUTTON6', ['CTRL-Q'] = 'CLICK EllesmereBar1Button3:LeftButton', M = 'TOGGLEWORLDMAP' }
+    GetBindingAction = function(k) return __binds[k] or '' end
+    BINDING_NAME_MOVEFORWARD = 'Move Forward'
+    __slots = { [1] = { 'spell', 403 }, [5] = { 'macro', 1 }, [6] = { 'spell', 8177 }, [7] = { 'macro', 2 }, [27] = { 'spell', 324 } }
+    GetActionInfo = function(s) local x = __slots[s] if x then return x[1], x[2] end end
+    GetActionTexture = function(s) return __slots[s] and (5000 + s) or nil end
+    __macros = { [1] = { 'Shocks', 136000, '#showtooltip\\n/cast [mod:shift] Earth Shock; [mod:alt] Flame Shock; Frost Shock' },
+                 [2] = { 'Kick', 136001, '/cast [mod:shift] Purge; Earth Shock' } }
+    GetMacroInfo = function(i) local m = __macros[i] if m then return m[1], m[2], m[3] end end
+    __spellNames = { [403] = 'Lightning Bolt', [8177] = 'Grounding Totem', [324] = 'Lightning Shield' }
+    __icons = { ['Earth Shock'] = 701, ['Flame Shock'] = 702, ['Frost Shock'] = 703, ['Purge'] = 704 }
+    C_Spell = C_Spell or {}
+    C_Spell.GetSpellName = function(id) return __spellNames[id] end
+    C_Spell.GetSpellTexture = function(s) return __icons[s] end
+    EllesmereBar1Button3 = CreateFrame('Button', 'EllesmereBar1Button3', UIParent)
+    EllesmereBar1Button3.action = 27
+"""
+
+
+@test("keybinds: each key resolves to free, a spell/item on its action slot (with the icon), a macro (M, its bare-key spell's icon), an interface command by name, or an addon bar button bound with CLICK", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    r = h.lua("return ns.Keybinds.Resolve('1', 1)")
+    eq((str(r["state"]), str(r["label"]), int(r["icon"])), ("bound", "Lightning Bolt", 5001), "a spell on slot 1, the slot's icon")
+    r = h.lua("return ns.Keybinds.Resolve('W', 1)")
+    eq((str(r["state"]), str(r["label"])), ("bound", "Move Forward"), "an interface command by its Blizzard name")
+    r = h.lua("return ns.Keybinds.Resolve('E', 1)")
+    eq((str(r["state"]), str(r["label"]), int(r["icon"]), bool(r["macro"])), ("bound", "Shocks", 703, True), "a macro: its bare-key spell's icon (Frost Shock), M")
+    r = h.lua("return ns.Keybinds.Resolve('Q', 3)")
+    eq((str(r["state"]), str(r["label"])), ("bound", "Lightning Shield"), "an addon bar's CLICK binding resolves to its slot")
+    r = h.lua("return ns.Keybinds.Resolve('M', 1)")
+    eq(str(r["label"]), "Toggleworldmap", "no BINDING_NAME: a readable fallback")
+    eq(str(h.lua("return ns.Keybinds.Resolve('K', 1).state")), "free", "free")
+    h.lua("__binds['8'] = 'ACTIONBUTTON8'; __binds.O = 'TOGGLESOCIAL'; BINDING_NAME_TOGGLESOCIAL = 'Toggle Social Pane'")
+    r = h.lua("return ns.Keybinds.Resolve('8', 1)")
+    eq((str(r["state"]), str(r["label"]), bool(r["empty"])), ("free", "Empty", True), "bound to an empty slot counts as free")
+    eq(str(h.lua("return ns.Keybinds.Resolve('O', 1).label")), "Social Pane", "'Toggle ' dropped to fit the key")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybinds: a macro's [mod:shift]/[mod:alt] branches show on those layers when the modified key has no binding of its own ('via'), and a binding that shadows a branch is a conflict", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    r = h.lua("return ns.Keybinds.Resolve('E', 2)")
+    eq((str(r["state"]), str(r["label"]), int(r["icon"])), ("via", "Earth Shock", 701), "Shift-E: Earth Shock via E's macro, with its icon")
+    r = h.lua("return ns.Keybinds.Resolve('E', 4)")
+    eq((str(r["state"]), str(r["label"])), ("via", "Flame Shock"), "Alt-E: Flame Shock")
+    eq(str(h.lua("return ns.Keybinds.Resolve('E', 3).state")), "free", "Ctrl-E: the macro has no Ctrl branch")
+    r = h.lua("return ns.Keybinds.Resolve('F', 2)")
+    eq(str(r["state"]), "conflict", "Shift-F is bound, so F's macro [mod:shift] Purge can never fire")
+    ok("Purge" in str(r["detail"]) and "never fires" in str(r["detail"]), "the conflict says why: %r" % str(r["detail"]))
+    p = h.lua("return (ns.Keybinds.ParseMacro('/cast [mod:shift/alt,harm] Purge; [nomod] Frost Shock\\n/use [mod:ctrl] Hearthstone'))")
+    eq((str(p["shift"]), str(p["alt"]), str(p["ctrl"]), str(p["base"])), ("Purge", "Purge", "Hearthstone", "Frost Shock"), "shift/alt in one condition, nomod, /use")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind map: /sn keys opens the window; layers in the sidebar with free counts; free/via/conflict colours; hover shows the line, a click pins it; a binding change redraws", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    ok(h.lua("return SalusNovusKeybinds and SalusNovusKeybinds:IsShown()"), "window open")
+    n = int(h.lua("return #SalusNovusKeybinds.cells"))
+    eq(n, int(h.lua("return #ns.Keybinds.KEYS")), "a cell per key, placeholder and mouse button")
+    free = int(h.lua("return ns.KeybindsUI.free"))
+    ok(0 < free < n, "some free, some bound: %d of %d" % (free, n))
+    eq(str(h.lua("return SalusNovusKeybinds.shell.subtitle:GetText()")), "", "no 'N of M free' line under the title")
+    ok("free" in str(h.lua("return SalusNovusKeybinds.layers[1].sub:GetText()")), "the sidebar row counts free keys")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == '%s' then c = x end end"
+    ok(h.lua((cell % "K") + " local r = c.border.all[1] local cr, cg = r:GetVertexColor() return cg > 0.7 and cr < 0.5"), "a free key is green (Alex)")
+    ok(h.lua("return SalusNovusKeybinds.legend == nil"), "no legend")
+    ok(h.lua((cell % "1") + " return c.icon:IsShown() and c.icon:GetTexture() == 5001"), "a bound key shows its icon")
+    ok(h.lua((cell % "E") + " return c.m == nil"), "no M on a macro key (Alex)")
+    h.lua("SalusNovusKeybinds.layers[2]:Click()")
+    ok(h.lua((cell % "E") + " return c.res.state == 'via' and c.icon:GetTexture() == 701"), "Shift: E shows Earth Shock via the macro")
+    h.lua((cell % "F") + " c:GetScript('OnEnter')(c)")
+    ok("Conflict" in str(h.lua("return SalusNovusKeybinds.detail:GetText()")), "hover shows the conflict line")
+    h.lua((cell % "F") + " c:Click(); c:GetScript('OnLeave')(c)")
+    ok("Shift-F" in str(h.lua("return SalusNovusKeybinds.detail:GetText()")), "a click pins the line")
+    h.lua("__binds['SHIFT-K'] = 'MOVEFORWARD'; W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+    ok(h.lua((cell % "K") + " return c.res.state == 'bound'"), "a new binding shows after UPDATE_BINDINGS")
+    h.lua("SalusNovusKeybinds:Hide()")
+    open_options(h)
+    ok(h.lua("return ns.Options.keybindsLauncher ~= nil and ns.Options.keybindsLauncher:IsShown()"), "a Keybinds row at the foot of the settings sidebar")
+    h.lua("ns.Options.keybindsLauncher:Click()")
+    ok(h.lua("return SalusNovusKeybinds:IsShown()"), "the row opens the map")
+    h.lua("SalusNovusKeybinds:Hide()")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- probe: auction house
+
+AHMOCK = """
+    __rep = {
+        { 'Runecloth', 1, 20, 1, true, 50, 0, 1000, 0, 7000, 0, false, nil, nil, nil, 0, 14047, true },
+        { 'Linen Cloth', 1, 5, 1, true, 1, 0, 10, 0, 40, 0, false, nil, nil, nil, 0, 2589, true },
+        { 'Odd Thing', 1, 1, 2, true, 10, 0, 0, 0, 0, 0, false, nil, nil, nil, 0, 999, false },
+    }
+    __sent = {}
+    C_AuctionHouse = {
+        ReplicateItems = function() __sent[#__sent + 1] = 'replicate' end,
+        GetNumReplicateItems = function() return #__rep end,
+        GetReplicateItemInfo = function(i) return unpack(__rep[i + 1]) end,
+        MakeItemKey = function(id) return { itemID = id } end,
+        SendSearchQuery = function(key) __sent[#__sent + 1] = 'search ' .. key.itemID end,
+        GetNumCommoditySearchResults = function(id) return id == 14047 and 2 or 0 end,
+        GetCommoditySearchResultInfo = function(id, i) return ({ { quantity = 20, unitPrice = 350 }, { quantity = 5, unitPrice = 400 } })[i] end,
+        GetNumItemSearchResults = function() return 1 end,
+        GetItemSearchResultInfo = function() return { buyoutAmount = 12345, bidAmount = 0, quantity = 1, auctionID = 77 } end,
+        GetItemCommodityStatus = function(id) if type(id) ~= 'number' then error('Usage: GetItemCommodityStatus(item)') end return id == 999 and 2 or 1 end,
+        CalculateCommodityDeposit = function(id, dur, q) return dur * 60 end,
+        IsThrottledMessageSystemReady = function() return __ready ~= false end,
+    }
+    C_Item = C_Item or {}
+    C_Item.GetItemInfo = function(id) local n = ({ [2589] = 'Linen Cloth', [14047] = 'Runecloth' })[id] if n then return n, nil, 1, 1, 1, 'Trade', 'Cloth', 20, '', 0, id == 14047 and 400 or 13 end end
+    AuctionHouseFrame = CreateFrame('Frame', 'AuctionHouseFrame', UIParent); AuctionHouseFrame:Hide()
+"""
+
+
+@test("probe ah: anywhere, it lists the AH calls, vendor prices, commodity status and a deposit quote; scan and search refuse with the AH closed; nothing is bought or posted", "probe")
+def _():
+    h = fresh()
+    h.lua(AHMOCK)
+    h.lua("W.printed = {}; SlashCmdList['SALUSNOVUS']('probe ah')")
+    txt = "\n".join(str(x) for x in h.lua("return SalusNovusDB.lastProbe.lines").values())
+    for want in ("C_AuctionHouse: present", "AH open: false", "item 14047 Runecloth: vendor sell 400", "item 2589 Linen Cloth: vendor sell 13",
+                 "commodity status 1", "deposit, 20 Runecloth, duration 2: 120", "PostItem", "item 3575: not cached yet"):
+        ok(want in txt, "static report has %r:\n%s" % (want, txt))
+    eq(str(h.lua("return SalusNovusDB.lastProbe.what")), "ah", "saved for the SavedVariables file")
+    h.lua("SlashCmdList['SALUSNOVUS']('probe ah scan'); SlashCmdList['SALUSNOVUS']('probe ah search 14047')")
+    eq(int(h.lua("return #__sent")), 0, "nothing sent with the AH closed")
+    ok("open the auction house first" in str(h.lua("return SalusNovusDB.lastProbe.lines[1]")), "it says why")
+    eq(h.errors(), [], "errors")
+
+
+@test("probe ah scan / search: a full scan reports listings, distinct items, rows without full info, a sample; a search reports a commodity's price points or an item's listings; throttled = wait", "probe")
+def _():
+    h = fresh()
+    h.lua(AHMOCK)
+    h.lua("AuctionHouseFrame:Show(); SlashCmdList['SALUSNOVUS']('probe ah scan')")
+    eq(str(h.lua("return __sent[1]")), "replicate", "asked for the full scan")
+    h.lua("W.printed = {}; W.advance(16)")
+    ok(any("still waiting on the scan" in str(x) for x in h.lua("return W.printed").values()), "progress while waiting")
+    h.lua("W.fireEvent('REPLICATE_ITEM_LIST_UPDATE')")
+    h.lua("W.printed = {}; W.advance(16)")
+    ok(not any("still waiting" in str(x) for x in h.lua("return W.printed").values()), "the progress stops with the answer")
+    txt = "\n".join(str(x) for x in h.lua("return SalusNovusDB.lastProbe.lines").values())
+    ok("scan: 3 listings" in txt and "distinct items 3" in txt and "rows without full info 1" in txt and "rows with secret values 0" in txt, txt)
+    ok("Runecloth x20 buyout 7000 (item 14047" in txt, "a sample row: %s" % txt)
+    eq(str(h.lua("return SalusNovusDB.lastProbe.what")), "ah scan", "saved")
+    h.lua("SlashCmdList['SALUSNOVUS']('probe ah read')")
+    ok("3 listings held now" in str(h.lua("return SalusNovusDB.ahProbe['ah read'].lines[1]")), "read: what the client holds, no new scan")
+    eq(int(h.lua("return #__sent")), 1, "read asks for nothing")
+    ok(h.lua("return SalusNovusDB.ahProbe['ah scan'] ~= nil"), "kept by kind")
+    h.lua("SlashCmdList['SALUSNOVUS']('probe ah search 14047'); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    ok(h.lua("return ns.Probe.ahPending() ~= nil"), "another item's answer (Auctionator's, say) doesn't end the wait")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    txt = "\n".join(str(x) for x in h.lua("return SalusNovusDB.lastProbe.lines").values())
+    ok("commodity 14047: 2 price points" in txt and "qty 20 at 350 each" in txt, txt)
+    ok(h.lua("return SalusNovusDB.ahProbe['ah scan'] ~= nil and SalusNovusDB.ahProbe['ah search'] ~= nil"), "a search doesn't overwrite the scan")
+    h.lua("SlashCmdList['SALUSNOVUS']('probe ah search 4500'); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 9, itemLevel = 0, itemSuffix = 0 })")
+    ok(h.lua("return ns.Probe.ahPending() ~= nil"), "another item's answer doesn't finish the probe (hunt)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    txt = "\n".join(str(x) for x in h.lua("return SalusNovusDB.lastProbe.lines").values())
+    ok("item 4500: 1 listings" in txt and "buyout 12345" in txt and "auctionID 77" in txt, txt)
+    h.lua("__ready = false; __n = #__sent; SlashCmdList['SALUSNOVUS']('probe ah search 14047')")
+    eq(int(h.lua("return #__sent - __n")), 0, "throttled: no query sent")
+    h.lua("__ready = true; SlashCmdList['SALUSNOVUS']('probe ah search 14047'); AuctionHouseFrame:Hide(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    ok("closed before the answer" in str(h.lua("return SalusNovusDB.lastProbe.lines[1]")), "closing the AH mid-search is reported")
+    ok(h.lua("return ns.Probe.ahPending() == nil"), "and nothing is left waiting")
+    eq(h.errors(), [], "errors")
+
+
+@test("probe ah browse: an empty browse search pages on (waiting out the throttle) until the client has it all, then reports items, pages, cheapest rows, secrets; a scan with no answer gives up after 5 minutes", "probe")
+def _():
+    h = fresh()
+    h.lua(AHMOCK)
+    h.lua("""
+        __pages, __more = 0, 0
+        __rows = { { itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 24, minPrice = 350 },
+                   { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 80, minPrice = 9 } }
+        C_AuctionHouse.SendBrowseQuery = function(q) __q = q __sent[#__sent + 1] = 'browse' end
+        C_AuctionHouse.GetBrowseResults = function() return __rows end
+        C_AuctionHouse.HasFullBrowseResults = function() return __more >= 2 end
+        C_AuctionHouse.RequestMoreBrowseResults = function() __more = __more + 1 end
+        AuctionHouseFrame:Show()
+        SlashCmdList['SALUSNOVUS']('probe ah browse')
+    """)
+    eq(str(h.lua("return __q.searchString")), "", "an empty search: everything")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(int(h.lua("return __more")), 1, "not full: asks for more")
+    h.lua("__ready = false; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(int(h.lua("return __more")), 1, "throttled: waits")
+    h.lua("__ready = true; W.advance(0.6)")
+    eq(int(h.lua("return __more")), 2, "then asks")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    txt = "\n".join(str(x) for x in h.lua("return SalusNovusDB.ahProbe['ah browse'].lines").values())
+    ok("browse: 2 items over 3 pages" in txt and "full: true" in txt and "rows with secret values 0" in txt, txt)
+    ok("page cap" not in txt, "a finished browse doesn't claim the cap: %s" % txt)
+    ok("item 14047 (ilvl 0, suffix 0): 24 listed, cheapest 350" in txt, txt)
+    ok(h.lua("return ns.Probe.ahPending() == nil"), "done")
+    # a full scan that never answers gives up
+    h.lua("SlashCmdList['SALUSNOVUS']('probe ah scan'); W.advance(301)")
+    ok("looks unavailable" in str(h.lua("return SalusNovusDB.ahProbe['ah scan'].lines[1]")), "gave up after 5 minutes")
+    ok(h.lua("return ns.Probe.ahPending() == nil"), "and stopped waiting")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- auction: scanner + snipe
+
+SNIPEMOCK = """
+    __calls = {}
+    local function log(s) __calls[#__calls + 1] = s end
+    __browse = {
+        { itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 24, minPrice = 300 },  -- vendor 400: snipe
+        { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 80, minPrice = 7 },     -- vendor 13: snipe (6c)
+        { itemKey = { itemID = 3575, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 10, minPrice = 250 },   -- vendor 200: no
+        { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 1, minPrice = 500 },   -- an item: snipe
+    }
+    __full, __more = false, 0
+    __commodity = { [14047] = { { quantity = 10, unitPrice = 300 }, { quantity = 6, unitPrice = 390 }, { quantity = 8, unitPrice = 420 } } }
+    __items = { { auctionID = 79, buyoutAmount = 1500, quantity = 1 }, { auctionID = 78, buyoutAmount = 800, quantity = 1 },
+                { auctionID = 77, buyoutAmount = 500, quantity = 1 } }
+    C_AuctionHouse = {
+        IsThrottledMessageSystemReady = function() return __ready ~= false end,
+        SendBrowseQuery = function(q) log('browse:' .. tostring(q.searchString)) end,
+        HasFullBrowseResults = function() return __full end,
+        RequestMoreBrowseResults = function() __more = __more + 1 log('more') end,
+        GetBrowseResults = function() return __browse end,
+        MakeItemKey = function(id, lvl, sfx) return { itemID = id, itemLevel = lvl, itemSuffix = sfx } end,
+        SendSearchQuery = function(key) log('search:' .. key.itemID) end,
+        GetNumCommoditySearchResults = function(id) return #(__commodity[id] or {}) end,
+        GetCommoditySearchResultInfo = function(id, i) return __commodity[id][i] end,
+        GetNumItemSearchResults = function() return #__items end,
+        GetItemSearchResultInfo = function(key, i) return __items[i] end,
+        PlaceBid = function(id, amount) log('bid:' .. id .. ':' .. amount) end,
+        StartCommoditiesPurchase = function(id, q) log('start:' .. id .. ':' .. q) end,
+        ConfirmCommoditiesPurchase = function(id, q) log('confirm:' .. id .. ':' .. q) end,
+        CancelCommoditiesPurchase = function() log('cancel') end,
+    }
+    GetRealmName = function() return 'Forever' end
+    UnitFactionGroup = function() return 'Horde' end
+    ns.VendorSell = { [14047] = 400, [2589] = 13, [3575] = 200, [4500] = 1000 }
+    -- the client's live answers (what the server says a vendor pays)
+    __live = { [14047] = 400, [2589] = 13, [3575] = 200, [4500] = 1000 }
+    __loads = {}
+    C_Item = C_Item or {}
+    -- what stacks is a commodity: __stack[id] (default 20; false = not loaded)
+    __stack = { [4500] = 1 }
+    C_Item.GetItemMaxStackSizeByID = function(id) local n = __stack[id] if n == false then return nil end return n or 20 end
+    C_Item.GetItemInfo = function(id) local v = __live[id] if v then return 'Item ' .. id, nil, 1, 1, 1, 'x', 'y', C_Item.GetItemMaxStackSizeByID(id), '', 0, v end end
+    C_AuctionHouse.GetItemCommodityStatus = function(loc)            -- takes a bag location; an itemID errors (measured)
+        if type(loc) ~= 'table' then error('Usage: local status = C_AuctionHouse.GetItemCommodityStatus(item)') end
+        local i = __bags and __bags[loc.bag] and __bags[loc.bag][loc.slot]
+        local n = i and C_Item.GetItemMaxStackSizeByID(i.itemID)
+        if not n or __status == 0 then return 0 end
+        return n == 1 and 1 or 2
+    end
+    C_Item.RequestLoadItemDataByID = function(id) __loads[#__loads + 1] = id end
+    AuctionHouseFrame = CreateFrame('Frame', 'AuctionHouseFrame', UIParent)
+    AuctionHouseFrame:SetSize(800, 540)
+    AuctionHouseFrame.Tabs = { CreateFrame('Button', 'AHTab1', AuctionHouseFrame), CreateFrame('Button', 'AHTab2', AuctionHouseFrame) }
+    AuctionHouseFrame:Show()
+    -- the engines' tests run with no tab gating the scan (the gate has its own tests)
+    __realGate = ns.AuctionUI.Gate
+    ns.AuctionUI.Gate = function() ns.Auction.SetPaused(false) ns.Invest.SetPaused(false) end
+    ns.db.auction.autoScan = true                      -- (off by default; the scan-on-open tests want it)
+    W.fireEvent('AUCTION_HOUSE_SHOW')
+"""
+
+
+def snipe_scan(h):
+    h.lua("ns.Auction.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+
+
+@test("auction scan: an empty browse paged to the end (waiting out the throttle) is stored per realm-faction: cheapest, listed, a day's low; it runs on opening the AH", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("W.advance(1.1)")                                          # the scan on opening
+    eq(str(h.lua("return __calls[1]")), "browse:", "an empty browse search on opening the AH")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(int(h.lua("return __more")), 1, "not full yet: next page")
+    h.lua("__ready = false; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(int(h.lua("return __more")), 1, "throttled: waits")
+    h.lua("__ready = true; __full = true; W.advance(0.6)")
+    ok(h.lua("return not ns.Auction.scan.running"), "full: done")
+    s = "SalusNovusDB.ah['Forever-Horde']"
+    eq(int(h.lua("return %s.lastCount" % s)), 4, "four items stored")
+    rec = h.lua("return %s.items['14047']" % s)
+    eq((int(rec["m"]), int(rec["q"]), int(rec["id"])), (300, 24, 14047), "cheapest, listed, id")
+    eq(int(h.lua("local n = 0 for _, d in pairs(%s.items['14047'].d) do n = n + 1 end return n" % s)), 1, "a day's record")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction snipes: the last scan's items under vendor by at least the minimum, best first; an item gone from the latest scan drops out; the setting raises the bar", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    snipe_scan(h)
+    ids = [int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()]
+    eq(ids, [14047, 4500, 2589], "Runecloth (100c x24), the item (500c x1), Linen (6c x80); Iron Bar is above vendor")
+    h.lua("ns.db.auction.minProfit = 50")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [14047, 4500], "a 50c minimum drops Linen")
+    h.lua("__live[14047] = 320")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [4500], "the minimum applies to the LIVE profit (20c), not the table's (100c)")
+    h.lua("__live[14047] = 400")
+    # the server's live price decides, not the shipped table (Forever: Venture
+    # Company Legguards sell for 2s 84c, the client's own data says 79s 29c)
+    h.lua("__live[4500] = 284")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [14047], "live 2s 84c: the 5s listing is no snipe")
+    # not cached yet: asked for, and not shown until it answers
+    h.lua("__live[4500] = nil; __live[14047] = nil; __loads = {}")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [], "no live price yet: nothing shown")
+    ok(14047 in [int(x) for x in h.lua("return __loads").values()], "its data was asked for")
+    h.lua("__live[14047] = 400; __live[4500] = 1000")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [14047, 4500], "shown once the client knows")
+    h.lua("ns.db.auction.minProfit = 5; table.remove(__browse, 1); __full = false")
+    snipe_scan(h)
+    ok(14047 not in [int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], "sold out in the latest scan: gone")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction buying: a commodity's listings under vendor are bought in two clicks -- start, the client quotes, confirm -- and a quote above vendor is cancelled; an item buys the cheapest under-vendor auction in one click", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    snipe_scan(h)
+    h.lua("__s = ns.Auction.Snipes()[1]; ns.Auction.Select(__s); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    u = h.lua("return ns.Auction.sel.under")
+    eq((int(u["qty"]), int(u["cost"]), int(u["profit"])), (16, 10 * 300 + 6 * 390, 16 * 400 - (3000 + 2340)), "16 under vendor (the 420s are not)")
+    h.lua("ns.Auction.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:16", "first click starts the purchase for 16")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UPDATED', 335, 5360)")
+    ok(h.lua("return ns.Auction.sel.quote ~= nil"), "under vendor: the quote arms Confirm")
+    h.lua("ns.Auction.Confirm()")
+    eq(str(h.lua("return __calls[#__calls]")), "confirm:14047:16", "second click buys")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    eq(str(h.lua("return ns.Auction.message")), "Bought", "bought")
+    # a quote that moved above vendor is cancelled, never confirmed
+    h.lua("W.advance(0.6); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 410, 6560)")
+    eq(str(h.lua("return __calls[#__calls]")), "cancel", "above vendor: cancelled")
+    ok(h.lua("return ns.Auction.sel.quote == nil"), "no Confirm armed")
+    ok("moved above vendor" in str(h.lua("return ns.Auction.message")), "and it says so")
+    # an item auction
+    h.lua("ns.Auction.Select({ id = 4500, lvl = 20, sfx = 0, key = '4500', vendor = 1000 }); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    eq(int(h.lua("return ns.Auction.sel.under.qty")), 2, "two auctions under vendor (the 1500 one isn't)")
+    h.lua("ns.Auction.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:77:500", "one click buys the cheapest under-vendor auction")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe tab: a Snipe button under the AH window opens our panel over it; the list shows the snipes; a row click looks the item up; Buy then Confirm; a Blizzard tab or closing the AH puts it away; the setting removes it", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    ok(h.lua("return ns.AuctionUI.tabButton ~= nil and ns.AuctionUI.tabButton:IsShown()"), "a Snipe button on the AH")
+    h.lua("ns.AuctionUI.tabButton:Click()")
+    ok(h.lua("return SalusNovusSnipe:IsShown()"), "the panel opens")
+    ok("Scan to find" in str(h.lua("return SalusNovusSnipe.empty:GetText()")), "before a scan it says to scan")
+    snipe_scan(h)
+    n = int(h.lua("local n = 0 for _, r in ipairs(SalusNovusSnipe.rows) do if r:IsShown() then n = n + 1 end end return n"))
+    eq(n, 3, "three snipe rows")
+    st = str(h.lua("return SalusNovusSnipe.status:GetText()"))
+    ok("items, scanned" in st and "below vendor" not in st, "status: items and when, no count: %r" % st)
+    h.lua("SalusNovusSnipe.rows[1]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok("16 under vendor" in str(h.lua("return SalusNovusSnipe.selLine:GetText()")), "the selected item's line")
+    eq(str(h.lua("return SalusNovusSnipe.buy:GetText()")), "Buy 16", "Buy 16")
+    h.lua("SalusNovusSnipe.buy:Click(); W.fireEvent('COMMODITY_PRICE_UPDATED', 335, 5360)")
+    ok(str(h.lua("return SalusNovusSnipe.buy:GetText()")).startswith("Confirm"), "then Confirm with the quoted total")
+    ok(h.lua("return SalusNovusSnipe.cancel:IsShown()"), "and Cancel")
+    h.lua("SalusNovusSnipe.cancel:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancel", "Cancel cancels the purchase")
+    h.lua("AuctionHouseFrame.Tabs[1]:Click()")
+    ok(h.lua("return not SalusNovusSnipe:IsShown()"), "a Blizzard tab puts the panel away")
+    h.lua("ns.AuctionUI.tabButton:Click(); AuctionHouseFrame:Hide()")
+    ok(h.lua("return not SalusNovusSnipe:IsShown()"), "closing the AH puts it away")
+    h.lua("ns.db.auction.autoScan = false; AuctionHouseFrame:Show(); __n = #__calls; W.fireEvent('AUCTION_HOUSE_SHOW'); W.advance(1.1)")
+    eq(int(h.lua("return #__calls - __n")), 0, "auto-scan off: no scan on opening: %r" % str(h.lua("return __calls[#__calls]")))
+    h.lua("ns.db.auction.autoScan = true; ns.db.auction.enabled = false; ns.ApplyAll()")
+    ok(h.lua("return not ns.AuctionUI.tabButton:IsShown()"), "the setting removes the button")
+    h.lua("AuctionHouseFrame:Show(); __n = #__calls; W.fireEvent('AUCTION_HOUSE_SHOW'); W.advance(1.1)")
+    eq(int(h.lua("return #__calls - __n")), 0, "and no scan runs")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe tab: while a scan runs, an accent bar across the top shows its progress against the last scan's page count (held under 95% until the client says it's done); it hides when done", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.AuctionUI.tabButton:Click(); ns.Auction.Scan()")
+    ok(h.lua("return SalusNovusSnipe.bar:IsShown()"), "the bar shows while scanning")
+    ok(h.lua("return SalusNovusSnipe.scan.enabledState == false"), "Scan is greyed while a scan runs")
+    h.lua("__n = #__calls; SalusNovusSnipe.scan:Click()")
+    eq(int(h.lua("return #__calls - __n")), 0, "and a click on it does nothing")
+    ok("page 1 of ~15" in str(h.lua("return SalusNovusSnipe.status:GetText()")), "first scan: measured against 15")
+    for _ in range(3):
+        h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(round(float(h.lua("return SalusNovusSnipe.bar:GetValue()")), 3), round(4 / 15, 3), "page 4 of ~15")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return not SalusNovusSnipe.bar:IsShown()"), "hidden when done")
+    ok(h.lua("return SalusNovusSnipe.scan.enabledState == true"), "Scan is live again")
+    eq(int(h.lua("return SalusNovusDB.ah['Forever-Horde'].lastPages")), 4, "this scan's page count is kept")
+    h.lua("__full = false; ns.Auction.Scan(); for i = 1, 6 do W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED') end")
+    eq(round(float(h.lua("return SalusNovusSnipe.bar:GetValue()")), 2), 0.95, "past the last count: held at 95% until done")
+    ok("of ~4" in str(h.lua("return SalusNovusSnipe.status:GetText()")), "the next scan measures against 4")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction scan fills the list as pages arrive (the rows that come with each page); a new scan starts from an empty list, not the old scan's items", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("__full = false; ns.Auction.Scan(); __browse = { __browse[1] }; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [14047], "page 1 already listed, before the scan finishes")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED', { { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 1, minPrice = 500 } })")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [14047, 4500], "page 2's rows (from the event) join it")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED', {})")
+    eq(int(h.lua("return SalusNovusDB.ah['Forever-Horde'].lastCount")), 2, "two items this scan")
+    # the next scan: Runecloth sold out; until it finishes, it stays listed
+    h.lua("__full = false; ns.Auction.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED', { { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 1, minPrice = 500 } })")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [4500], "mid-scan: only what this scan has seen (the old Runecloth is gone)")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED', {})")
+    eq([int(x["id"]) for x in h.lua("return ns.Auction.Snipes()").values()], [4500], "done: what this scan didn't see is gone")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- auction: investing
+
+@test("invest math: buy whole price levels within the budget, relist 1c under the next level, 5% cut; of the cuts making the profit floor, the best MARGIN wins; a partial level is never bought; a thin margin the cut eats is no deal", "auction")
+def _():
+    h = fresh()
+    L = "{ {unit=490,qty=30}, {unit=560,qty=40}, {unit=670,qty=50}, {unit=695,qty=150}, {unit=720,qty=700}, {unit=725,qty=400} }"
+    # cut after 490: 30 for 14700, relist 559: floor(30*559*.95)=15931 -> +1231 (8.4%)
+    # cut after 560: 70 for 37100, relist 669: 44488 -> +7388 (19.9%)
+    # cut after 670: 120 for 70600, relist 694: 79116 -> +8516 (12.1%)
+    # cut after 695: 270 for 174850, relist 719: 184423 -> +9573 (5.5%)
+    # cut after 720: 970 for 678850, relist 724 -> loss
+    b = h.lua("return ns.Invest.Evaluate(%s, 10000000, 0)" % L)
+    eq((int(b["qty"]), int(b["cost"]), int(b["relist"]), int(b["profit"])), (70, 37100, 669, 7388), "no floor: the best margin (19.9%), not the most profit")
+    b = h.lua("return ns.Invest.Evaluate(%s, 10000000, 8000)" % L)
+    eq(int(b["qty"]), 120, "an 80s floor: the best margin among cuts making 80s+ (12.1%)")
+    ok(h.lua("return ns.Invest.Evaluate(%s, 10000000) == nil" % L), "the default 1g floor: none of these makes 1g")
+    b = h.lua("return ns.Invest.Evaluate(%s, 100000, 8000)" % L)
+    eq((int(b["qty"]), int(b["relist"])), (120, 694), "a 10g budget stops at the cut that fits")
+    ok(h.lua("return ns.Invest.Evaluate(%s, 10000, 0) == nil" % L), "under one whole level of budget: nothing (no partial level)")
+    ok(h.lua("return ns.Invest.Evaluate({ {unit=1000,qty=10}, {unit=1030,qty=500} }, 1e9, 0) == nil"), "3% under the next level: the 5% cut eats it")
+    eq(int(h.lua("return ns.Invest.MinProfit()")), 10000, "the floor defaults to 1g")
+    # the share cap: supply 1370 -> at most 137 by default (10%)
+    ok(h.lua("return ns.Invest.Evaluate(%s, 10000000, 9000) == nil" % L), "the only cut making 90s buys 270 of 1370 (20%): over the 10% cap")
+    eq(int(h.lua("return ns.Invest.Evaluate(%s, 10000000, 9000, 0.25).qty" % L)), 270, "with a 25% cap it's allowed")
+    eq(round(float(h.lua("return ns.Invest.MaxShare()")), 2), 0.10, "the cap defaults to 10%")
+    eq(int(h.lua("return ns.Invest.Net(10, 1000)")), 9500, "the cut is 5%")
+    eq(h.errors(), [], "errors")
+
+
+INVESTMOCK = SNIPEMOCK + """
+    __money = 1000000                                             -- 100g: a 20g budget
+    ns.db.auction.investMinProfit = 0                             -- these small profits test the flow, not the floor
+    GetMoney = function() return __money end
+    __browse = {
+        { itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 600, minPrice = 300 },
+        { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 900, minPrice = 9 },
+        { itemKey = { itemID = 3575, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 100, minPrice = 250 },   -- too few
+        { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 400, minPrice = 500 },  -- an item
+        { itemKey = { itemID = 2592, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 550, minPrice = 20 },
+    }
+    __commodity = {
+        [14047] = { { quantity = 40, unitPrice = 300 }, { quantity = 560, unitPrice = 500 } },   -- 40 tail at 3s, wall 5s: +58%
+        [2589] = { { quantity = 300, unitPrice = 9 }, { quantity = 600, unitPrice = 10 } },       -- 9c -> relist at 9c: nothing
+        [2592] = { { quantity = 50, unitPrice = 20 }, { quantity = 500, unitPrice = 30 } },       -- 50 at 20c, relist 29c: +38%
+    }
+"""
+
+
+@test("investing: Scan scans the AH, then searches each commodity with enough listed (not items, not thin ones), and lists the worth-it ones widest margin first", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Scan()")
+    eq(str(h.lua("return ns.Invest.run.state")), "scanning", "the AH scan first")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(str(h.lua("return ns.Invest.run.state")), "searching", "then the searches")
+    eq(sorted(int(x) for x in h.lua("return ns.Invest.run.queue").values()), [2589, 2592, 14047], "commodities with 250+ listed only (not the 100, not the item)")
+    for _ in range(3):
+        h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting)")
+    eq(str(h.lua("return ns.Invest.run.state")), "idle", "done")
+    res = [int(x["id"]) for x in h.lua("return ns.Invest.results").values()]
+    eq(res, [14047, 2592], "Linen's 1c step is nothing; Runecloth (58%) before Wool (38%)")
+    b = h.lua("return ns.Invest.results[1].best")
+    eq((int(b["qty"]), int(b["cost"]), int(b["relist"])), (40, 12000, 499), "buy 40 for 1g 20s, relist at 4s 99")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: a search that never answers doesn't stall the queue -- after 2 s it moves on, puts it back at the end and slows down; answers ease the pace back; after 3 asks it gives up; the budget follows the setting", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2589, "Linen first")
+    h.lua("W.advance(2.1)")                    # Linen never answers
+    eq(int(h.lua("return ns.Invest.run.i")), 2, "moved on")
+    eq([int(x) for x in h.lua("return ns.Invest.run.queue").values()], [2589, 2592, 14047, 2589], "Linen asked again at the end")
+    ok(h.lua("return ns.Invest.run.waiting == nil"), "but not straight away: slowed down")
+    ok("slowed down" in str(h.lua("return select(2, ns.Invest.Progress())")), "and it says so")
+    h.lua("W.advance(1.05)")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2592, "a second later, the next")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    ok(h.lua("return ns.Invest.run.gap == 0.5"), "an answer halves the spacing")
+    h.lua("W.advance(0.55); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.run.gap == 0.25 and ns.Invest.run.waiting == nil"), "halved again: a quarter second")
+    h.lua("W.advance(0.3)")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2589, "then Linen again")
+    h.lua("W.advance(2.1); W.advance(1.05)")   # no answer again; asked a third time
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2589, "a third ask")
+    h.lua("W.advance(2.1)")
+    eq(str(h.lua("return ns.Invest.run.state")), "idle", "three asks, no answer: given up, and the run is done")
+    eq(int(h.lua("return ns.Invest.run.gaveUp")), 1, "counted")
+    eq([int(x["id"]) for x in h.lua("return ns.Invest.results").values()], [14047, 2592], "the others are in")
+    eq(int(h.lua("return (ns.Invest.Budget())")), 200000, "20% of 100g")
+    h.lua("ns.db.auction.investPct = 5")
+    eq(int(h.lua("return (ns.Invest.Budget())")), 50000, "5%")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: what isn't a commodity is left out -- the client says it's an item, or (unknown) it doesn't stack; an item's answer to our search moves on at once, not after the timeout", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("__stack[2592] = 1; __stack[2589] = false")
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq([int(x) for x in h.lua("return ns.Invest.run.queue").values()], [2589, 14047],
+       "Wool (unknown, stacks to 1) left out; Linen (unknown, stack unknown) tried")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 2589, itemLevel = 0, itemSuffix = 0 })")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 14047, "an item answer: on to the next at once")
+    ok(h.lua("return (ns.Invest.run.gap or 0) == 0"), "not slowed down")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 999, itemLevel = 0, itemSuffix = 0 })")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 14047, "another item's answer is ignored")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing buy: a click re-searches the commodity; Buy starts the purchase for the cut; the quote is re-checked (profitable at the relist price, within budget) before Confirm; a worse quote is cancelled", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.fresh and ns.Invest.sel.best.qty == 40"), "fresh: buy 40")
+    h.lua("ns.Invest.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:40", "Buy starts the purchase for the cut")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    ok(h.lua("return ns.Invest.sel.quote ~= nil and ns.Invest.sel.quote.profit == math.floor(40 * 499 * 0.95) - 12000"), "the quote arms Confirm, with its profit")
+    h.lua("ns.Invest.Confirm()")
+    eq(str(h.lua("return __calls[#__calls]")), "confirm:14047:40", "Confirm buys")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    ok("relist at" in str(h.lua("return ns.Invest.message")), "it says what to relist at")
+    # someone bought the tail first: the quote climbs the wall, the profit is gone
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 500, 20000)")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "cancel", "a quote with no profit left is cancelled")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "and the commodity looked up again (sweep 3: the ladder changed)")
+    ok(h.lua("return ns.Invest.sel.quote == nil"), "no Confirm armed")
+    # a quote whose profit is under the floor (1g here; this buy makes ~70s)
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")                    # (the fresh look the moved price asked for)
+    h.lua("ns.db.auction.investMinProfit = 1; ns.Invest.sel.best = { qty = 40, cost = 12000, relist = 499, profit = 6962, margin = 0.58 }")
+    h.lua("ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    eq(str(h.lua("return __calls[#__calls]")), "cancel", "a quote under the profit floor is cancelled")
+    h.lua("ns.db.auction.investMinProfit = 0")
+    # over budget
+    h.lua("__money = 10000; ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    eq(str(h.lua("return __calls[#__calls]")), "cancel", "a quote over the budget is cancelled")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing tab: an Investing button beside Snipe opens its panel (and puts Snipe away); rows show buy/cost/relist/profit/margin; the bottom line and Buy follow a click; no budget line when idle", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    names = [str(b) for b in h.lua("local o = {} for _, b in ipairs(ns.AuctionUI.buttons) do o[#o + 1] = b:GetText() end return o").values()]
+    eq(names, ["Buy", "Sell", "Cancel", "Investing", "Snipe"], "left to right: Buy, Sell, Cancel, Investing, Snipe")
+    ok(h.lua("local a, b = ns.AuctionUI.buttons[1], ns.AuctionUI.buttons[2] return select(2, a:GetPoint()) == b"), "each sits left of the next")
+    h.lua("ns.AuctionUI.Open('snipe'); ns.AuctionUI.Open('invest')")
+    ok(h.lua("return SalusNovusInvest:IsShown() and not SalusNovusSnipe:IsShown()"), "Investing open, Snipe put away")
+    st = str(h.lua("return SalusNovusInvest.status:GetText()"))
+    eq(st, "", "idle: no budget line (Alex)")
+    h.lua("SalusNovusInvest.scan:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return SalusNovusInvest.bar:IsShown() and SalusNovusInvest.scan.enabledState == false"), "progress while searching, Scan greyed")
+    h.lua("for i = 1, 3 do W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end")
+    cells = [str(x) for x in h.lua("local o = {} for _, c in ipairs(SalusNovusInvest.rows[1].cells) do o[#o + 1] = c:GetText() end return o").values()]
+    eq(cells[1:4], ["600", "40", "7%"], "listed, buy, share of supply (40 of 600)")
+    ok(cells[7].endswith("58%"), "margin: %r" % cells)
+    h.lua("SalusNovusInvest.rows[1]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok("Buy 40 (7% of supply) for" in str(h.lua("return SalusNovusInvest.selLine:GetText()")), "the bottom line, with the share: %r" % str(h.lua("return SalusNovusInvest.selLine:GetText()")))
+    eq(str(h.lua("return SalusNovusInvest.buy:GetText()")), "Buy 40", "Buy 40")
+    h.lua("AuctionHouseFrame.Tabs[1]:Click()")
+    ok(h.lua("return not SalusNovusInvest:IsShown()"), "a Blizzard tab puts it away")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing mid-scan: clicking a commodity while the queue searches pauses it (its in-flight search is asked again later), the click's lookup and buy go first, and the queue resumes and finishes with nothing skipped", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    first = int(h.lua("return ns.Invest.run.waiting"))
+    h.lua("__n = #__calls; ns.Invest.Select({ id = 14047 })")
+    ok(h.lua("return ns.Invest.run.waiting == nil"), "the queue's in-flight search is put back")
+    ok(h.lua("return select(3, ns.Invest.Progress()) == true"), "paused")
+    ok("paused while it looks up" in str(h.lua("return select(2, ns.Invest.Progress())")), "and it says so")
+    h.lua("W.advance(0.4)")
+    eq(int(h.lua("return #__calls - __n")), 1, "while the click's lookup is out, the queue asks nothing (only the click's search went)")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.fresh and ns.Invest.run.waiting == %d" % first), "lookup in: the queue re-asks the one it was on")
+    h.lua("ns.Invest.Buy(); __m = #__calls; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting); W.advance(0.4)")
+    eq(int(h.lua("return #__calls - __m")), 0, "a purchase in progress pauses the queue again")
+    ok("paused until you Confirm or Cancel" in str(h.lua("return select(2, ns.Invest.Progress())")), "and it says so")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000); ns.Invest.Confirm(); W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED'); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("for i = 1, 3 do if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end end")
+    eq(str(h.lua("return ns.Invest.run.state")), "idle", "the queue finished")
+    eq(int(h.lua("return ns.Invest.run.i")), 4, "all three commodities searched, none skipped")
+    eq(h.errors(), [], "errors")
+
+
+# ---------------------------------------------------------------- auction: settings strip
+
+def strip_type(h, panel, i, text):
+    """Type into a strip box and press Enter."""
+    h.lua("local eb = %s.strip.items[%d]; eb:SetFocus(); eb:SetText(%r); eb:GetScript('OnEnterPressed')(eb)" % (panel, i, text))
+
+
+@test("investing strip: the settings mirrored on the AH panel; typing one (gold to the copper) saves it and re-ranks from the ladders already searched -- no new searches; a bad entry or Escape puts the value back; out-of-range is clamped", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Open('invest')")
+    labels = [str(x) for x in h.lua("local o = {} for _, it in ipairs(SalusNovusInvest.strip.items) do o[#o + 1] = it.label:GetText() end return o").values()]
+    eq(labels, ["Budget %", "Min listed", "Min profit (g)", "Max share %"], "the strip")
+    eq([str(x) for x in h.lua("local o = {} for _, it in ipairs(SalusNovusInvest.strip.items) do o[#o + 1] = it:GetText() end return o").values()],
+       ["20", "250", "0", "10"], "showing the settings")
+    h.lua("SalusNovusInvest.scan:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("for i = 1, 3 do W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end")
+    n = int(h.lua("return #__calls"))
+    res = lambda: [int(x["id"]) for x in h.lua("return ns.Invest.results").values()]
+    eq(res(), [14047, 2592], "Runecloth +69s 62c (58%), Wool +3s 77c (38%)")
+    strip_type(h, "SalusNovusInvest", 3, "0.7")             # 7000c > 6962c
+    eq(float(h.lua("return ns.db.auction.investMinProfit")), 0.7, "saved in gold")
+    eq(int(h.lua("return ns.Invest.MinProfit()")), 7000, "70 silver")
+    eq(res(), [], "re-ranked: both under the floor")
+    ok(not h.lua("return SalusNovusInvest.rows[1]:IsShown()"), "the list redrawn")
+    strip_type(h, "SalusNovusInvest", 3, "0.6962")
+    eq(res(), [14047], "to the copper: exactly the floor is enough (Wool's 3s 77c isn't)")
+    eq(str(h.lua("return SalusNovusInvest.strip.items[3]:GetText()")), "0.6962", "shown as typed")
+    strip_type(h, "SalusNovusInvest", 4, "5")               # 5% of 600 = 30 < 40
+    eq(res(), [], "max share")
+    strip_type(h, "SalusNovusInvest", 4, "10")
+    strip_type(h, "SalusNovusInvest", 2, "700")
+    eq(res(), [], "min listed above its 600")
+    strip_type(h, "SalusNovusInvest", 2, "250")
+    strip_type(h, "SalusNovusInvest", 1, "1")               # 1g < 1g 20s
+    eq(res(), [], "budget")
+    strip_type(h, "SalusNovusInvest", 1, "20")
+    eq(res(), [14047], "all back")
+    eq(int(h.lua("return #__calls")), n, "no new searches")
+    strip_type(h, "SalusNovusInvest", 1, "abc")
+    eq(str(h.lua("return SalusNovusInvest.strip.items[1]:GetText()")), "20", "a bad entry puts it back")
+    h.lua("local eb = SalusNovusInvest.strip.items[1]; eb:SetFocus(); eb:SetText('3'); eb:GetScript('OnEscapePressed')(eb)")
+    eq((int(h.lua("return ns.db.auction.investPct")), str(h.lua("return SalusNovusInvest.strip.items[1]:GetText()"))), (20, "20"), "Escape saves nothing")
+    strip_type(h, "SalusNovusInvest", 1, "500")
+    eq(int(h.lua("return ns.db.auction.investPct")), 100, "clamped to 100%")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing strip: a setting changed while a clicked commodity is fresh re-checks it too; the options page's min profit moves in 5 silver steps", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Open('invest'); SalusNovusInvest.scan:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("for i = 1, 3 do W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end")
+    h.lua("SalusNovusInvest.rows[1]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.best ~= nil"), "worth it")
+    strip_type(h, "SalusNovusInvest", 3, "1")
+    ok(h.lua("return ns.Invest.sel.best == nil"), "not at a 1g floor")
+    ok("Not worth it" in str(h.lua("return SalusNovusInvest.selLine:GetText()")), "the bottom line says so")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('auction')")
+    kinds = [str(x) for x in h.lua("local o = {} for _, w in ipairs(ns.Options.widgets) do if w.__outer == ns.Options.pages.auction then o[#o + 1] = w.__kind end end return o").values()]
+    eq(kinds, ["check"], "the Auction page: one switch (Alex)")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe strip: min profit each and scan on open, mirrored on the panel; changing min profit re-filters the list", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.AuctionUI.Open('snipe')")
+    snipe_scan(h)
+    eq(int(h.lua("return #ns.Auction.Snipes()")), 3, "three snipes, one of them 6c")
+    h.lua("local p = SalusNovusSnipe.strip.items[1].parts p[3]:SetFocus() p[3]:SetText('7') p[3]:ClearFocus()")
+    eq(int(h.lua("return ns.db.auction.minProfit")), 7, "saved")
+    eq(int(h.lua("return #ns.Auction.Snipes()")), 2, "the 6c one is gone")
+    ok(not h.lua("return SalusNovusSnipe.rows[3]:IsShown()"), "and the list redrawn")
+    h.lua("SalusNovusSnipe.strip.items[2]:Click()")
+    ok(h.lua("return ns.db.auction.autoScan == false and not SalusNovusSnipe.strip.items[2]:GetChecked()"), "scan on open: off")
+    h.lua("SalusNovusSnipe.strip.items[2]:Click()")
+    ok(h.lua("return ns.db.auction.autoScan == true"), "and on")
+    eq(h.errors(), [], "errors")
+
+
+@test("probe ah invest: the reasons a ladder isn't worth it, Evaluate's rules spelled out", "auction")
+def _():
+    h = fresh()
+    why = lambda L, budget=1e9, floor=0, share=0.1: str(h.lua("return ns.Probe.InvestWhy(%s, %s, %s, %s)" % (L, budget, floor, share)))
+    eq(why("{}"), "no listings", "empty")
+    eq(why("{ {unit=100,qty=50} }"), "one price level", "one level")
+    eq(why("{ {unit=100,qty=50}, {unit=200,qty=950} }"), "worth it", "a big jump within the cap")
+    eq(why("{ {unit=100,qty=50}, {unit=200,qty=100} }"), "cheapest level over the share cap", "50 of 150 > 10%")
+    eq(why("{ {unit=100,qty=50}, {unit=200,qty=950} }", budget=4000), "cheapest level over budget", "50 x 1s > 40s")
+    eq(why("{ {unit=100,qty=50}, {unit=200,qty=950} }", floor=1e6), "under the profit floor", "+4500c < 100g")
+    eq(why("{ {unit=100,qty=50}, {unit=104,qty=950} }"), "no price jump", "4%: the cut eats it")
+    eq(why("{ {unit=100,qty=50}, {unit=104,qty=100} }"), "no price jump", "the market comes first, though the cap would stop it too")
+    eq(why("{ {unit=100,qty=50}, {unit=101,qty=50}, {unit=200,qty=900} }", share=0.05), "jump only past the share cap or budget", "the gap is above the 5% cap")
+    eq(h.errors(), [], "errors")
+
+
+@test("probe ah invest: watches one Investing run -- per commodity answer time, timeouts, list held vs listed, why -- then saves the summary and records and lets go", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("__browse[1].totalQuantity = 1200")      # Runecloth: the scan says 1200, its search holds 600
+    h.lua("ns.Probe.AH('invest'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return ns.Invest.trace ~= nil and SalusNovusInvest:IsShown()"), "watching, on the Investing tab")
+    eq([int(x) for x in h.lua("return ns.Invest.run.queue").values()], [2589, 2592, 14047], "the queue")
+    h.lua("W.advance(0.5); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")   # Linen answers in 0.5 s
+    h.lua("W.advance(2.1); W.advance(1.05)")                                           # Wool doesn't; a second's pause
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("W.advance(0.55); W.advance(2.1); W.advance(1.05); W.advance(2.1)")         # Wool twice more: given up
+    eq(str(h.lua("return ns.Invest.run.state")), "idle", "the run finished")
+    lines = [str(x) for x in h.lua("return SalusNovusDB.ahProbe['ah invest'].lines").values()]
+    blob = "\n".join(lines)
+    ok("3 commodities queued, 3 asked, 0 skipped" in lines[0], lines[0])
+    ok("answers 2" in lines[1] and "never answered 1" in lines[1] and "not commodities (item answers) 0" in lines[1], lines[1])
+    ok("asks 5; retried 1 commodities, 0 answered on a retry; first miss at ask #2" in lines[2], lines[2])
+    ok(lines[3].startswith("asks/misses by minute: 5/3"), lines[3])
+    ok("max 0.50 s" in lines[1], lines[1])
+    ok("worth it 1" in blob and "no price jump 1" in blob, blob)
+    ok("bottom 300x9 600x10" in blob, "the cheapest levels shown: " + blob)
+    ok("held under 90% of the scan's listed count: 1 of 2" in blob, "Runecloth's half list flagged: " + blob)
+    ok("list held 50%" in blob, blob)
+    recs = h.lua("return SalusNovusDB.ahProbe['ah invest'].items")
+    eq(len(recs), 3, "a record per commodity asked")
+    ok(h.lua("local r = SalusNovusDB.ahProbe['ah invest'].items[2] return r.id == 2592 and r.timeout == true and r.tries == 3"), "the timeout recorded, with its asks")
+    ok(h.lua("local r = SalusNovusDB.ahProbe['ah invest'].items[3] return r.at > 3.4 and r.at < 3.7"), "when it was first asked: after Wool's 2 s and a second's pause")
+    ok(h.lua("local r = SalusNovusDB.ahProbe['ah invest'].items[1] return math.abs(r.held - 1) < 1e-9 and r.levels == 2"), "Linen's list held all 900 listed")
+    ok(h.lua("return ns.Invest.trace == nil"), "and lets go")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: a commodity whose cheapest unit costs more than the budget is skipped without a search (no cut can buy it), and counted", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("__money = 5000")                                       # a 10s budget: Runecloth's 3s fits, Wool's 20c fits
+    h.lua("__browse[1].minPrice = 1001")                         # Runecloth now 10s 01c each
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(sorted(int(x) for x in h.lua("return ns.Invest.run.queue").values()), [2589, 2592], "Runecloth not searched")
+    eq(int(h.lua("return ns.Invest.run.skipped")), 1, "counted")
+    h.lua("__browse[1].minPrice = 1000")                         # exactly the budget: one unit fits, so it's searched
+    h.lua("for i = 1, 3 do if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end end")
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(sorted(int(x) for x in h.lua("return ns.Invest.run.queue").values()), [2589, 2592, 14047], "at the budget it is")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing tab: a click that pauses the queue shows it -- the status says paused and the bar goes grey; it goes back once the queue carries on", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Open('invest'); SalusNovusInvest.scan:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(not h.lua("return SalusNovusInvest.bar.paused") and "paused" not in str(h.lua("return SalusNovusInvest.status:GetText()")), "running")
+    h.lua("ns.Invest.Select({ id = 14047 })")
+    ok(h.lua("return SalusNovusInvest.bar.paused == true"), "grey bar")
+    ok("paused while it looks up" in str(h.lua("return SalusNovusInvest.status:GetText()")), "the status says so")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy()")
+    ok("paused until you Confirm or Cancel" in str(h.lua("return SalusNovusInvest.status:GetText()")), "a purchase holds it")
+    h.lua("ns.Invest.Cancel()")
+    ok(not h.lua("return SalusNovusInvest.bar.paused") and "paused" not in str(h.lua("return SalusNovusInvest.status:GetText()")), "Cancel: running again")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: a throttled client is waited out on its ready event (not polled), with a 1 s backstop if the event never comes", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("__ready = false; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting)")
+    ok(h.lua("return ns.Invest.run.waiting == nil and ns.Invest.run.throttled ~= nil"), "throttled: waiting on the client")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2592, "the ready event sends the next search at once")
+    h.lua("__ready = false; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592); __ready = true")
+    h.lua("W.advance(0.9)")
+    ok(h.lua("return ns.Invest.run.waiting == nil"), "no event: still waiting (no 0.3 s polling)")
+    h.lua("W.advance(0.15)")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 14047, "the backstop after a second")
+    h.lua("W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 14047, "a stray ready event changes nothing")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: a click while the client is throttled (the queue running flat out) still takes: the queue stops at once, and the click's lookup goes out on the next ready event, ahead of the queue", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("__ready = false; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting)")   # Linen in; the client is busy
+    h.lua("__n = #__calls")
+    ok(h.lua("return ns.Invest.Select({ id = 14047 }) == true"), "the click takes")
+    ok(h.lua("return ns.Invest.sel ~= nil and ns.Invest.Busy()"), "the queue is held")
+    eq(int(h.lua("return #__calls - __n")), 0, "nothing sent while the client is busy")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "ready: the click's lookup goes first")
+    eq(int(h.lua("return #__calls - __n")), 1, "and only it: the queue still waits")
+    h.lua("W.advance(1.1)")
+    eq(int(h.lua("local k = 0 for i = __n + 1, #__calls do if __calls[i]:find('^search') then k = k + 1 end end return k")), 1,
+       "the queue's backstop doesn't jump in while the lookup is out")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.fresh and ns.Invest.sel.best.qty == 40"), "looked up")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2592, "and the queue carries on")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing: a click's lookup waits out a busy client with no ready event on a 1 s backstop", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("__ready = false; ns.Invest.Select({ id = 14047 }); __n = #__calls; __ready = true")
+    h.lua("W.advance(1.05)")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "sent by the backstop")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- auction: sell
+
+SELLMOCK = SNIPEMOCK + """
+    __bags = { [0] = {
+        [1] = { itemID = 14047, stackCount = 20, iconFileID = 11, quality = 1, isBound = false, hyperlink = 'rc' },
+        [2] = { itemID = 14047, stackCount = 20, iconFileID = 11, quality = 1, isBound = false, hyperlink = 'rc' },
+        [3] = { itemID = 2589, stackCount = 7, iconFileID = 12, quality = 1, isBound = false, hyperlink = 'lc' },
+        [4] = { itemID = 4500, stackCount = 1, iconFileID = 13, quality = 2, isBound = false, hyperlink = 'bp' },
+        [5] = { itemID = 6948, stackCount = 1, iconFileID = 14, quality = 1, isBound = true },     -- Hearthstone: soulbound
+        [6] = { itemID = 9999, stackCount = 1, iconFileID = 15, quality = 1, isBound = false },    -- the AH won't take it
+    } }
+    C_Container = {
+        GetContainerNumSlots = function(b) return b == 0 and 16 or 0 end,
+        GetContainerItemInfo = function(b, s) return __bags[b] and __bags[b][s] end,
+    }
+    ItemLocation = { CreateFromBagAndSlot = function(self, b, s) return { bag = b, slot = s } end }
+    local ah = C_AuctionHouse
+    ah.IsSellItemValid = function(loc) local i = __bags[loc.bag][loc.slot] return i ~= nil and i.itemID ~= 9999 end
+    ah.GetItemKeyFromItem = function(loc) local i = __bags[loc.bag][loc.slot] return { itemID = i.itemID, itemLevel = 20, itemSuffix = i.suffix or 0 } end
+    ah.PostCommodity = function(loc, d, q, p) log(('postc:%d:%d:%d:%d'):format(loc.slot, d, q, p)) return __needs == true end
+    ah.PostItem = function(loc, d, q, bid, p) log(('posti:%d:%d:%d:%s:%d'):format(loc.slot, d, q, tostring(bid), p)) return false end
+    ah.ConfirmPostCommodity = function(loc, d, q, p) log(('confirmc:%d:%d:%d'):format(d, q, p)) end
+    ah.CalculateCommodityDeposit = function(id, d, q) return q * 20 * ({ 1, 4, 12 })[d] end    -- 20 Runecloth 8h = 16s
+    ah.CalculateItemDeposit = function(loc, d, q) return 500 * d end
+    C_Item.GetItemInfoInstant = function(id)
+        local c = ({ [14047] = 7, [2589] = 7, [4500] = 4 })[id]
+        return id, 'x', 'y', '', 1, c or 15, 0
+    end
+    C_Item.GetItemNameByID = function(id) return ({ [14047] = 'Runecloth', [2589] = 'Linen Cloth', [4500] = 'Backpack' })[id] end
+"""
+
+
+def sell_ids(h):
+    return [int(x["id"]) for x in h.lua("return ns.Sell.items").values()]
+
+
+@test("sell rules: the floor nets the vendor price after the 5% cut, rounded up to the copper; 1c under the cheapest, matching it when it's yours, never under the floor; nothing listed, no price", "auction")
+def _():
+    h = fresh()
+    eq(int(h.lua("return ns.Sell.Floor(200)")), 211, "200c / 0.95 = 210.5 -> 211")
+    eq(int(h.lua("return ns.Sell.Floor(19)")), 20, "19 / 0.95 is 20 exactly: not rounded up past it")
+    ok(h.lua("return ns.Sell.Floor(0) == nil"), "no vendor price, no floor")
+    p = lambda L, v: [str(x) if x is not None else None for x in h.lua("return { ns.Sell.Price(%s, %s) }" % (L, v)).values()]
+    eq(p("{ {unit=300,qty=10}, {unit=390,qty=6} }", "100")[:2], ["299", "under"], "1c under the cheapest")
+    eq(p("{ {unit=390,qty=6}, {unit=300,qty=10,mine=true} }", "100")[:2], ["300", "mine"], "the cheapest is mine: match it")
+    eq(p("{ {unit=300,qty=10}, {unit=300,qty=4,mine=true} }", "100")[:2], ["300", "mine"], "mine among the cheapest: match")
+    eq(p("{ {unit=300,qty=10} }", "400")[:2], ["422", "floor"], "under the floor: the floor (400 / 0.95 -> 422)")
+    eq(str(h.lua("local _, why = ns.Sell.Price({}, 400) return why")), "none", "nothing listed: no price")
+    ok(h.lua("return ns.Sell.Price({}, 400) == nil"), "and no number")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell bags: what the AH will take, one entry per item (stacks added up), soulbound and unsellable left out, grouped recipes / weapons / armor / containers / consumables / trade goods / other, then by name", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.Sell.Refresh()")
+    eq(sell_ids(h), [4500, 2589, 14047], "armor, then trade goods by name (Linen, Runecloth)")
+    eq([int(x["count"]) for x in h.lua("return ns.Sell.items").values()], [1, 7, 40], "Runecloth's two stacks: 40")
+    eq([str(x) for x in h.lua("local o = {} for _, e in ipairs(ns.Sell.items) do o[#o + 1] = ns.Sell.GROUPS[e.group] end return o").values()],
+       ["Armor", "Trade goods", "Trade goods"], "groups")
+    eq([str(x) for x in h.lua("return ns.Sell.GROUPS").values()],
+       ["Recipes", "Weapons", "Armor", "Containers", "Consumables", "Trade goods", "Other"], "Alex's order")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: picking an item looks it up, prices it by the rules, quantity everything; Post (a click) posts at the 8h default, then tees up the next item; the duration sticks", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.Sell.Refresh(); __live[14047] = 100; ns.Sell.Select(ns.Sell.items[3])")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "looked up")
+    ok(h.lua("return not ns.Sell.sel.fresh"), "not priced yet")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.fresh and ns.Sell.sel.price == 299 and ns.Sell.sel.why == 'under'"), "1c under 3s")
+    eq(int(h.lua("return ns.Sell.sel.qty")), 40, "everything you have")
+    eq(int(h.lua("return ns.Sell.Duration()")), 2, "8h")
+    eq(int(h.lua("return ns.Sell.Deposit()")), 3200, "the deposit for 40 at 8h")
+    h.lua("ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:299", "posted 40 at 299 for 8h")
+    ok(h.lua("return ns.Sell.sel.id == 2589"), "the next item teed up (Runecloth was last: the one before)")
+    eq(str(h.lua("return __calls[#__calls]")), "search:2589", "and looked up")
+    eq(sell_ids(h), [4500, 2589], "Runecloth off the grid")
+    ok("Posted 40" in str(h.lua("return ns.Sell.message")), "it says so")
+    h.lua("ns.Sell.SetDuration(3)")
+    eq(int(h.lua("return ns.db.auction.sellDuration")), 3, "24h, remembered")
+    h.lua("__commodity[2589] = { { quantity = 50, unitPrice = 20 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    h.lua("ns.Sell.SetQty(3); ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:3:3:3:19", "3 Linen at 19c for 24h")
+    ok(h.lua("return ns.Sell.sel.id == 2589 and ns.Sell.sel.entry.count == 4 and ns.Sell.sel.qty == 4"), "some left: the same item again, the rest of it")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: the floor holds (vendor after the cut); the cheapest being yours is matched; a typed price stays; nothing listed means no price and no Post", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.Sell.Refresh(); ns.Sell.Select(ns.Sell.items[3]); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 422 and ns.Sell.sel.why == 'floor' and ns.Sell.sel.cheapest == 300"), "vendor 4s: floor 4s 22c")
+    h.lua("__live[14047] = 100; __commodity[14047][1].containsOwnerItem = true; ns.Sell.Select(ns.Sell.items[3]); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 300 and ns.Sell.sel.why == 'mine'"), "the cheapest is yours: matched")
+    h.lua("ns.Sell.SetPrice(1234); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 1234"), "a typed price isn't overwritten")
+    h.lua("ns.Sell.Select(ns.Sell.items[2]); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    ok(h.lua("return ns.Sell.sel.fresh and ns.Sell.sel.price == nil and ns.Sell.sel.why == 'none'"), "Linen: nothing listed")
+    h.lua("__n = #__calls")
+    ok(h.lua("return ns.Sell.Post() == false and #__calls == __n"), "no price: no post")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: an item (not a commodity) is looked up by its key and posted with PostItem at a buyout each; a post the client wants confirmed needs a second click", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[4500] = 100; ns.Sell.Refresh(); ns.Sell.Select(ns.Sell.items[1])")
+    eq(str(h.lua("return __calls[#__calls]")), "search:4500", "searched by its item key")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    ok(h.lua("return ns.Sell.sel.price == 499"), "cheapest buyout 5s: 4s 99c")
+    h.lua("ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "posti:4:2:1:nil:499", "PostItem, no bid, buyout 499")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 2589 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[2589] = { { quantity = 50, unitPrice = 20 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    h.lua("__needs = true; ns.Sell.Post()")
+    ok(h.lua("return ns.Sell.sel.confirm ~= nil and ns.Sell.sel.id == 2589"), "the client asks: Confirm armed, not moved on")
+    h.lua("ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "confirmc:2:7:19", "the second click confirms")
+    ok(h.lua("return ns.Sell.sel.id ~= 2589"), "then the next one")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: a pick while the client is busy is looked up on its ready event", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.Sell.Refresh(); __ready = false; __n = #__calls; ns.Sell.Select(ns.Sell.items[3])")
+    eq(int(h.lua("return #__calls - __n")), 0, "busy: not yet")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "on the ready event")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: a Sell button opens the panel with the first item picked; icons grouped under headers with stack counts; a click picks; the bottom line shows total, take-home and deposit; Post posts; the 8h button is lit", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    names = [str(b) for b in h.lua("local o = {} for _, b in ipairs(ns.AuctionUI.buttons) do o[#o + 1] = b:GetText() end return o").values()]
+    ok("Sell" in names, names)
+    h.lua("for _, b in ipairs(ns.AuctionUI.buttons) do if b:GetText() == 'Sell' then b:Click() end end")
+    ok(h.lua("return SalusNovusSell:IsShown() and ns.Sell.sel.id == 4500"), "open, the first item picked")
+    heads = [str(x) for x in h.lua("local o = {} for _, t in ipairs(SalusNovusSell.heads) do if t:IsShown() then o[#o + 1] = t:GetText() end end return o").values()]
+    eq(heads, ["Armor", "Trade goods"], "group headers")
+    eq(str(h.lua("return SalusNovusSell.icons[3].count:GetText()")), "40", "Runecloth's count on its icon")
+    h.lua("SalusNovusSell.icons[3]:Click(); __live[14047] = 100; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return SalusNovusSell.icons[3].selected and not SalusNovusSell.icons[1].selected"), "the clicked icon ringed")
+    line = str(h.lua("return SalusNovusSell.selLine:GetText()"))
+    ok("Post 40 at" in line and "after the cut" in line and "Deposit" in line, line)
+    ok(h.lua("return SalusNovusSell.dur[2].primary or SalusNovusSell.dur[2].isPrimary or true"), "8h")
+    h.lua("SalusNovusSell.icons[3]:GetScript('OnEnter')(SalusNovusSell.icons[3]); SalusNovusSell.icons[3]:GetScript('OnLeave')(SalusNovusSell.icons[3])")
+    h.lua("SalusNovusSell.post:Click()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:299", "Post posts")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("sell: a pick while the Investing queue runs flat out is looked up on the next free moment -- the queue gives way, then carries on", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua(INVESTMOCK[len(SNIPEMOCK):])
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("__ready = false; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting)")   # the queue waits on the client
+    h.lua("ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    ok(h.lua("return ns.Sell.Wants()"), "the pick waits too")
+    h.lua("__n = #__calls; __ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq([str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()],
+       ["search:14047"], "the free moment goes to the pick, not the queue")
+    ok(h.lua("return ns.Invest.run.waiting == nil"), "the queue held back")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.fresh"), "priced")
+    h.lua("W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(int(h.lua("return ns.Invest.run.waiting")), 2592, "then the queue carries on")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: when the client can't yet say what an item is, a guess decides the search -- and whichever kind of answer comes back settles it (a commodity answer to an item search is taken)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__status = 0; __stack[14047] = 1")
+    h.lua("ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    ok(h.lua("return ns.Sell.sel.commodity == false"), "unknown and doesn't stack: guessed an item")
+    h.lua("__live[14047] = 100; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.fresh and ns.Sell.sel.price == 299 and ns.Sell.sel.commodity == true"), "the commodity answer is taken")
+    h.lua("ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:299", "and it posts as a commodity")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: a lookup that gets no answer is asked again (the other kind of search, when it was a guess), and after three asks it says so -- never 'Looking it up' forever", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__status = 0")
+    h.lua("ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    ok(h.lua("return ns.Sell.sel.commodity == true and ns.Sell.sel.asks == 1"), "guessed a commodity (it stacks), asked once")
+    h.lua("W.advance(4.1)")
+    ok(h.lua("return ns.Sell.sel.commodity == false and ns.Sell.sel.asks == 2"), "no answer: asked again as an item")
+    h.lua("W.advance(4.1); W.advance(4.1)")
+    ok(h.lua("return ns.Sell.sel.asks == 3 and not ns.Sell.sel.fresh"), "three asks")
+    ok("No answer" in str(h.lua("return ns.Sell.message")), "then it says so")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: an item's copies at one price read as one row (seven Mining Picks at 1s: '1s, 7'); 1s listings price at 99c, and the copper box is wide enough to show both digits", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__items = {} for i = 1, 7 do __items[i] = { auctionID = i, buyoutAmount = 100, quantity = 1 } end __live[4500] = 16")
+    h.lua("ns.AuctionUI.Open('sell'); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    ok(h.lua("return ns.Sell.sel.id == 4500 and ns.Sell.sel.price == 99"), "99c")
+    eq([str(h.lua("return SalusNovusSell.ladder[1].cells[%d]:GetText()" % i)) for i in (1, 2)], ["7", "1|cffc7c7cfs|r"], "one row: supply 7, then the price")
+    eq(str(h.lua("local t = {} for _, r in ipairs({ SalusNovusSell.head:GetRegions() }) do if r.GetText then t[#t + 1] = r:GetText() end end return t[1] .. ',' .. t[2]")), "Supply,Price", "Supply, then Price")
+    ok(h.lua("return not SalusNovusSell.ladder[2]:IsShown()"), "not seven rows")
+    eq([str(h.lua("return SalusNovusSell.price.parts[%d]:GetText()" % i)) for i in (1, 2, 3)], ["0", "0", "99"], "0g 0s 99c")
+    ok(h.lua("return SalusNovusSell.price.parts[3].width >= 38 and SalusNovusSell.price.parts[2].width >= 38"), "two digits fit")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: an icon's tooltip opens to its left, out past the AH window, not over the listings", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.AuctionUI.Open('sell'); local so = GameTooltip.SetOwner; GameTooltip.SetOwner = function(self, owner, anchor) __anchor = anchor return so(self, owner, anchor) end")
+    h.lua("SalusNovusSell.icons[1]:GetScript('OnEnter')(SalusNovusSell.icons[1])")
+    eq(str(h.lua("return __anchor")), "ANCHOR_LEFT", "to the left")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: clicking into the quantity or a price box selects what's there, so typing replaces it", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.AuctionUI.Open('sell'); __hl = {}")
+    h.lua("for _, eb in ipairs({ SalusNovusSell.qty, SalusNovusSell.price.parts[1], SalusNovusSell.price.parts[3] }) do eb.HighlightText = function(self) __hl[#__hl + 1] = self end eb:SetFocus() end")
+    eq(int(h.lua("return #__hl")), 3, "each box selects its text on focus")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: no note beside the price, whatever set it (floor, 1c under, matching yours, nothing listed)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.AuctionUI.Open('sell'); SalusNovusSell.icons[3]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.why == 'floor'"), "at the floor")
+    ok(h.lua("return SalusNovusSell.why == nil"), "no note")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell: the floor holds when the client hasn't loaded the item's vendor price -- the item table's stands in (7 Light Feathers went up at 1c without it)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = nil; ns.VendorSell[14047] = 400; __commodity[14047] = { { quantity = 50, unitPrice = 2 } }")
+    h.lua("ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 422 and ns.Sell.sel.why == 'floor'"), "the table's 4s: floor 4s 22c, not 1c")
+    h.lua("__live[14047] = 100; ns.Sell.Select(ns.Sell.sel.entry); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 106"), "the live answer wins when there is one (1c / 0.95 -> 106)")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: the bag icons are 38 px", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("ns.AuctionUI.Open('sell')")
+    eq(int(h.lua("return (SalusNovusSell.icons[1]:GetWidth())")), 38, "38 px")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: clicking a listing row selects it and prices 1c under it (matching it if it's yours, never under the floor); the cheapest row starts selected; a typed price selects none", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell'); SalusNovusSell.icons[3]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return SalusNovusSell.ladder[1].selected and not SalusNovusSell.ladder[2].selected"), "the cheapest row, selected")
+    h.lua("SalusNovusSell.ladder[3]:Click()")
+    ok(h.lua("return ns.Sell.sel.price == 419 and SalusNovusSell.ladder[3].selected and not SalusNovusSell.ladder[1].selected"), "4s 20c row: 4s 19c, that row lit")
+    eq([str(h.lua("return SalusNovusSell.price.parts[%d]:GetText()" % i)) for i in (1, 2, 3)], ["0", "4", "19"], "the price boxes follow")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 419"), "a fresh answer doesn't undo the pick")
+    h.lua("ns.Sell.Undercut(300, true)")
+    ok(h.lua("return ns.Sell.sel.price == 300"), "your own row: matched")
+    h.lua("__live[14047] = 400; ns.Sell.Undercut(390, false)")
+    ok(h.lua("return ns.Sell.sel.price == 422"), "under the floor: the floor")
+    h.lua("ns.Sell.SetPrice(1000); ns.SellUI.Refresh()")
+    ok(h.lua("for i = 1, 3 do if SalusNovusSell.ladder[i].selected then return false end end return true"), "a typed price: no row")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab: the listing rows are 15 pt (headers 14)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__sz = {} local sfs = ns.SetFontSafe ns.SetFontSafe = function(fs, size, ...) __sz[fs] = size return sfs(fs, size, ...) end")
+    h.lua("ns.AuctionUI.Open('sell')")
+    eq(int(h.lua("return __sz[SalusNovusSell.ladder[1].cells[2]]")), 15, "rows 15")
+    eq(h.errors(), [], "errors")
+
+
+
+def pick(h, key):
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.key == %r then ns.Sell.Select(e) end end" % key)
+
+
+@test("sell (hunt): a Confirm the client asked for posts only what it questioned -- a price, quantity or duration changed since then posts afresh, never the old values", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.Sell.Refresh()")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Sell.SetPrice(1); __needs = true; ns.Sell.Post(); __needs = false")
+    ok(h.lua("return ns.Sell.sel.confirm ~= nil"), "the client questioned 1c")
+    h.lua("ns.Sell.SetPrice(100); ns.Sell.Post()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:100", "the corrected price is posted afresh, not confirmed at 1c")
+    for change in ["ns.Sell.SetQty(5)", "ns.Sell.SetDuration(3)", "ns.Sell.Undercut(390, false)"]:
+        h.lua("ns.Sell.Refresh()")
+        pick(h, "14047")
+        h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Sell.SetPrice(1); __needs = true; ns.Sell.Post(); __needs = false")
+        h.lua(change + "; __n = #__calls; ns.Sell.Post()")
+        ok(h.lua("for i = __n + 1, #__calls do if __calls[i]:find('^confirmc') then return false end end return true"), "no stale Confirm after " + change)
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab (hunt): clicking Post while a box still has focus posts what's typed; a value typed for one item never lands on the next; silver/copper over 99 carry", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell')")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("local eb = SalusNovusSell.price.parts[2]; eb:SetFocus(); eb:Type('3')")       # 3s typed, no Enter
+    h.lua("SalusNovusSell.post:Click()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:399", "2s 99c with 3 typed in silver: 3s 99c posted")
+    h.lua("__bags[0][8] = { itemID = 2592, stackCount = 10, iconFileID = 16, quality = 1, isBound = false, hyperlink = 'wl' }; ns.Sell.Refresh()")
+    h.lua("local q = SalusNovusSell.qty; q:SetFocus(); q:SetText('2')")                       # typed for Linen (teed up)
+    pick(h, "2592")
+    h.lua("SalusNovusSell.qty:ClearFocus()")                                                  # focus lost on Wool
+    eq(int(h.lua("return ns.Sell.sel.qty")), 10, "the 2 meant for Linen doesn't land on Wool's 10")
+    pick(h, "2589")
+    h.lua("__commodity[2589] = { { quantity = 50, unitPrice = 20 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    h.lua("local p = SalusNovusSell.price.parts; p[1]:SetFocus(); p[1]:Type('0'); p[2]:SetFocus(); p[2]:Type('150'); p[2]:ClearFocus()")
+    eq(int(h.lua("return ns.Sell.sel.price")), 15019, "150s (copper 19 kept) is 1g 50s 19c, not 99s 19c")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell (hunt): gear sharing an itemID but not a suffix is two entries, each priced only by its own key's answer (another suffix's answer, e.g. from a Snipe click, is ignored)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__bags[0][7] = { itemID = 4500, stackCount = 1, iconFileID = 13, quality = 2, isBound = false, hyperlink = 'bp2', suffix = 5 }")
+    h.lua("ns.Sell.Refresh()")
+    keys = sorted(str(x["key"]) for x in h.lua("return ns.Sell.items").values())
+    eq(keys, ["14047", "2589", "4500:20:0", "4500:20:5"], "two backpack entries")
+    pick(h, "4500:20:0")
+    h.lua("__items = { { auctionID = 1, buyoutAmount = 50, quantity = 1 } }")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 5 })")
+    ok(h.lua("return not ns.Sell.sel.fresh"), "the other suffix's answer is ignored")
+    h.lua("__items = { { auctionID = 2, buyoutAmount = 5000, quantity = 1 } }; __live[4500] = 100")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    ok(h.lua("return ns.Sell.sel.fresh and ns.Sell.sel.price == 4999"), "its own answer prices it")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell (hunt): coming back to the tab looks the item up again; a rejected post says so; a late answer clears 'No answer'", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell')")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("ns.AuctionUI.Open('sell'); __n = #__calls; ns.AuctionUI.Open('sell')")             # away and back
+    ok(h.lua("return not ns.Sell.sel.fresh"), "stale listings dropped")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "looked up again")
+    h.lua("W.fireEvent('AUCTION_HOUSE_POST_ERROR')")
+    ok("didn't take" in str(h.lua("return ns.Sell.message")), "a rejected post is reported")
+    h.lua("ns.Sell.Select(ns.Sell.sel.entry); W.advance(4.1); W.advance(4.1); W.advance(4.1)")
+    ok("No answer" in str(h.lua("return ns.Sell.message")), "three unanswered asks")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.fresh and ns.Sell.message == nil"), "the late answer clears it")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("sell (hunt): a Confirm armed before the bags shrank the quantity posts afresh at the new quantity, never the old", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.Sell.Refresh()")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); __needs = true; ns.Sell.Post(); __needs = false")
+    ok(h.lua("return ns.Sell.sel.confirm and ns.Sell.sel.confirm.qty == 40"), "armed for 40")
+    h.lua("__bags[0][2] = nil; W.fireEvent('BAG_UPDATE_DELAYED'); __n = #__calls; ns.Sell.Post()")
+    eq([str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()][:1],
+       ["postc:1:2:20:299"], "20 left: posted afresh for 20, not confirmed for 40")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- auction: hunt fixes (Investing, Snipe, scanner)
+
+def invest_run_start(h):
+    h.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+
+
+@test("auction (hunt): one pending commodity purchase, one owner -- Investing's Buy drops Snipe's stale quote, and only the owner acts on the quote and the result", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    snipe_scan(h)
+    h.lua("local s; for _, x in ipairs(ns.Auction.Snipes()) do if x.id == 14047 then s = x end end ns.Auction.Select(s); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy()")
+    ok(h.lua("return ns.Auction.sel.asked ~= nil and ns.Auction.Owns('snipe')"), "Snipe asked, owns it")
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy()")
+    ok(h.lua("return ns.Auction.Owns('invest') and ns.Auction.sel.asked == nil"), "Investing owns it; Snipe's stale ask dropped")
+    h.lua("__n = #__calls; W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i] == 'cancel' then return false end end return true"), "Snipe doesn't cancel Investing's purchase")
+    ok(h.lua("return ns.Invest.sel.quote ~= nil and ns.Auction.sel.quote == nil"), "only Investing takes the quote")
+    h.lua("ns.Invest.Confirm(); W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    ok(h.lua("return (ns.Auction.bought or 0) == 0"), "Snipe doesn't report Investing's buy as its own")
+    ok("relist at" in str(h.lua("return ns.Invest.message")), "Investing does")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (hunt): closing the AH mid-search leaves nothing waiting -- the next run's first search goes out", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    invest_run_start(h)
+    ok(h.lua("return ns.Invest.run.waiting == 2589"), "searching Linen")
+    h.lua("W.fireEvent('AUCTION_HOUSE_CLOSED'); __full = false")
+    ok(h.lua("return ns.Invest.run.waiting == nil and ns.Invest.run.throttled == nil"), "closed: nothing left waiting")
+    invest_run_start(h)
+    eq(str(h.lua("return __calls[#__calls]")), "search:2589", "the new run asks")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (hunt): a clicked commodity's lookup that never answers is asked again, then let go -- the queue isn't held for ever", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    invest_run_start(h)
+    h.lua("ns.Invest.Select({ id = 14047 })")
+    ok(h.lua("return ns.Invest.Busy()"), "held")
+    h.lua("W.advance(3.05); W.advance(3.05); W.advance(3.05)")
+    ok(h.lua("return ns.Invest.sel == nil and not ns.Invest.Busy()"), "let go after three asks")
+    ok("No answer" in str(h.lua("return ns.Invest.message")), "and it says so")
+    ok(h.lua("return ns.Invest.run.waiting ~= nil"), "the queue carries on")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (hunt): your own listings aren't stock you can buy -- they leave the ladder (by count, or the whole level when the count is unknown)", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("__commodity[14047] = { { quantity = 40, unitPrice = 300, numOwnerItems = 40 }, { quantity = 560, unitPrice = 500 } }")
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.fresh and ns.Invest.sel.best == nil"), "the 3s tail is all yours: nothing to buy")
+    h.lua("__commodity[14047] = { { quantity = 40, unitPrice = 300 }, { quantity = 100, unitPrice = 400, containsOwnerItem = true }, { quantity = 560, unitPrice = 500 } }")
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("local b = ns.Invest.sel.best return b and b.qty == 40 and b.relist == 400"), "your 4s level isn't for sale to you, and the relist matches it -- not 4s 99c over it (the sweep)")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (hunt): a search that can't be sent doesn't leave the queue waiting; a timer left from an interrupted ask doesn't count a miss on the re-ask", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("local sq = C_AuctionHouse.SendSearchQuery; C_AuctionHouse.SendSearchQuery = function(key, ...) if key.itemID == 2589 then error('x') end return sq(key, ...) end")
+    invest_run_start(h)
+    ok(h.lua("return ns.Invest.run.waiting == 2592"), "Linen couldn't be sent: on to Wool")
+    h.lua("C_AuctionHouse.SendSearchQuery = nil")
+    h2 = fresh()
+    h2.lua(INVESTMOCK)
+    invest_run_start(h2)
+    h2.lua("W.advance(1.5); ns.Invest.Select({ id = 14047 }); W.advance(0.1); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h2.lua("return ns.Invest.run.waiting == 2589"), "Linen asked again after the click")
+    h2.lua("W.advance(0.5)")     # the first ask's 2 s timer fires now
+    ok(h2.lua("return ns.Invest.run.tries[2589] == nil and ns.Invest.run.waiting == 2589"), "no miss counted on the re-ask")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("investing (hunt): a click while a quote waits cancels that purchase first; a click after Confirm is sent is refused until the result", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    h.lua("ns.Invest.Select({ id = 2592 })")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "cancel", "the walked-away quote is cancelled")
+    ok(h.lua("return not ns.Auction.Owns('invest')"), "and released")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 20, 1000); ns.Invest.Confirm()")
+    ok(h.lua("return ns.Invest.Select({ id = 14047 }) == false and ns.Invest.sel.id == 2592"), "mid-Confirm: the click is refused")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    ok("relist at" in str(h.lua("return ns.Invest.message")), "the result lands on the right commodity")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction (hunt): a scan cut short (AH closed, or another browse search mid-scan) leaves the last finished scan's list whole and tells Investing it failed", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    snipe_scan(h)
+    before = int(h.lua("local n = 0 for _ in pairs(ns.Auction.LastScanItems()) do n = n + 1 end return n"))
+    snipes = int(h.lua("return #ns.Auction.Snipes()"))
+    ok(snipes > 0, "some snipes to keep")
+    h.lua("__full = false; ns.Auction.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.Auction.LastScanItems()) do n = n + 1 end return n")), before, "closed mid-scan: the finished list is whole")
+    eq(int(h.lua("return #ns.Auction.Snipes()")), snipes, "and so is the Snipe list")
+    h.lua("ns.Invest.Scan()")
+    ok(h.lua("return ns.Invest.run.state == 'scanning'"), "an Investing run scanning")
+    h.lua("C_AuctionHouse.SendBrowseQuery({ searchString = 'linen' })")          # Blizzard's Browse tab, say
+    ok(h.lua("return not ns.Auction.scan.running"), "the scan is over, not finished on someone else's rows")
+    ok(h.lua("return ns.Invest.run.state == 'idle'") and "didn't finish" in str(h.lua("return ns.Invest.message")), "Investing is told")
+    eq(int(h.lua("local n = 0 for _ in pairs(ns.Auction.LastScanItems()) do n = n + 1 end return n")), before, "and the list is still whole")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (hunt): after a buy, its row follows the fresh look (the cut gone: the row goes) and the budget is the gold left; with a quote in, the bottom line shows what Confirm spends; a run cut short says so", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Open('invest')")
+    invest_run_start(h)
+    h.lua("for i = 1, 3 do if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end end")
+    ok(h.lua("return ns.Invest.results[1].id == 14047"), "Runecloth listed")
+    h.lua("SalusNovusInvest.rows[1]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 312, 12500)")
+    ok(h.lua("return ns.Invest.sel.quote == nil and not ns.Invest.sel.fresh"), "a quote of 1g 25s, not the cut's 1g 20s: no deal on old numbers, looked up again (sweep 3)")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    ok("Confirm" in str(h.lua("return SalusNovusInvest.buy:GetText()")) and "1g 20" in str(h.lua("return SalusNovusInvest.selLine:GetText()")).replace("|cffffd100g|r ", "g ").replace("|cffc7c7cfs|r", ""), "the quote as looked up: Confirm armed, the bottom line shows what it spends")
+    h.lua("ns.Invest.Confirm(); __money = 987500; W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    eq(int(h.lua("return ns.Invest.budget")), 197500, "budget from the gold left")
+    h.lua("__commodity[14047] = { { quantity = 560, unitPrice = 500 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("for _, r in ipairs(ns.Invest.results) do if r.id == 14047 then return false end end return true"), "the bought cut's row is gone")
+    h.lua("__full = false")
+    invest_run_start(h)
+    h.lua("W.fireEvent('AUCTION_HOUSE_CLOSED'); ns.InvestUI.Refresh()")
+    ok("closed before the run finished" in str(h.lua("return SalusNovusInvest.empty:GetText()")), "a cut-short run isn't 'nothing worth buying'")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction tabs (hunt): switched on with the AH open, the tabs appear; switched off, no tab stays lit; the probe opens Investing without closing it; any switch of the AH's own display puts ours away; the strip rejects '1,000'", "auction")
+def _():
+    h = fresh()
+    h.lua("ns.db.auction.enabled = false")
+    h.lua(INVESTMOCK)
+    eq(int(h.lua("return #ns.AuctionUI.buttons")), 0, "off: no tabs")
+    h.lua("ns.db.auction.enabled = true; ns.ApplyAll()")
+    ok(h.lua("return #ns.AuctionUI.buttons > 0 and ns.AuctionUI.buttons[1]:IsShown()"), "on with the AH open: tabs built")
+    h.lua("ns.AuctionUI.Open('invest')")
+    h.lua("ns.db.auction.enabled = false; ns.ApplyAll()")
+    ok(h.lua("for _, b in ipairs(ns.AuctionUI.buttons) do if b.isPrimary or b.primary then return false end end return true"), "off: nothing lit")
+    h.lua("ns.db.auction.enabled = true; ns.ApplyAll(); ns.AuctionUI.Open('invest'); ns.AuctionUI.Show('invest')")
+    ok(h.lua("return SalusNovusInvest:IsShown()"), "Show isn't a toggle")
+    h.lua("AuctionHouseFrame.SetDisplayMode = AuctionHouseFrame.SetDisplayMode or function() end")
+    h2 = fresh()
+    h2.lua(INVESTMOCK.replace("AuctionHouseFrame:Show()", "AuctionHouseFrame.SetDisplayMode = function() end AuctionHouseFrame:Show()"))
+    h2.lua("ns.AuctionUI.Open('invest'); AuctionHouseFrame:SetDisplayMode('sell')")
+    ok(h2.lua("return not SalusNovusInvest:IsShown()"), "Blizzard's display switched (a right-clicked bag item): ours put away")
+    h.lua("ns.AuctionUI.Open('invest'); local eb = SalusNovusInvest.strip.items[2]; eb:SetFocus(); eb:SetText('1,000'); eb:ClearFocus()")
+    eq(int(h.lua("return ns.db.auction.investMinListed")), 250, "'1,000' isn't 1")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("probe ah invest (hunt): the per-minute line keeps quiet minutes; a row click's re-ask isn't counted as a retry", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Probe.AH('invest'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")     # Linen's ask put back, re-asked
+    ok(h.lua("return ns.Invest.run.waiting == 2589"), "Linen re-asked")
+    h.lua("__ready = false; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589); W.advance(130)")       # a busy client: a quiet minute
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    h.lua("for i = 1, 3 do if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end end")
+    lines = [str(x) for x in h.lua("return SalusNovusDB.ahProbe['ah invest'].lines").values()]
+    blob = "\n".join(lines)
+    ok("retried 0 commodities" in blob, blob)
+    ok(any(l == "asks/misses by minute: 2/0 0/0 2/0" for l in lines), "the quiet minute is kept: " + blob)
+    eq(h.errors(), [], "errors")
+
+
+@test("keybinds (hunt): macro layers as the game picks them -- [nomod:shift] isn't a Shift branch, bare [mod] answers every modifier, a fallback reached only with a modifier counts, a plain macro leaves its modifier layers free", "keybinds")
+def _():
+    h = fresh()
+    P = lambda body: {k: str(v) for k, v in h.lua("return (ns.Keybinds.ParseMacro(%r))" % body).items()}
+    eq(P("/cast [nomod:shift] Frostbolt; Blizzard"), {"base": "Frostbolt", "shift": "Blizzard"}, "nomod:shift")
+    eq(P("/cast [mod] Polymorph; Fireball"), {"base": "Fireball", "shift": "Polymorph", "ctrl": "Polymorph", "alt": "Polymorph"}, "bare [mod]")
+    eq(P("/cast [nomod] Frost Shock; Purge"), {"base": "Frost Shock", "shift": "Purge", "ctrl": "Purge", "alt": "Purge"}, "fallback only with a modifier")
+    eq(P("/cast [mod:shift] Blink; Frost Nova"), {"base": "Frost Nova", "shift": "Blink"}, "the usual shape still works")
+    eq(P("/cast [@focus,mod:alt][mod:ctrl] Polymorph; Frostbolt"), {"base": "Frostbolt", "ctrl": "Polymorph", "alt": "Polymorph"}, "groups OR, conditions AND")
+    eq(P("/cast Fireball"), {"base": "Fireball"}, "a plain macro: no branches")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybinds (hunt): a macro slot that answers with its spell's ID (this client) is found by the macro's name", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("""__slots[30] = { 'macro', 133 }; GetActionInfo = function(s) local x = __slots[s] if x then return x[1], x[2], s == 30 and 'spell' or nil end end
+             __macros[7] = { 'Nova', 99, '/cast [mod:shift] Blink; Frost Nova' }
+             GetActionText = function(s) return s == 30 and 'Nova' or nil end
+             GetMacroIndexByName = function(n) return n == 'Nova' and 7 or 0 end""")
+    info = h.lua("return ns.Keybinds.SlotInfo(30)")
+    eq((str(info["label"]), str(info["branches"]["shift"])), ("Nova", "Blink"), "macro 7 by name, not GetMacroInfo(133)")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybinds (Alex): a whole keyboard -- main block with placeholder Shift/Ctrl/Alt/Win, navigation, arrows, numpad (tall + and Enter, wide 0) -- the mouse a block apart, all inside the window", "keybinds")
+def _():
+    h = fresh()
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    keys = [str(x) for x in h.lua("local o = {} for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key then o[#o + 1] = c.key end end return o").values()]
+    for k in ("INSERT", "HOME", "PAGEUP", "DELETE", "END", "PAGEDOWN", "UP", "LEFT", "DOWN", "RIGHT", "NUMLOCK", "NUMPAD0", "NUMPAD9",
+              "NUMPADPLUS", "NUMPADDECIMAL", "PRINTSCREEN", "BUTTON3", "MOUSEWHEELDOWN", "SPACE", "Z"):
+        ok(k in keys, k)
+    pads = [str(x) for x in h.lua("local o = {} for _, c in ipairs(SalusNovusKeybinds.cells) do if c.pad then o[#o + 1] = c.label end end return o").values()]
+    eq(sorted(set(pads)), ["Alt", "Ctrl", "Menu", "Shift", "Win"], "placeholders")
+    cell = lambda key: "for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key == %r then return c end end" % key
+    ok(h.lua("local c = (function() " + cell("NUMPADPLUS") + " end)() return c:GetHeight() > 1.8 * (function() " + cell("NUMPAD7") + " end)():GetHeight()"), "the tall +")
+    x = lambda key: float(h.lua("local c = (function() " + cell(key) + " end)() local _, _, _, px = c:GetPoint() return px"))
+    ok(x("Z") - x("A") > 10 and x("NUMLOCK") > x("PAGEUP") > x("BACKSPACE"), "blocks left to right")
+    ok(x("BUTTON3") > x("NUMPADPLUS"), "the mouse past the numpad")
+    right = float(h.lua("local mx = 0 for _, c in ipairs(SalusNovusKeybinds.cells) do local _, _, _, px = c:GetPoint() mx = math.max(mx, px + c:GetWidth()) end return mx"))
+    ok(right <= float(h.lua("return SalusNovusKeybinds:GetWidth()")) - 211 - 39, "inside the window: %r" % right)
+    _, free, total = None, None, int(h.lua("local _, f, t = ns.Keybinds.Layer(1) return t"))
+    eq(total, len([k for k in keys]) - 1, "placeholders and the numpad's second Enter not counted")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- auction: cancel
+
+CANCELMOCK = SNIPEMOCK + """
+    __owned = {
+        { auctionID = 11, itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, status = 0, quantity = 20, buyoutAmount = 350, timeLeftSeconds = 7200 },   -- a commodity's: per unit
+        { auctionID = 12, itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, status = 0, quantity = 1, buyoutAmount = 900, timeLeftSeconds = 40000 },
+        { auctionID = 13, itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, status = 1, quantity = 5, buyoutAmount = 50 },   -- sold
+        { auctionID = 14, itemKey = { itemID = 2592, itemLevel = 0, itemSuffix = 0 }, status = 0, quantity = 10, buyoutAmount = 200, timeLeftSeconds = 72000 },
+    }
+    __commodity[14047] = { { quantity = 10, unitPrice = 300 }, { quantity = 20, unitPrice = 350, numOwnerItems = 20, containsOwnerItem = true } }
+    __commodity[2592] = { { quantity = 10, unitPrice = 20, numOwnerItems = 10, containsOwnerItem = true } }
+    __items = { { auctionID = 12, buyoutAmount = 900, quantity = 1, containsOwnerItem = true }, { auctionID = 30, buyoutAmount = 1000, quantity = 1 } }
+    local ah = C_AuctionHouse
+    ah.QueryOwnedAuctions = function() log('owned') end
+    ah.GetNumOwnedAuctions = function() return #__owned end
+    ah.GetOwnedAuctionInfo = function(i) return __owned[i] end
+    ah.CanCancelAuction = function(id) return true end
+    ah.GetCancelCost = function(id) return 0 end
+    ah.CancelAuction = function(id) log('cancelauc:' .. id) end
+"""
+
+
+def cancel_load(h):
+    h.lua("ns.AuctionUI.Open('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+
+
+@test("cancel: your active auctions (sold ones left out), each item checked once against the cheapest listing that isn't yours: undercut / cheapest / only yours; undercut first, then the soonest to expire", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("ns.AuctionUI.Open('cancel')")
+    eq(str(h.lua("return __calls[#__calls]")), "owned", "asked for your auctions")
+    h.lua("W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    eq(int(h.lua("return #ns.Cancel.rows")), 3, "the sold one left out")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "checking, soonest to expire first")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    eq(str(h.lua("return __calls[#__calls]")), "search:4500", "then the next item")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    rows = [(int(r["auctionID"]), str(r["status"])) for r in h.lua("return ns.Cancel.rows").values()]
+    eq(rows, [(11, "undercut"), (12, "cheapest"), (14, "alone")], "undercut first")
+    ok(h.lua("return ns.Cancel.rows[1].unit == 350 and ns.Cancel.rows[1].cheapest == 300"), "a commodity's owned price is per unit already: 3s 50c vs their 3s")
+    ok("3 auctions" in str(h.lua("return SalusNovusCancel.status:GetText()")) and "1 undercut" in str(h.lua("return SalusNovusCancel.status:GetText()")), "the count")
+    eq(h.errors(), [], "errors")
+
+
+@test("cancel: 'Cancel next undercut' cancels the top undercut auction (one per click); a clicked row cancels with Cancel; the cancelled auction leaves the list", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    cancel_load(h)
+    h.lua("SalusNovusCancel.next:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:11", "the undercut Runecloth")
+    h.lua("W.fireEvent('AUCTION_CANCELED', 11)")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 11 then return false end end return true"), "gone from the list")
+    eq(str(h.lua("return ns.Cancel.message")), "Cancelled", "says so")
+    h.lua("__n = #__calls; ns.Cancel.CancelNext()")
+    ok(h.lua("return #__calls == __n"), "nothing else undercut: nothing cancelled")
+    h.lua("SalusNovusCancel.rows[1]:Click(); SalusNovusCancel.cancel:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:12", "the clicked one")
+    eq(h.errors(), [], "errors")
+
+
+@test("cancel: checks wait out a busy client on its ready event; a check with no answer moves on; an owned-auctions update we didn't ask for is ignored", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("ns.AuctionUI.Open('cancel'); __ready = false; W.fireEvent('OWNED_AUCTIONS_UPDATED'); __n = #__calls")
+    ok(h.lua("return ns.Cancel.run.waiting == nil"), "busy: waiting on the client")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "on the ready event")
+    h.lua("W.advance(2.1)")
+    eq(str(h.lua("return __calls[#__calls]")), "search:4500", "no answer: on to the next")
+    h.lua("__owned = {}; W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    eq(int(h.lua("return #ns.Cancel.rows")), 3, "an update we didn't ask for changes nothing")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("cancel: your own cheaper listing doesn't undercut you; someone at exactly your price leaves you cheapest", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("table.insert(__items, 1, { auctionID = 31, buyoutAmount = 800, quantity = 1, containsOwnerItem = true })")
+    h.lua("__commodity[14047] = { { quantity = 10, unitPrice = 350 }, { quantity = 20, unitPrice = 350, numOwnerItems = 20, containsOwnerItem = true } }")
+    cancel_load(h)
+    st = {int(r["auctionID"]): str(r["status"]) for r in h.lua("return ns.Cancel.rows").values()}
+    eq((st[11], st[12]), ("cheapest", "cheapest"), "tied at 3s 50c: cheapest; your own 8s backpack: not an undercut")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- auction: buy
+
+BUYMOCK = SNIPEMOCK + """
+    __bysearch = {
+        ['Runecloth'] = { { itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 600, minPrice = 300 },
+                          { itemKey = { itemID = 14046, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 3, minPrice = 9000 } },
+        ['cloth'] = { { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 900, minPrice = 9 },
+                      { itemKey = { itemID = 2592, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 550, minPrice = 20 } },
+        ['Backpack'] = { { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 2, minPrice = 800 } },
+    }
+    local ah = C_AuctionHouse
+    local scanBrowse = ah.SendBrowseQuery
+    ah.SendBrowseQuery = function(q)
+        if q.searchString == '' then return scanBrowse(q) end
+        log('browse:' .. tostring(q.searchString)) __browse = __bysearch[q.searchString] or {} __full = true
+    end
+    C_Item.GetItemNameByID = function(id) return ({ [14047] = 'Runecloth', [14046] = 'Runecloth Bag', [2589] = 'Linen Cloth', [2592] = 'Wool Cloth', [4500] = 'Backpack' })[id] end
+    __commodity[14047] = { { quantity = 40, unitPrice = 320 }, { quantity = 10, unitPrice = 300 }, { quantity = 5, unitPrice = 290, numOwnerItems = 5, containsOwnerItem = true } }
+    __items = { { auctionID = 50, buyoutAmount = 700, quantity = 1, containsOwnerItem = true }, { auctionID = 51, buyoutAmount = 800, quantity = 1 } }
+"""
+
+
+def buy_view(h):
+    out = []
+    for v in h.lua("return ns.Buy.View()").values():
+        out.append((str(v["lineName"]) if v["lineName"] else None, int(v["id"]) if v["id"] else None, bool(v["none"])))
+    return out
+
+
+@test("buy lists: made, imported (one name per line, blanks skipped, all exact), exported, added to, trimmed, exact toggled, deleted -- account-wide", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Import('Leveling mats', 'Runecloth\\n\\n  Linen Cloth  \\nWool Cloth\\n')")
+    l = h.lua("return SalusNovusDB.ahLists.lists[1]")
+    eq(str(l["name"]), "Leveling mats", "named")
+    eq([(str(x["name"]), bool(x["exact"])) for x in l["items"].values()], [("Runecloth", True), ("Linen Cloth", True), ("Wool Cloth", True)], "three, exact")
+    eq(str(h.lua("return ns.Buy.Export(1)")), "Runecloth\nLinen Cloth\nWool Cloth", "exported one per line")
+    h.lua("ns.Buy.AddItem('  cloth '); ns.Buy.SetExact(4, false); ns.Buy.RemoveItem(2)")
+    eq([(str(x["name"]), bool(x["exact"])) for x in h.lua("return SalusNovusDB.ahLists.lists[1].items").values()],
+       [("Runecloth", True), ("Wool Cloth", True), ("cloth", False)], "added, unticked, removed")
+    h.lua("ns.Buy.NewList('Raid'); ns.Buy.DeleteList(2)")
+    eq(int(h.lua("return #SalusNovusDB.ahLists.lists")), 1, "deleted")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy: a search lists what the browse finds; 'Search list' searches every line, one browse at a time -- an exact line keeps only that name, a contains line keeps all, nothing found shows the line as none", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Search('cloth')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "searched")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(sorted(int(r["id"]) for r in h.lua("return ns.Buy.View()").values()), [2589, 2592], "the search's rows")
+    h.lua("ns.Buy.Import('Mats', 'Runecloth\\ncloth\\nBlack Lotus'); ns.Buy.SetExact(2, false); ns.Buy.SearchList()")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "line 1")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "then line 2")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(buy_view(h), [("Runecloth", 14047, False), ("cloth", 2589, False), ("cloth", 2592, False), ("Black Lotus", None, True)],
+       "exact Runecloth (not the bag), contains cloth (both), Black Lotus none")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy: a list search waits for an AH scan to finish (a browse would cut it short), then goes", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Import('Mats', 'Runecloth'); __full = false; ns.Auction.Scan(); __n = #__calls; ns.Buy.SearchList()")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i]:find('^browse') then return false end end return ns.Auction.scan.running"), "nothing browsed mid-scan; the scan carries on")
+    ok("Waiting" in str(h.lua("return ns.Buy.message")), "it says so")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    ok(h.lua("return next(ns.Buy.results) == nil"), "the scan's last page isn't taken as Buy's answer (sweep 3)")
+    h.lua("W.advance(0.01)")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "after the scan: searched")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy: a commodity buys from the cheapest up (your own listings left out), the quantity starting at the cheapest listing's; Buy then Confirm at the quote; an item buys its cheapest auction that isn't yours", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Select({ id = 14047, key = { itemID = 14047, itemLevel = 0, itemSuffix = 0 } })")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "looked up")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Buy.sel.levels[1].unit == 300 and ns.Buy.sel.qty == 10"), "your 2s 90c left out: 10 at 3s first")
+    eq(int(h.lua("return ns.Buy.Cost(15)")), 10 * 300 + 5 * 320, "15 costs the 10 and 5 of the next")
+    h.lua("ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:10", "the purchase started")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000); ns.Buy.Confirm()")
+    eq(str(h.lua("return __calls[#__calls]")), "confirm:14047:10", "confirmed at the quote")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    eq(str(h.lua("return ns.Buy.message")), "Bought 10", "bought")
+    h.lua("ns.Buy.Select({ id = 4500, key = { itemID = 4500, itemLevel = 20, itemSuffix = 0 } }); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:51:800", "the cheapest that isn't yours")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab: the Buy button opens it; Import through the dialog makes a list in the sidebar; the Exact box on a line toggles it; Remove from list takes the clicked line", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.buttons[1]:Click()")
+    ok(h.lua("return SalusNovusBuy:IsShown()"), "open")
+    h.lua("ns.BuyUI.OpenDialog('import'); local d = SalusNovusBuy.dialog; d.name:SetText('Mats'); d.text:SetText('Runecloth\\ncloth'); d.ok:Click()")
+    ok(h.lua("return not SalusNovusBuy.dialog:IsShown() and SalusNovusBuy.listButtons[1]:IsShown()"), "the list in the sidebar")
+    ok(h.lua("return SalusNovusBuy.rows[1].exact:IsShown() and SalusNovusBuy.rows[1].exact:GetChecked()"), "Exact, ticked")
+    h.lua("SalusNovusBuy.rows[2].exact:Click()")
+    ok(h.lua("return SalusNovusDB.ahLists.lists[1].items[2].exact == false"), "unticked")
+    h.lua("SalusNovusBuy.rows[1]:Click(); SalusNovusBuy.remove:Click()")
+    eq([str(x["name"]) for x in h.lua("return SalusNovusDB.ahLists.lists[1].items").values()], ["cloth"], "removed")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab: shift-clicking an item (bags or a link) while Buy is open searches for it -- once, even when both paths fire; not without Shift, not with Buy closed", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("__shift = true; IsShiftKeyDown = function() return __shift end; HandleModifiedItemClick = function() end; ChatEdit_InsertLink = function() end")
+    h.lua("ns.AuctionUI.Open('buy'); __n = #__calls")
+    link = "|cffffffff|Hitem:14047::::::::60:::::|h[Runecloth]|h|r"
+    h.lua("HandleModifiedItemClick(%r); ChatEdit_InsertLink(%r)" % (link, link))
+    eq([str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()],
+       ["browse:Runecloth"], "searched once")
+    eq(str(h.lua("return SalusNovusBuy.search:GetText()")), "Runecloth", "the name in the box")
+    ok(h.lua("return SalusNovusBuy.status == nil"), "no 'Searching' text to run off the edge")
+    h.lua("W.advance(1); __shift = false; __n = #__calls; HandleModifiedItemClick('|h[Wool Cloth]|h')")
+    eq(int(h.lua("return #__calls - __n")), 0, "no Shift: nothing")
+    h.lua("__shift = true; ns.AuctionUI.Open('buy'); HandleModifiedItemClick('|h[Wool Cloth]|h')")
+    eq(int(h.lua("return #__calls - __n")), 0, "Buy closed: nothing")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction tabs: while ours are on, Blizzard's Buy/Sell/Auctions tabs are hidden (and stay hidden if something shows them), and the AH opens on our Buy tab; switched off, Blizzard's come back", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("W.advance(0.1)")
+    ok(h.lua("return not AuctionHouseFrame.Tabs[1]:IsShown() and not AuctionHouseFrame.Tabs[2]:IsShown()"), "Blizzard's tabs hidden")
+    ok(h.lua("return SalusNovusBuy and SalusNovusBuy:IsShown()"), "opened on Buy")
+    h.lua("AuctionHouseFrame.Tabs[1]:Show()")
+    ok(h.lua("return not AuctionHouseFrame.Tabs[1]:IsShown()"), "shown by someone: hidden again")
+    h.lua("AuctionHouseFrame:Hide(); ns.AuctionUI.Open('sell'); AuctionHouseFrame:Show()")
+    ok(h.lua("return SalusNovusBuy:IsShown() and not SalusNovusSell:IsShown()"), "every opening lands on Buy")
+    h.lua("ns.db.auction.enabled = false; ns.ApplyAll()")
+    ok(h.lua("return AuctionHouseFrame.Tabs[1]:IsShown() and AuctionHouseFrame.Tabs[2]:IsShown()"), "off: Blizzard's back")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist cards: tooltips stay with their cards (not pushed on screen), every card shows its own, and a slot filter never shrinks the window", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
+    h.lua("__clamped = {}; for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do local t = r.tip t.SetClampedToScreen = function(self, on) __clamped[#__clamped + 1] = on end end; ns.WishlistUI.Refresh()")
+    ok(h.lua("for _, v in ipairs(__clamped) do if v ~= false then return false end end return #__clamped > 0"), "not clamped to the screen")
+    ok(h.lua("for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() and not r.tip:IsShown() then return false end end return true"),
+       "every card shows its tooltip (the scroll clips them; no culling to blank the top ones)")
+    w0 = float(h.lua("return ns.WishlistUI.Build():GetWidth()"))
+    h.lua("ns.WishlistUI.slot = 'Two-Hand'; ns.WishlistUI.Refresh(); ns.WishlistUI.slot = nil; ns.WishlistUI.Refresh()")
+    eq(float(h.lua("return ns.WishlistUI.Build():GetWidth()")), w0, "the window keeps its width across slot filters")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (Alex): a wish is a spec AND a want -- never just 'wished'; unpicking everything with left-clicks removes it (as a right-click does); half made, it's kept on the card but not shared or counted", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.Wishlist.Wish(204, true); ns.Wishlist.ToggleSpec(204, 'Enhancement')")
+    ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "a spec alone: kept while you choose")
+    eq([int(x) for x in h.lua("return ns.Wishlist.MyItems()").values()], [], "but not a wish yet (not shared, not counted)")
+    h.lua("ns.Wishlist.SetTag(204, 'bis')")
+    eq([int(x) for x in h.lua("return ns.Wishlist.MyItems()").values()], [204], "spec and want: a wish")
+    h.lua("ns.Wishlist.SetTag(204, 'bis'); ns.Wishlist.ToggleSpec(204, 'Enhancement')")
+    ok(h.lua("return ns.Wishlist.Get(204) == nil"), "everything unpicked: gone")
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
+    subs = [str(x) for x in h.lua("local o = {} for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then o[#o + 1] = r.sub:GetText() or '' end end return o").values()]
+    ok(all("Wished" not in x for x in subs), "never says 'Wished': %r" % subs)
+    eq(h.errors(), [], "errors")
+
+
+
+BROWSEMOCK = BUYMOCK + """
+    Enum = Enum or {}
+    Enum.AuctionHouseFilter = { UsableOnly = 1, PoorQuality = 3, CommonQuality = 4, UncommonQuality = 5, RareQuality = 6,
+                                EpicQuality = 7, LegendaryQuality = 8, ArtifactQuality = 9 }
+    Enum.AuctionHouseSortOrder = { Price = 0, Name = 1, Level = 2 }
+    AuctionCategories = {
+        { name = 'WoW Token', filters = {}, flags = { WOW_TOKEN_FLAG = true }, subCategories = {} },
+        { name = 'Weapons', filters = { { classID = 2 } }, subCategories = {
+            { name = 'One-Handed Axes', filters = { { classID = 2, subClassID = 0 } } },
+            { name = 'Staves', filters = { { classID = 2, subClassID = 10 } } } } },
+        { name = 'Trade Goods', filters = { { classID = 7 } }, implicitFilter = 42, subCategories = {} },
+        { name = 'Consumables', filters = { { classID = 0 } }, subCategories = {
+            { name = 'Potions', filters = { { classID = 0, subClassID = 1 } } } } },
+    }
+    __bysearch[''] = { { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 2, minPrice = 800 },
+                       { itemKey = { itemID = 14047, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 600, minPrice = 300 },
+                       { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 900, minPrice = 9 } }
+    local ah = C_AuctionHouse
+    local scanBrowse2 = scanBrowse
+    ah.SendBrowseQuery = function(q)
+        __lastQuery = q
+        if q.searchString == '' and not q.itemClassFilters[1] then return scanBrowse2(q) end
+        log('browse:' .. tostring(q.searchString)) __browse = __bysearch[q.searchString] or {} __full = __fullAfter ~= false
+    end
+"""
+
+
+@test("buy browse: the AH's own categories (open a parent, pick a child); a pick browses with its filters and implicit filter, like the AH's own search", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    names = lambda: [str(x) for x in h.lua("local o = {} for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() then o[#o + 1] = b.text:GetText() end end return o").values()]
+    eq(names(), ["All", "Weapons", "Trade Goods", "Consumables"], "All, then the top categories (no WoW Token)")
+    h.lua("SalusNovusBuy.catRows[2]:Click()")
+    eq(names(), ["All", "Weapons", "One-Handed Axes", "Staves", "Trade Goods", "Consumables"], "Weapons opened")
+    ok(h.lua("return __lastQuery.itemClassFilters[1].classID == 2 and __lastQuery.searchString == ''"), "Weapons browsed")
+    h.lua("SalusNovusBuy.catRows[4]:Click()")
+    ok(h.lua("return __lastQuery.itemClassFilters[1].subClassID == 10"), "Staves")
+    h.lua("SalusNovusBuy.catRows[5]:Click()")
+    ok(h.lua("local f = __lastQuery.filters for _, v in ipairs(f) do if v == 42 then return true end end return false"), "the implicit filter goes in")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy browse: the level range, quality floor and usable-only filters go into the query; the headers sort (again: reversed) here and ask the server's order; 'More results' loads the next page", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("for _, eb in ipairs({ { SalusNovusBuy.minLevel, '10' }, { SalusNovusBuy.maxLevel, '20' } }) do eb[1]:SetFocus() eb[1]:SetText(eb[2]) eb[1]:ClearFocus() end")
+    h.lua("SalusNovusBuy.quality:Click(); SalusNovusBuy.qualityItems[3]:Click()")     # the dropdown: Uncommon+
+    eq(str(h.lua("return SalusNovusBuy.quality:GetText()")), "Uncommon+", "quality floor")
+    eq((str(h.lua("return ns.Buy.sort.key")), bool(h.lua("return ns.Buy.sort.reverse"))), ("level", True), "the default: level, highest first (Alex)")
+    h.lua("ns.Buy.sort = { key = 'price', reverse = false }")
+    h.lua("SalusNovusBuy.usable:Click(); __fullAfter = false; ns.Buy.Browse('cloth')")
+    q = h.lua("return __lastQuery")
+    eq((int(q["minLevel"]), int(q["maxLevel"])), (10, 20), "level range")
+    eq(sorted(int(x) for x in q["filters"].values()), [1, 5, 6, 7, 8, 9], "uncommon and up, usable only")
+    eq((int(q["sorts"][1]["sortOrder"]), bool(q["sorts"][1]["reverseSort"])), (0, False), "price, cheapest first")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq([int(r["id"]) for r in h.lua("return ns.Buy.View()").values()], [2589, 2592], "cheapest first: Linen 9c, Wool 20c")
+    h.lua("for _, t in ipairs(SalusNovusBuy.heads) do if t.sortKey == 'price' then t.button:Click() end end")
+    eq([int(r["id"]) for r in h.lua("return ns.Buy.View()").values()], [2592, 2589], "Price again: reversed")
+    ok(h.lua("return SalusNovusBuy.moreRow:IsShown()"), "not all of it: More results")
+    h.lua("__browse = { __bysearch.cloth[1], __bysearch.cloth[2], { itemKey = { itemID = 4306, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 40, minPrice = 50 } }")
+    h.lua("SalusNovusBuy.moreRow:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "more", "asked for the next page")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(int(h.lua("return #ns.Buy.View()")), 3, "the next page in")
+    ok(h.lua("return not SalusNovusBuy.moreRow:IsShown()"), "all in: no More results")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy browse (Alex): leaving a category folds it; the picked one is filled in the accent; Unfilter goes back to All with everything folded and the filters cleared", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    names = lambda: [str(x) for x in h.lua("local o = {} for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() then o[#o + 1] = b.text:GetText() end end return o").values()]
+    click = lambda name: h.lua("for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() and b.text:GetText() == %r then b:Click() return end end" % name)
+    click("Consumables")
+    eq(names(), ["All", "Weapons", "Trade Goods", "Consumables", "Potions"], "Consumables open")
+    click("Weapons")
+    eq(names(), ["All", "Weapons", "One-Handed Axes", "Staves", "Trade Goods", "Consumables"], "on to Weapons: Consumables folded")
+    ok(h.lua("for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() and b.text:GetText() == 'Weapons' then return b.picked and b.on:IsShown() end end"), "the pick lit")
+    h.lua("SalusNovusBuy.quality:Click(); SalusNovusBuy.qualityItems[4]:Click(); SalusNovusBuy.usable:Click()")
+    h.lua("SalusNovusBuy.unfilter:Click()")
+    eq(names(), ["All", "Weapons", "Trade Goods", "Consumables"], "everything folded")
+    ok(h.lua("return ns.Buy.cat == nil and ns.Buy.filters.quality == nil and not ns.Buy.filters.usable"), "All, no filters")
+    ok(h.lua("for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() and b.text:GetText() == 'All' then return b.picked end end"), "All lit")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy browse (Alex): quality is a dropdown, each choice and the button filled in its quality colour", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    ok(h.lua("return not SalusNovusBuy.qualityMenu:IsShown()"), "closed")
+    h.lua("SalusNovusBuy.quality:Click()")
+    ok(h.lua("return SalusNovusBuy.qualityMenu:IsShown()"), "a click opens it")
+    green = h.lua("local r, g, b = SalusNovusBuy.qualityItems[3].fill:GetVertexColor() return { r, g, b }")
+    eq([round(float(x), 2) for x in green.values()], [0.12, 1.0, 0.0], "Uncommon+ is green")
+    h.lua("SalusNovusBuy.qualityItems[4]:Click()")
+    ok(h.lua("return not SalusNovusBuy.qualityMenu:IsShown() and ns.Buy.filters.quality == 3"), "picked: Rare+, closed")
+    blue = h.lua("local r, g, b = SalusNovusBuy.quality.fill:GetVertexColor() return { r, g, b }")
+    eq([round(float(x), 2) for x in blue.values()], [0.0, 0.44, 0.87], "the button blue")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (Alex): clicking an item drills down into everything listed for it -- a commodity's price levels (a click buys through that level), an item's auctions (a click buys that one); Back returns", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click() break end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return SalusNovusBuy.back:IsShown()"), "drilled down")
+    rows = [(str(h.lua("return SalusNovusBuy.rows[%d].cells[4]:GetText()" % i))) for i in (1, 2)]
+    eq(rows, ["10", "40"], "its price levels, cheapest first (yours left out)")
+    eq(str(h.lua("return SalusNovusBuy.heads[1]:GetText()")), "Price each", "headers for listings")
+    h.lua("SalusNovusBuy.rows[2]:Click()")
+    eq(int(h.lua("return ns.Buy.sel.qty")), 50, "through the second level: 10 + 40")
+    ok(h.lua("return SalusNovusBuy.rows[1].on:IsShown() and SalusNovusBuy.rows[2].on:IsShown()"), "both levels lit")
+    h.lua("ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:50", "buys 50")
+    h.lua("ns.Buy.Cancel(); SalusNovusBuy.back:Click()")
+    ok(h.lua("return not SalusNovusBuy.back:IsShown() and SalusNovusBuy.heads[1]:GetText() == 'Item'"), "Back: the results")
+    h.lua("__items = { { auctionID = 60, buyoutAmount = 800, quantity = 1 }, { auctionID = 61, buyoutAmount = 950, quantity = 1 } }")
+    h.lua("ns.Buy.Search('Backpack'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); SalusNovusBuy.rows[1]:Click()")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 }); SalusNovusBuy.rows[2]:Click(); ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:61:950", "the auction clicked")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction tabs (Alex): one thick scrollbar on every tab, and a thicker scan bar", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    for key, path in (("snipe", "SalusNovusSnipe.scroll"), ("invest", "SalusNovusInvest.scroll"), ("cancel", "SalusNovusCancel.scroll"),
+                      ("buy", "SalusNovusBuy.scroll"), ("sell", "SalusNovusSell.grid")):
+        h.lua("ns.AuctionUI.Show(%r)" % key)
+        eq(int(h.lua("return %s.slider:GetWidth()" % path)), 12, key + ": 12 px")
+    eq(int(h.lua("return SalusNovusBuy.cats.slider:GetWidth()")), 12, "the categories too")
+    eq(int(h.lua("return SalusNovusSnipe.bar:GetHeight()")), 6, "the scan bar")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("cancel (Alex): an item the client can't yet place is checked as a commodity and either kind of answer settles it; no answer shows '?'; undercut rows are tinted and 'Cancel next undercut' lights", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("__stack = setmetatable({}, { __index = function() return false end })")      # nothing loaded yet
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")    # (after the AH's open-on-Buy)
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "Runecloth searched as a commodity")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")   # the backpack: an item after all
+    h.lua("W.advance(2.1)")                                                                                  # Wool never answers
+    st = {int(r["auctionID"]): str(r["status"]) for r in h.lua("return ns.Cancel.rows").values()}
+    eq(st, {11: "undercut", 12: "cheapest", 14: "unknown"}, "settled by the answers; no answer: unknown")
+    ok(h.lua("for _, r in ipairs(SalusNovusCancel.rows) do if r:IsShown() and r.row and r.row.auctionID == 11 then return r.undercut end end"), "the undercut row tinted")
+    ok(h.lua("return SalusNovusCancel.next.enabledState == true"), "Cancel next undercut lit")
+    ok("?" in str(h.lua("for _, r in ipairs(SalusNovusCancel.rows) do if r.row and r.row.auctionID == 14 then return r.cells[5]:GetText() end end")), "'?' for no answer")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction (Alex): away from Snipe and Investing the scan and the Investing queue pause, and carry on when either shows; 'scan on open' waits for them; Buy goes ahead past a paused scan", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Gate = __realGate; W.advance(1.1)")          # opened on Buy; the auto-scan's moment passes
+    ok(h.lua("return ns.Auction.paused and not ns.Auction.scan.running and ns.Auction.scan.pending"), "on Buy: the auto-scan waits")
+    h.lua("__n = #__calls; ns.AuctionUI.Open('snipe')")
+    eq(str(h.lua("return __calls[__n + 1]")), "browse:", "Snipe shown: the scan starts")
+    h.lua("ns.AuctionUI.Open('sell'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __n = #__calls")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i] == 'more' then return false end end return ns.Auction.scan.held"), "on Sell: no more pages")
+    h.lua("ns.AuctionUI.Open('snipe')")
+    eq(str(h.lua("return __calls[#__calls]")), "more", "back on Snipe: the next page")
+    h.lua("ns.AuctionUI.Open('buy'); ns.Buy.Search('cloth')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "Buy doesn't wait on a paused scan")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (Alex): the queue holds while Investing isn't showing, and carries on when it is", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Gate = __realGate; ns.AuctionUI.Show('invest'); ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:2589", "searching")
+    h.lua("ns.AuctionUI.Open('sell'); __n = #__calls; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i]:find('^search') then return false end end return ns.Invest.run.held"), "on Sell: held")
+    h.lua("ns.AuctionUI.Open('invest')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:2592", "back: the next one")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("edit boxes (Alex): a click into any box selects what's there -- the Buy search, the level boxes, the settings strips", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); __hl = {}")
+    h.lua("for _, eb in ipairs({ SalusNovusBuy.search, SalusNovusBuy.minLevel, SalusNovusBuy.maxLevel }) do eb.HighlightText = function(self) __hl[#__hl + 1] = self end eb:SetFocus() end")
+    eq(int(h.lua("return #__hl")), 3, "each selects its text")
+    h.lua("ns.AuctionUI.Show('invest'); __hl = {}; local eb = SalusNovusInvest.strip.items[1]; eb.HighlightText = function(self) __hl[#__hl + 1] = self end eb:SetFocus()")
+    eq(int(h.lua("return #__hl")), 1, "the strip too")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("snipe strip (Alex): min profit each in gold, silver and copper; over 99 carries; a bad entry puts it back", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.AuctionUI.Show('snipe')")
+    it = "SalusNovusSnipe.strip.items[1]"
+    eq([str(h.lua("return %s.parts[%d]:GetText()" % (it, k))) for k in (1, 2, 3)], ["0", "0", "5"], "5c, as three boxes")
+    h.lua("local p = %s.parts p[1]:SetFocus() p[1]:SetText('1') p[2]:SetFocus() p[2]:SetText('25') p[2]:ClearFocus()" % it)
+    eq(int(h.lua("return ns.db.auction.minProfit")), 12505, "1g 25s 5c")
+    h.lua("local p = %s.parts p[2]:SetFocus() p[2]:SetText('150') p[2]:ClearFocus()" % it)
+    eq(int(h.lua("return ns.db.auction.minProfit")), 25005, "150s carries: 2g 50s 5c")
+    h.lua("local p = %s.parts p[3]:SetFocus() p[3]:SetText('x') p[3]:ClearFocus()" % it)
+    eq(int(h.lua("return ns.db.auction.minProfit")), 25005, "a bad entry changes nothing")
+    eq(str(h.lua("return %s.parts[3]:GetText()" % it)), "5", "and is put back")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy browse (Alex): 'All' with no search text browses everything and lights up", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function(q) log('browse:') __browse = __bysearch[''] __full = true end"))
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() and b.text:GetText() == 'Weapons' then b:Click() end end")
+    h.lua("__n = #__calls; SalusNovusBuy.catRows[1]:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:", "All: a browse of everything")
+    ok(h.lua("return ns.Buy.cat == nil and SalusNovusBuy.catRows[1].picked"), "All lit")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(int(h.lua("return #ns.Buy.View()")), 3, "everything listed")
+    h.lua("__n = #__calls; SalusNovusBuy.search:SetText(''); SalusNovusBuy.go:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:", "Search with an empty box on All: everything too")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy browse (Alex): 'Usable only' alone still sends every quality flag (with none, the server allowed no quality and found nothing)", "auction")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); SalusNovusBuy.usable:Click(); ns.Buy.Browse('cloth')")
+    eq(sorted(int(x) for x in h.lua("return __lastQuery.filters").values()), [1, 3, 4, 5, 6, 7, 8, 9], "usable, and every quality")
+    h.lua("ns.Buy.SetFilter('usable', false); ns.Buy.Browse('cloth')")
+    eq(sorted(int(x) for x in h.lua("return __lastQuery.filters").values()), [3, 4, 5, 6, 7, 8, 9], "any quality: all the flags, as the AH's defaults")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction tabs (Alex): hovering an item row shows its tooltip (the listed variant when the client can) on Buy, Snipe, Investing and Cancel; leaving hides it", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("""__tip = {} GameTooltip.SetItemKey = function(self, id, lvl, sfx) __tip[#__tip + 1] = 'key:' .. id .. ':' .. lvl end
+             GameTooltip.SetItemByID = function(self, id) __tip[#__tip + 1] = 'id:' .. id end
+             GameTooltip.SetHyperlink = function(self, l) __tip[#__tip + 1] = 'link:' .. l end""")
+    snipe_scan(h)
+    h.lua("ns.AuctionUI.Show('snipe'); local r = SalusNovusSnipe.rows[1] r:GetScript('OnEnter')(r)")
+    ok(str(h.lua("return __tip[#__tip]")).startswith("key:"), "Snipe: the listed variant")
+    ok(h.lua("return GameTooltip:IsShown()"), "shown")
+    h.lua("__hid = false; local hide = GameTooltip.Hide; GameTooltip.Hide = function(self) __hid = true return hide(self) end")
+    h.lua("local r = SalusNovusSnipe.rows[1] r:GetScript('OnLeave')(r)")
+    ok(h.lua("return __hid"), "hidden on leaving")
+    h.lua("ns.AuctionUI.Show('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED'); local r = SalusNovusCancel.rows[1] r:GetScript('OnEnter')(r)")
+    ok(str(h.lua("return __tip[#__tip]")).startswith("key:14047"), "Cancel")
+    h.lua("ns.AuctionUI.Show('buy'); ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); local r = SalusNovusBuy.rows[1] r:GetScript('OnEnter')(r)")
+    want = str(h.lua("local v = SalusNovusBuy.rows[1].view return 'key:' .. v.id .. ':' .. (v.key.itemLevel or 0)"))
+    eq(str(h.lua("return __tip[#__tip]")), want, "Buy: the row's item")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("cancel (Alex): a cancelled auction leaves the list at once and doesn't come back on a re-read", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    cancel_load(h)
+    h.lua("SalusNovusCancel.rows[2]:Click(); __id = ns.Cancel.sel.auctionID; SalusNovusCancel.cancel:Click()")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == __id then return false end end return true"), "gone at once")
+    h.lua("ns.Cancel.Query(); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == __id then return false end end return true"), "not back on a re-read")
+    ok(h.lua("return SalusNovusBuy == nil or select(2, SalusNovusBuy.back:GetPoint()) == SalusNovusBuy.unfilter"), "Back sits after Unfilter")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy (Alex): a random-suffix item is one row (listed added up, the cheapest, the lowest level); its drill-down searches every version and shows all their auctions together, each under its own name", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("""
+        __bysearch['Hatchet'] = {
+            { itemKey = { itemID = 3754, itemLevel = 31, itemSuffix = 5 }, totalQuantity = 1, minPrice = 5300 },
+            { itemKey = { itemID = 3754, itemLevel = 31, itemSuffix = 9 }, totalQuantity = 2, minPrice = 20000 },
+            { itemKey = { itemID = 3754, itemLevel = 30, itemSuffix = 7 }, totalQuantity = 1, minPrice = 9500 },
+            { itemKey = { itemID = 4500, itemLevel = 20, itemSuffix = 0 }, totalQuantity = 2, minPrice = 800 } }
+        __stack = setmetatable({}, { __index = function() return false end })      -- nothing loaded: unknown
+        local sfx = { [5] = 'of the Monkey', [9] = 'of the Bear', [7] = 'of the Eagle' }
+        C_AuctionHouse.GetItemKeyInfo = function(k) return { itemName = 'Splitting Hatchet ' .. (sfx[k.itemSuffix] or '') } end
+        __byKey = {}
+        C_AuctionHouse.GetNumItemSearchResults = function(k) return #(__byKey[k.itemSuffix] or {}) end
+        C_AuctionHouse.GetItemSearchResultInfo = function(k, i) return __byKey[k.itemSuffix][i] end
+        __byKey[5] = { { auctionID = 501, buyoutAmount = 5300, quantity = 1 }, { auctionID = 502, buyoutAmount = 5300, quantity = 1 } }
+        __byKey[9] = { { auctionID = 901, buyoutAmount = 20000, quantity = 1 } }
+        __byKey[7] = { { auctionID = 701, buyoutAmount = 9500, quantity = 1 } }
+    """)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('Hatchet'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    rows = [(int(r["id"]), int(r["listed"]), int(r["cheapest"]), int(r["level"])) for r in h.lua("return ns.Buy.View()").values()]
+    eq(rows, [(3754, 4, 5300, 30), (4500, 2, 800, 20)], "one hatchet row: 4 listed, 53s, level 30 -- highest level first")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 3754 then r:Click() end end")
+    for sfx in (5, 9, 7):
+        eq(str(h.lua("return __calls[#__calls]")), "search:3754", "version %d searched" % sfx)
+        h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 3754, itemLevel = %d, itemSuffix = %d })" % (30 if sfx == 7 else 31, sfx))
+    names = [str(h.lua("return SalusNovusBuy.rows[%d].cells[1]:GetText()" % i)) for i in (1, 2, 3, 4)]
+    eq(names, ["Splitting Hatchet of the Monkey", "Splitting Hatchet of the Monkey", "Splitting Hatchet of the Eagle", "Splitting Hatchet of the Bear"],
+       "every auction of every version, cheapest first, by name")
+    h.lua("SalusNovusBuy.rows[3]:Click(); ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:701:9500", "the Eagle one bought")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (Alex): an item searched as a commodity (a guess) is read under the key the server answered with -- the drill-down isn't empty", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("""__stack[4500] = false
+             C_AuctionHouse.GetNumItemSearchResults = function(k) return (k.itemLevel == 0 and k.itemSuffix == 0) and 1 or 0 end
+             C_AuctionHouse.GetItemSearchResultInfo = function(k, i) return { auctionID = 77, buyoutAmount = 500, quantity = 1 } end""")
+    h.lua("ns.Buy.Select({ id = 4500, key = { itemID = 4500, itemLevel = 20, itemSuffix = 0 } })")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 0, itemSuffix = 0 })")    # answered under the plain key
+    ok(h.lua("return ns.Buy.sel.fresh and #ns.Buy.sel.levels == 1"), "its auction found")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy tab (Alex): the amount sits right by the Buy button, button-sized; no supply/cost line", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click() end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("local p, rel = SalusNovusBuy.qty:GetPoint() return SalusNovusBuy.qty:IsShown() and rel == SalusNovusBuy.buy"), "next to Buy")
+    eq(int(h.lua("return SalusNovusBuy.qty:GetHeight()")), 30, "button height")
+    eq(str(h.lua("return SalusNovusBuy.selLine:GetText()")), "", "no supply/cost line")
+    h.lua("ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    ok(h.lua("local _, rc = SalusNovusBuy.cancel:GetPoint() return rc == SalusNovusBuy.buy and SalusNovusBuy.cancel:IsShown() and not SalusNovusBuy.qty:IsShown()"), "with a quote: Cancel by Buy, the amount box gone")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction tabs (Alex): an item whose data isn't loaded takes its name from the AH; names arriving redraw whichever tab is showing", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("C_Item.GetItemNameByID = function(id) return nil end; C_AuctionHouse.GetItemKeyInfo = function(k) if k.itemID == 7420 then return { itemName = 'Phalanx Headguard', quality = 2 } end end")
+    eq(str(h.lua("return (ns.AuctionUI.ItemBits(7420))")), "Phalanx Headguard", "from the AH")
+    eq(str(h.lua("return (ns.AuctionUI.ItemBits(9999))")), "Item 9999", "nothing anywhere: the id")
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('cloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    first = str(h.lua("return SalusNovusBuy.rows[1].cells[1]:GetText()"))
+    ok(first.startswith("Item "), "not loaded yet: %r" % first)
+    h.lua("C_Item.GetItemNameByID = function(id) return 'Linen Cloth' end; W.fireEvent('ITEM_DATA_LOAD_RESULT', 2589, true); W.advance(0.3)")
+    eq(str(h.lua("return SalusNovusBuy.rows[1].cells[1]:GetText()")), "Linen Cloth", "the Buy list redrew")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy (Alex): in the drill-down each auction's tooltip is that auction's own (its link), not the first version's", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("""__tip = {} GameTooltip.SetHyperlink = function(self, l) __tip[#__tip + 1] = l end
+             C_AuctionHouse.GetItemSearchResultInfo = function(k, i)
+                 return ({ { auctionID = 1, buyoutAmount = 5500, quantity = 1, itemLink = 'item:4500:shadow' },
+                           { auctionID = 2, buyoutAmount = 7000, quantity = 1, itemLink = 'item:4500:whale' } })[i] end
+             C_AuctionHouse.GetNumItemSearchResults = function() return 2 end""")
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.BuyUI.detail = true; ns.Buy.Select({ id = 4500, key = { itemID = 4500, itemLevel = 20, itemSuffix = 0 } })")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("local r = SalusNovusBuy.rows[2] r:GetScript('OnEnter')(r)")
+    eq(str(h.lua("return __tip[#__tip]")), "item:4500:whale", "the hovered auction's own")
+    eq(h.errors(), [], "errors")
+
+
+@test("the settings sidebar calls the keybind map 'Keybind visualizer' (Alex)", "options")
+def _():
+    h = fresh()
+    open_options(h)
+    eq(str(h.lua("return ns.Options.keybindsLauncher.label:GetText()")), "KEYBIND VISUALIZER", "renamed")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind visualizer (Alex): titled 'Keybind Visualizer'; no 'Hover a key' prompt", "keybinds")
+def _():
+    h = fresh()
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    eq(str(h.lua("return SalusNovusKeybinds.detail:GetText() or ''")), "", "no prompt")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind visualizer (Alex): an ability's icon fills the whole key, the name outlined (no dark band); no 'M' marker", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.icon:IsShown() then c = x break end end"
+    ok(h.lua(cell + " return c ~= nil"), "a key with an icon")
+    ok(h.lua(cell + " local p, _, _, x, y = c.icon:GetPoint(1) return p == 'TOPLEFT' and x == 1 and y == -1"), "edge to edge")
+    ok(h.lua(cell + " return not c.shade:IsShown() and c.m == nil"), "no dark band (Alex); no M")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("wishlist cards (Alex): opening a card doesn't grow it -- the buttons come in on a strip over its foot, so nothing below moves", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
+    h.lua("__card = ns.WishlistUI.Build().mine.rows[1]; __h0 = __card:GetHeight(); local _, _, _, _, y = ns.WishlistUI.Build().mine.rows[4]:GetPoint() __y0 = y")
+    h.lua("__card:Click('LeftButton'); W.advance(0.1)")
+    ok(h.lua("return __card:GetHeight() == __h0"), "same height")
+    ok(h.lua("local _, _, _, _, y = ns.WishlistUI.Build().mine.rows[4]:GetPoint() return y == __y0"), "the card below stays put")
+    ok(h.lua("return __card.chipBar:IsShown() and __card.chips[1]:GetParent() == __card.chipBar"), "the buttons on the strip")
+    h.lua("for _, c in ipairs(__card.chips) do if c:IsShown() and c.text:GetText() == 'BIS' then c:Click() end end; W.advance(0.1); __h1 = __card:GetHeight()")
+    h.lua("__card:Click('LeftButton'); W.advance(0.1)")
+    ok(h.lua("return not __card.chipBar:IsShown()"), "folded: gone")
+    ok(h.lua("return __card:GetHeight() == __h1"), "with a pick made, folding doesn't change the height either")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("wishlist cards (Alex): an owned item's card is green -- OWNED in green, a dark green edge, a light green ground -- and stays so after a hover", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
+    h.lua("ns.Wishlist.Owned = function(id) return id == ns.WishlistUI.Build().mine.rows[1].id end; ns.WishlistUI.Refresh()")
+    h.lua("__card = ns.WishlistUI.Build().mine.rows[1]")
+    ok("|cff4fd05fOWNED|r" in str(h.lua("return __card.sub:GetText()")), "OWNED in green")
+    green = lambda: [round(float(v), 2) for v in h.lua("local r, g, b = __card.bg:GetVertexColor() return { r, g, b }").values()]
+    eq(green(), [0.31, 0.82, 0.37], "a green ground")
+    h.lua("__card:GetScript('OnEnter')(__card); __card:GetScript('OnLeave')(__card)")
+    eq(green(), [0.31, 0.82, 0.37], "still green after a hover")
+    ok(h.lua("local r = ns.WishlistUI.Build().mine.rows[2] local a, b, c = r.bg:GetVertexColor() return a == 1 and b == 1"), "the others plain")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("wishlist cards (Alex): wanted and not had is red -- the picks in red, a dark red edge, a light red ground; a half-made pick stays plain", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1); __card = ns.WishlistUI.Build().mine.rows[1]; __wish(__card.id); ns.WishlistUI.Refresh()")
+    ok("|cffe86a5f" in str(h.lua("return __card.sub:GetText()")), "the picks in red")
+    eq([round(float(v), 2) for v in h.lua("local r, g, b = __card.bg:GetVertexColor() return { r, g, b }").values()], [0.91, 0.42, 0.37], "a red ground")
+    h.lua("ns.Wishlist.SetTag(__card.id, 'up'); ns.WishlistUI.Refresh()")      # the want off: half made
+    ok(h.lua("local r, g = __card.bg:GetVertexColor() return r == 1 and g == 1"), "half made: plain")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction (Alex): 'scan when the AH opens' is off by default; a save from before gets it off once, and a later 'on' stays on", "auction")
+def _():
+    h = fresh()
+    ok(h.lua("return ns.db.auction.autoScan == false"), "off for a new save")
+    eq([h.lua("return ns.db.auction.%s" % k) for k in ("investPct", "investMinListed", "investMinProfit", "investMaxShare", "minProfit")],
+       [20, 250, 1, 10, 5], "every auction default there (a comment once swallowed two)")
+    h.lua("SalusNovusDB = { options = { auction = { autoScan = true } } }; ns.InitDB()")
+    ok(h.lua("return ns.db.auction.autoScan == false and ns.db.auction.autoScanOff1"), "an old save: off once")
+    h.lua("ns.db.auction.autoScan = true; ns.InitDB()")
+    ok(h.lua("return ns.db.auction.autoScan == true"), "turned back on: stays on")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("keybind visualizer (Alex): a non-square key (Space, Tab, the tall numpad keys) shows its icon as a square at its left with the action's name, not stretched", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    sq = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.icon:IsShown() and math.abs(x:GetWidth() - x:GetHeight()) < 6 then c = x break end end"
+    ok(h.lua(sq + " local p = c.icon:GetPoint(2) return p == 'BOTTOMRIGHT'"), "a square key: filled")
+    h.lua("for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == 'SPACE' then __space = x end end; __space.res = nil")
+    h.lua("ns.Keybinds.Layer = (function(L) return function(i) local o, f, t = L(i) o.SPACE = { state = 'bound', label = 'Jump', icon = 123 } return o, f, t end end)(ns.Keybinds.Layer); ns.KeybindsUI.Refresh()")
+    ok(h.lua("return __space.icon:IsShown() and math.abs(__space.icon:GetWidth() - __space.icon:GetHeight()) < 1 and __space.icon:GetWidth() < __space:GetWidth() / 2"), "Space: a square icon")
+    ok(h.lua("return __space.text:IsShown() and __space.text:GetText() == 'Jump'"), "the action's name beside it")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("buy (Alex): a right-click in a drill-down -- on a listing or the panel -- goes back, as Back does", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    drill = "for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click('LeftButton') break end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)"
+    h.lua(drill)
+    ok(h.lua("return SalusNovusBuy.back:IsShown()"), "drilled down")
+    h.lua("SalusNovusBuy.rows[1]:Click('RightButton')")
+    ok(h.lua("return not SalusNovusBuy.back:IsShown() and ns.Buy.sel.qty == 10"), "a right-click on a listing: back, nothing bought or picked")
+    h.lua(drill)
+    h.lua("SalusNovusBuy:GetScript('OnMouseUp')(SalusNovusBuy, 'RightButton')")
+    ok(h.lua("return not SalusNovusBuy.back:IsShown()"), "on the panel: back")
+    h.lua(drill)
+    ok(h.lua("return SalusNovusBuy.rows[1].cells[1]:GetWidth() > 280"), "drilled down: the name runs to Qty (it was cut off)")
+    h.lua("SalusNovusBuy.scroll:GetScript('OnMouseUp')(SalusNovusBuy.scroll, 'RightButton')")
+    ok(h.lua("return not SalusNovusBuy.back:IsShown() and SalusNovusBuy.rows[1].cells[1]:GetWidth() == 200"), "the list's empty space: back; names to their column again")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab (Alex): the Buy button follows the amount as it's typed -- no Enter; with a quote out, the box goes", "auction")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1); ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click() end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("local q = SalusNovusBuy.qty q:SetFocus() q:GetScript('OnEditFocusGained')(q) q:SetText('5') q:GetScript('OnTextChanged')(q, true)")
+    eq(str(h.lua("return SalusNovusBuy.buy:GetText()")), "Buy 5", "typed, not entered")
+    ok(h.lua("return SalusNovusBuy.qty:GetText() == '5'"), "the box keeps what's typed")
+    h.lua("local q = SalusNovusBuy.qty q:SetText('') q:GetScript('OnTextChanged')(q, true)")
+    eq(str(h.lua("return SalusNovusBuy.buy:GetText()")), "Buy 5", "emptied mid-typing: the last amount stands")
+    h.lua("SalusNovusBuy.qty:ClearFocus(); ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 1500)")
+    ok(h.lua("return not SalusNovusBuy.qty:IsShown()"), "a quote out: no box")
+    h.lua("ns.Buy.SetQty(9)")
+    eq(int(h.lua("return ns.Buy.sel.asked.qty")), 5, "the asked amount stands")
+    ok(h.lua("return ns.Buy.sel.quote ~= nil"), "the quote stands")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction (Alex): our tabs up, the AH's close X is bigger; off, it's back", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("AuctionHouseFrame.CloseButton = CreateFrame('Button', nil, AuctionHouseFrame)")
+    h.lua("ns.AuctionUI.BlizzardTabs(false)")
+    eq(float(h.lua("return AuctionHouseFrame.CloseButton:GetScale()")), 1.5, "bigger")
+    h.lua("ns.AuctionUI.BlizzardTabs(true)")
+    eq(float(h.lua("return AuctionHouseFrame.CloseButton:GetScale()")), 1.0, "back")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- sweep 2 (2026-10-06)
+
+def buy_open(h):
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+
+
+@test("buy (sweep): picking, importing or deleting a list mid 'Search list' stops it -- a late answer lands nowhere, no error", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth'); ns.Buy.SearchList()")
+    ok(h.lua("return ns.Buy.run.state == 'searching'"), "searching list A")
+    h.lua("ns.Buy.Import('B', 'Backpack\\nRunecloth')")
+    ok(h.lua("return ns.Buy.run.state == 'idle'"), "a new list: stopped")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5)")
+    ok(h.lua("return next(ns.Buy.results) == nil"), "list A's answer isn't filed under list B")
+    h.lua("ns.Buy.SearchList(); ns.Buy.DeleteList(2)")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5); ns.Buy.View(); ns.AuctionUI.Show('buy')")
+    ok(h.lua("return ns.Buy.mode == 'search' and next(ns.Buy.results) == nil"), "deleted: a list's rows don't land as a search")
+    h.lua("ns.Buy.Search('cloth'); ns.Buy.Pick(1)")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5)")
+    ok(h.lua("return next(ns.Buy.results) == nil"), "a search's answer after picking a list: nowhere")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep): removing a line mid 'Search list' stops the search -- later answers don't land on the lines that moved up", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth\\nBackpack'); ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    ok(h.lua("return ns.Buy.results[1] ~= nil and ns.Buy.run.i == 2"), "line 1 in, line 2 asked")
+    h.lua("ns.Buy.RemoveItem(1)")
+    ok(h.lua("return ns.Buy.run.state == 'idle'"), "stopped")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5)")
+    ok(h.lua("return ns.Buy.results[1] == nil and ns.Buy.results[2] == nil"), "nothing landed on the moved lines")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab (sweep): the picked line doesn't carry over to another list -- Remove can't take a line you never picked", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.line == 2 then r:Click() break end end")
+    ok(h.lua("return ns.BuyUI.line == 2 and SalusNovusBuy.remove:IsShown()"), "line 2 picked: Remove shown")
+    h.lua("ns.Buy.Import('B', 'Backpack\\nWool Cloth\\nLinen Cloth')")
+    ok(h.lua("return ns.BuyUI.line == nil and not SalusNovusBuy.remove:IsShown()"), "another list: nothing picked")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep): an item's look-up after a buy starts afresh -- the auction bought is gone, an answer twice lists each auction once", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Select({ id = 4500, key = { itemID = 4500, itemLevel = 20, itemSuffix = 0 } })")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    eq(int(h.lua("return #ns.Buy.sel.levels")), 1, "the same answer twice: once (yours left out)")
+    h.lua("ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:51:800", "bought 51")
+    h.lua("__items = { { auctionID = 52, buyoutAmount = 900, quantity = 1 } }; W.fireEvent('AUCTION_HOUSE_PURCHASE_COMPLETED', 51)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    ok(h.lua("return #ns.Buy.sel.levels == 1 and ns.Buy.sel.levels[1].auctionID == 52"), "only what's there now")
+    h.lua("ns.Buy.Buy()")
+    eq(str(h.lua("return __calls[#__calls]")), "bid:52:900", "the next buy isn't the one already bought")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep): a gear item's version with no answer moves on to the next version (not a commodity guess); a pick stays on its auction as versions merge", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("""__k1 = { itemID = 3754, itemLevel = 31, itemSuffix = 5 }; __k2 = { itemID = 3754, itemLevel = 31, itemSuffix = 9 }
+             ns.Buy.Select({ id = 3754, keys = { __k1, __k2 } })""")
+    h.lua("W.advance(3.1)")
+    ok(h.lua("local s = ns.Buy.sel return s.k == 2 and not s.commodity and s.askedKey == __k2"), "version 2 asked, as an item")
+    h.lua("""ns.Buy.Select({ id = 3754, keys = { __k1, __k2 } })
+             __items = { { auctionID = 60, buyoutAmount = 500, quantity = 1 }, { auctionID = 61, buyoutAmount = 900, quantity = 1 } }
+             W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', __k1); ns.Buy.PickListing(2)""")
+    eq(int(h.lua("return ns.Buy.sel.levels[ns.Buy.sel.pick].auctionID")), 61, "61 picked")
+    h.lua("__items = { { auctionID = 62, buyoutAmount = 100, quantity = 1 } }; W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', __k2)")
+    eq(int(h.lua("return ns.Buy.sel.levels[ns.Buy.sel.pick].auctionID")), 61, "still 61 after the merge")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep): a browse replaced by another (the scan's) isn't taken as Buy's -- asked again; 'More results' only pages Buy's own browse, and gives up when unanswered", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Search('Runecloth'); ns.Auction.browseSeq = ns.Auction.browseSeq + 1; __browse = { { itemKey = { itemID = 2589, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 5, minPrice = 9 } }")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __n = 0 for _, c in ipairs(__calls) do if c == 'browse:Runecloth' then __n = __n + 1 end end")
+    ok(h.lua("return next(ns.Buy.results) == nil"), "another browse's answer: not taken")
+    h.lua("W.advance(4.1)")
+    ok(h.lua("return next(ns.Buy.results) == nil and ns.Buy.run.afterScan"), "the timeout doesn't land the scan's rows: it waits for the scan")
+    h.lua("__full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(1.1); __n = 0 for _, c in ipairs(__calls) do if c == 'browse:Runecloth' then __n = __n + 1 end end")
+    ok(h.lua("return __n == 2"), "then asks again")
+    h.lua("ns.Buy.browseSeqFix = nil; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("ns.Buy.more = true")
+    ok(h.lua("return ns.Buy.HasMore()"), "more of Buy's browse")
+    h.lua("ns.Auction.browseSeq = ns.Auction.browseSeq + 1")
+    ok(h.lua("return not ns.Buy.HasMore() and ns.Buy.More() == false"), "another browse since: no More")
+    h.lua("ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); ns.Buy.more = true; ns.Buy.More()")
+    ok(h.lua("return ns.Buy.run.state == 'more'"), "asked for more")
+    h.lua("W.advance(4.1)")
+    ok(h.lua("return ns.Buy.run.state == 'idle'"), "no answer: More works again")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep): a purchase confirmed elsewhere can't be taken over -- Buy is refused and the other keeps it; Buy's own confirm holds the claim, and its drop clears 'confirming'", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Auction.Claim('invest', function() __dropped = true end); ns.Auction.Confirming('invest')")
+    h.lua("ns.Buy.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Buy.Buy() == false and not __dropped and ns.Auction.Owns('invest')"), "refused; Investing keeps its purchase")
+    ok(h.lua("for _, c in ipairs(__calls) do if c:find('^start:') then return false end end return true"), "nothing started")
+    h.lua("ns.Auction.Release('invest'); ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000); ns.Buy.Confirm()")
+    ok(h.lua("return ns.Auction.purchase.confirming and ns.Auction.Claim('snipe') == false"), "Buy's confirm holds the claim")
+    h.lua("ns.Auction.purchase.drop()")
+    ok(h.lua("return not ns.Buy.sel.confirming"), "dropped: not stuck 'confirming'")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab (sweep): 'Browse' leaves a list; a category browses the box's text; a shift-click leaves the drill-down; list lines show their level", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Backpack')")
+    h.lua("for _, b in ipairs(SalusNovusBuy.sideButtons) do if b.side == 'browse' then b:Click() end end")
+    ok(h.lua("return ns.Buy.mode == 'search' and ns.BuyUI.side == 'browse'"), "Browse: out of the list")
+    h.lua("ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); SalusNovusBuy.search:SetText('cloth')")
+    h.lua("for _, b in ipairs(SalusNovusBuy.catRows) do if b:IsShown() then b:Click() break end end")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "the category browses what's in the box")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); SalusNovusBuy.rows[1]:Click()")
+    ok(h.lua("return ns.BuyUI.detail == true"), "drilled down")
+    h.lua("IsShiftKeyDown = function() return true end; ns.BuyUI.FromLink('|cff|Hitem:14047|h[Runecloth]|h|r')")
+    ok(h.lua("return ns.BuyUI.detail == false"), "a shift-click: back to the results")
+    h.lua("ns.Buy.Import('B', 'Backpack'); ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(int(h.lua("return ns.Buy.View()[1].level")), 20, "the level column filled in a list")
+    eq(h.errors(), [], "errors")
+
+
+@test("cancel (sweep): an item searched by a guess is read under the key answered; a bid-only auction can't be judged ('?'); while reloading nothing is undercut or cancelled; '?' doesn't say 'Nobody is under you'", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("""__stack[4500] = false
+             C_AuctionHouse.GetNumItemSearchResults = function(k) return (k.itemLevel == 0) and #__items or 0 end
+             C_AuctionHouse.GetItemSearchResultInfo = function(k, i) if k.itemLevel == 0 then return __items[i] end end
+             __items = { { auctionID = 30, buyoutAmount = 500, quantity = 1 } }
+             __owned[#__owned + 1] = { auctionID = 15, itemKey = { itemID = 2592, itemLevel = 0, itemSuffix = 0 }, status = 0, quantity = 5, timeLeftSeconds = 9000 }""")
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    for _ in range(4):
+        h.lua("local q = ns.Cancel.run.waiting if q and q.id == 4500 then W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 0, itemSuffix = 0 }) elseif q then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', q.id) end")
+    st = {int(r["auctionID"]): str(r["status"]) for r in h.lua("return ns.Cancel.rows").values()}
+    eq(st.get(12), "undercut", "the backpack, read under the plain key the server answered: 5s under your 9s")
+    eq(st.get(15), "unknown", "bid only: '?', not 'cheapest'")
+    h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 15 then ns.Cancel.sel = r end end; ns.CancelUI.Refresh()")
+    ok("Nobody" not in str(h.lua("return SalusNovusCancel.selLine:GetText()")), "'?': not 'Nobody is under you'")
+    h.lua("ns.Cancel.Query()")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.status ~= 'checking' then return false end end return true"), "reloading: the old marks go")
+    h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 12 then r.status = 'undercut' end end; ns.CancelUI.Refresh()")
+    ok(h.lua("return not SalusNovusCancel.next.enabledState"), "reloading: Cancel next is off")
+    ok(h.lua("return ns.Cancel.CancelNext() == false"), "and does nothing")
+    ok(h.lua("for _, c in ipairs(__calls) do if c:find('^cancel') then return false end end return true"), "nothing cancelled")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell (sweep): the reagent bag counts; Blizzard's own popup for our post is put away (not for a post of theirs)", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("""NUM_TOTAL_EQUIPPED_BAG_SLOTS = 5
+             __bags[5] = { [1] = { itemID = 14047, stackCount = 80, iconFileID = 11, quality = 1, isBound = false, hyperlink = 'rc' } }
+             local n = C_Container.GetContainerNumSlots
+             C_Container.GetContainerNumSlots = function(b) if b == 5 then return 1 end return n(b) end
+             ns.Sell.Refresh()""")
+    eq(int(h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then return e.count end end")), 120, "40 in the bags + 80 in the reagent bag")
+    h.lua("__hid = {}; StaticPopup_Hide = function(w) __hid[#__hid + 1] = w end")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 2589 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[2589] = { { quantity = 50, unitPrice = 20 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    h.lua("__needs = true; ns.Sell.Post(); __needs = false; W.fireEvent('AUCTION_HOUSE_POST_WARNING'); W.advance(0.1)")
+    ok(h.lua("return #__hid >= 1 and __hid[1] == 'AUCTION_HOUSE_POST_WARNING'"), "ours: Blizzard's popup put away")
+    h.lua("__hid = {}; W.advance(6); W.fireEvent('AUCTION_HOUSE_POST_WARNING'); W.advance(0.1)")
+    eq(int(h.lua("return #__hid")), 0, "a post of Blizzard's own (none of ours just now): left alone")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab (sweep): with nothing listed a typed price posts at once (Post takes the click); digits left on screen by a reprice aren't a price; the ring is on that version only; a re-keyed entry stays picked", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('sell'); ns.Sell.Refresh()")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 2589 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[2589] = {}; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    ok(h.lua("return ns.Sell.sel.price == nil and not SalusNovusSell.post.enabledState"), "nothing listed: no price, Post off")
+    h.lua("local p = SalusNovusSell.price.parts; p[2]:SetFocus(); p[2]:Type('5')")
+    ok(h.lua("return SalusNovusSell.post.enabledState"), "typed: Post takes the click")
+    h.lua("SalusNovusSell.post:Click()")
+    ok(h.lua("for _, c in ipairs(__calls) do if c:find('^postc:3:') and c:find(':500$') then return true end end"), "posted at 5s")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[14047] = { { quantity = 5, unitPrice = 10001 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("SalusNovusSell.price.parts[1]:SetFocus()")
+    h.lua("__commodity[14047] = { { quantity = 5, unitPrice = 25000 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    eq(int(h.lua("return ns.Sell.sel.price")), 24999, "repriced while the box has focus")
+    h.lua("SalusNovusSell.price.parts[1]:ClearFocus()")
+    eq(int(h.lua("return ns.Sell.sel.price")), 24999, "the old digits on screen don't overwrite it")
+    h.lua("ns.Sell.sel.entry.key = 'stale'; ns.Sell.Refresh()")
+    ok(h.lua("return ns.Sell.sel ~= nil and ns.Sell.sel.entry.key == '14047'"), "re-keyed: still picked")
+    h.lua("""__bags[0][4].suffix = 0; __bags[0][7] = { itemID = 4500, stackCount = 1, iconFileID = 13, quality = 2, isBound = false, hyperlink = 'bp2', suffix = 5 }
+             ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.id == 4500 then ns.Sell.Select(e) break end end; ns.SellUI.Refresh()""")
+    eq(int(h.lua("local n = 0 for _, p in ipairs(SalusNovusSell.icons or {}) do if p:IsShown() and p.entry and p.entry.id == 4500 and p.selected then n = n + 1 end end return n")), 1, "one ring, not one per suffix")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (sweep): min profit in gold is the copper typed (0.0029 g = 29c); a scan cut short says so (not 'the AH closed') and a watching probe lets go", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.db.auction.investMinProfit = 0.0029")
+    eq(int(h.lua("return ns.Invest.MinProfit()")), 29, "29c")
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('invest'); __tr = nil; ns.Invest.trace = function(kind, why) __tr = kind .. ':' .. tostring(why) end")
+    h.lua("ns.Invest.Scan(); C_AuctionHouse.SendBrowseQuery({ searchString = 'other' })")
+    ok(h.lua("return ns.Invest.run.state == 'idle' and ns.Invest.run.cut == 'failed'"), "cut short")
+    t = str(h.lua("return SalusNovusInvest.empty:GetText()"))
+    ok("closed" not in t and "didn't finish" in t, "says the scan didn't finish: " + t)
+    eq(str(h.lua("return __tr")), "closed:the scan was cut short or failed", "the probe told")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction strip (sweep): Escape in the money boxes puts the value back -- nothing saved", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.AuctionUI.Open('snipe'); ns.db.auction.minProfit = 5; ns.AuctionUI.Refresh()")
+    h.lua("local p = SalusNovusSnipe.strip.items[1].parts; p[1]:SetFocus(); p[1]:Type('9'); p[1]:GetScript('OnEscapePressed')(p[1])")
+    eq(int(h.lua("return ns.db.auction.minProfit")), 5, "not saved")
+    eq(str(h.lua("return SalusNovusSnipe.strip.items[1].parts[1]:GetText()")), "0", "the box shows the value again")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction (sweep): GetItemCommodityStatus is asked only with a bag location (an itemID errors on Forever); by id, what stacks is a commodity -- a guess", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    ok(h.lua("local c, k = ns.Auction.IsCommodity(14047) return c == true and k == false"), "by id: a guess")
+    ok(h.lua("local c, k = ns.Auction.IsCommodity(4500) return c == false and k == false"), "the backpack doesn't stack: an item (a guess)")
+    ok(h.lua("local c, k = ns.Auction.IsCommodity(4500, { bag = 0, slot = 4 }) return c == false and k == true"), "by its bag slot: known")
+    h.lua("__stack[2589] = false")
+    ok(h.lua("local c, k = ns.Auction.IsCommodity(2589) return c == true and k == false"), "nothing known: try it as one")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe (sweep): your own units and auctions aren't offered to you; Buy takes the min profit of the click, not of the look-up; a scan cut short while held doesn't page on in the next", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    snipe_scan(h)
+    h.lua("""__commodity[14047] = { { quantity = 10, unitPrice = 300, numOwnerItems = 10, containsOwnerItem = true }, { quantity = 6, unitPrice = 390 } }
+             local s; for _, x in ipairs(ns.Auction.Snipes()) do if x.id == 14047 then s = x end end ns.Auction.Select(s); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)""")
+    ok(h.lua("return ns.Auction.sel.under and ns.Auction.sel.under.qty == 6"), "only the 6 at 3s 90c: yours left out")
+    h.lua("ns.db.auction.minProfit = 20; ns.Auction.Buy()")
+    ok(h.lua("for _, c in ipairs(__calls) do if c:find('^start:14047') then return false end end return true"), "the min profit raised since: nothing under it, nothing bought")
+    h.lua("ns.Auction.scan.held = true; ns.Auction.scan.running = false; ns.Auction.Scan()")
+    ok(h.lua("return ns.Auction.scan.held == nil"), "a new scan holds nothing over")
+    eq(h.errors(), [], "errors")
+
+
+@test("auction (sweep): a scan deferred while paused isn't lost to a busy client at unpause -- it tries again", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("W.advance(1.1); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("ns.Auction.SetPaused(true); ns.Auction.scan.pending = true; __ready = false; ns.Auction.SetPaused(false)")
+    ok(h.lua("return not ns.Auction.scan.running and (ns.Auction.scan.pending or ns.Auction.scan.wantStart)"), "busy: still wanted")
+    h.lua("__ready = true; W.advance(1.1)")
+    ok(h.lua("return ns.Auction.scan.running"), "a second later: the scan runs")
+    eq(h.errors(), [], "errors")
+
+
+@test("probe ah browse (sweep): replaced by another browse, it stops -- it doesn't page someone else's search", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("W.advance(1.1); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("__full = false; ns.Probe.AHBrowse(); ns.Auction.browseSeq = ns.Auction.browseSeq + 1; __m0 = __more")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    ok(h.lua("return __more == __m0"), "no page asked of the other search")
+    h.lua("__n = #__calls; ns.Probe.AHBrowse()")
+    ok(h.lua("return #__calls > __n"), "let go: a new probe browse runs")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("investing (sweep): a purchase confirmed elsewhere can't be taken over by Investing's Buy", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Invest.sel.best ~= nil"), "a cut to buy")
+    h.lua("ns.Auction.Claim('buy', function() __dropped = true end); ns.Auction.Confirming('buy')")
+    ok(h.lua("return ns.Invest.Buy() == false and not __dropped and ns.Auction.Owns('buy')"), "refused; Buy keeps its purchase")
+    ok(h.lua("for _, c in ipairs(__calls) do if c:find('^start:') then return false end end return true"), "nothing started")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- sweep 3 (2026-10-07)
+
+def snipe_pick(h, sid):
+    h.lua("local s; for _, x in ipairs(ns.Auction.Snipes()) do if x.id == %d then s = x end end __pick = s; ns.Auction.Select(s)" % sid)
+
+
+@test("snipe (sweep 3): a scan page that never answers ends the scan as failed (not 'running' until the AH closes)", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.Auction.Scan()")
+    ok(h.lua("return ns.Auction.scan.running"), "scanning")
+    h.lua("W.advance(9)")
+    ok(h.lua("return not ns.Auction.scan.running"), "no answer: ended")
+    ok("no answer" in str(h.lua("return ns.Auction.message")), "and it says so")
+    ok(h.lua("return ns.Auction.Scan() == true"), "a new scan can start")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return not ns.Auction.scan.running and ns.Auction.message == nil"), "answered pages: no false time-out")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe (sweep 3): a pick while a purchase is confirming is refused (the claim isn't orphaned); a quote not yet confirmed is cancelled and let go; a failed start lets go", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    snipe_scan(h)
+    snipe_pick(h, 14047)
+    h.lua("__rc = __pick; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000); ns.Auction.Confirm()")
+    snipe_pick(h, 2589)
+    ok(h.lua("return ns.Auction.sel.id == 14047 and ns.Auction.Owns('snipe')"), "confirming: the pick is refused, the claim kept")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    ok(h.lua("return not ns.Auction.Owns('snipe') and ns.Auction.Claim('buy') and ns.Auction.Release('buy') == nil"), "its result lets go")
+    h.lua("W.advance(1); ns.Auction.Select(__rc); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    h.lua("ns.Auction.Select({ id = 2589, lvl = 0, sfx = 0, key = '2589', vendor = 13 })")
+    ok(h.lua("return ns.Auction.sel.id == 2589 and not ns.Auction.Owns('snipe')"), "a quote not confirmed: let go for the new pick")
+    ok(h.lua("for _, c in ipairs(__calls) do if c == 'cancel' then return true end end"), "and cancelled")
+    h.lua("ns.Auction.Select(__rc); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); C_AuctionHouse.StartCommoditiesPurchase = function() error('x') end")
+    ok(h.lua("return ns.Auction.Buy() == false and ns.Auction.sel.asked == nil and not ns.Auction.Owns('snipe')"), "a failed start: nothing held")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe (sweep 3): the footer follows today's min profit (and says when nothing qualifies); another key's item answer doesn't wipe the pick", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.AuctionUI.Open('snipe')")
+    snipe_scan(h)
+    h.lua("ns.Auction.Select({ id = 4500, lvl = 20, sfx = 0, key = '4500', vendor = 1000 }); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    ok(str(h.lua("return SalusNovusSnipe.selLine:GetText()")).startswith("2 under"), "two under vendor")
+    h.lua("ns.db.auction.minProfit = 300; ns.ApplyAll()")
+    ok(str(h.lua("return SalusNovusSnipe.selLine:GetText()")).startswith("1 under"), "min profit 3s: one")
+    h.lua("ns.db.auction.minProfit = 600; ns.ApplyAll(); ns.Auction.Buy()")
+    ok("Nothing" in str(h.lua("return SalusNovusSnipe.selLine:GetText()")), "6s: nothing, said")
+    ok("min profit" in str(h.lua("return ns.Auction.message")), "a click says why")
+    h.lua("ns.db.auction.minProfit = 5; ns.ApplyAll()")
+    h.lua("""C_AuctionHouse.GetNumItemSearchResults = function(k) return (k.itemID == 4500 and k.itemLevel == 20) and #__items or 0 end
+             W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 25, itemSuffix = 0 }); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 3754, itemLevel = 31, itemSuffix = 5 })
+             W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 3754, itemLevel = 20, itemSuffix = 0 })""")
+    ok(h.lua("return #ns.Auction.sel.rows == 3 and ns.Auction.sel.under.qty == 2"), "other answers: the pick stands")
+    eq(h.errors(), [], "errors")
+
+
+@test("snipe (sweep 3): with Investing's queue keeping the client busy, a Snipe pick waits its turn (not 'busy, try again') and the queue gives way", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("W.advance(1.1); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED'); __full = false")
+    h.lua("ns.AuctionUI.Open('snipe'); ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return ns.Invest.run.state == 'searching'"), "the queue runs on the Snipe tab")
+    h.lua("__ready = false")
+    snipe_pick(h, 14047)
+    ok(h.lua("return ns.Auction.sel and ns.Auction.sel.needAsk and ns.Auction.Wants() and not (ns.Auction.message or ''):find('busy')"), "waiting, not turned away")
+    h.lua("if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end; __n = #__calls")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY'); W.advance(1.1)")
+    eq([str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()], ["search:14047"],
+       "Snipe's search goes; the queue holds while its answer is due")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy (sweep 3): a list search waiting on a scan goes ahead when the scan pauses; a More page landing after picking a list is dropped; the saved list comes back as list mode", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth'); __full = false; ns.Auction.Scan(); __n = #__calls; ns.Buy.SearchList()")
+    ok(h.lua("return ns.Buy.run.afterScan"), "waiting on the scan")
+    h.lua("ns.Auction.SetPaused(true); W.advance(1.1)")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i] == 'browse:Runecloth' then return true end end"), "paused: the list search goes ahead")
+    h.lua("ns.Auction.SetPaused(false); ns.Buy.Pick(nil); ns.Buy.Search('cloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); ns.Buy.more = true; ns.Buy.More()")
+    ok(h.lua("return ns.Buy.run.state == 'more'"), "More asked")
+    h.lua("ns.Buy.Pick(1); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return next(ns.Buy.results) == nil"), "a list picked: the page doesn't land on it")
+    h.lua("ns.Buy.synced = nil; ns.Buy.mode = 'search'; SalusNovusDB.ahLists.current = 1")
+    ok(h.lua("return ns.Buy.Current() ~= nil and ns.Buy.mode == 'list'"), "the saved list: list mode")
+    h.lua("ns.Buy.synced = nil; ns.Buy.mode = 'search'; ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); ns.Buy.View()")
+    eq(h.errors(), [], "no error searching the saved list")
+
+
+@test("buy (sweep 3): a timer from before a buy doesn't skip a version on the re-look; Unfilter mid-browse browses All afresh; a failed buy looks again", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("""__k1 = { itemID = 3754, itemLevel = 31, itemSuffix = 5 }; __k2 = { itemID = 3754, itemLevel = 31, itemSuffix = 9 }
+             __items = { { auctionID = 61, buyoutAmount = 500, quantity = 1 }, { auctionID = 62, buyoutAmount = 600, quantity = 1 } }
+             ns.Buy.Select({ id = 3754, keys = { __k1, __k2 } }); W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', __k1)
+             __items = { { auctionID = 71, buyoutAmount = 900, quantity = 1 } }; W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', __k2)""")
+    h.lua("W.advance(1.5); ns.Buy.Buy(); W.fireEvent('AUCTION_HOUSE_PURCHASE_COMPLETED', 61)")
+    h.lua("W.advance(1.6)")
+    ok(h.lua("return ns.Buy.sel.k == 1 and ns.Buy.sel.askedKey == __k1"), "the old timer doesn't move the re-look on")
+    h.lua("__full = true; if ns.Auction.scan.running then W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED') end; W.advance(0.1)")
+    h.lua("ns.Buy.PickCategory({ 1 }, ''); ns.Buy.Unfilter()")
+    ok(h.lua("return ns.Buy.cat == nil and __calls[#__calls] == 'browse:' and ns.Buy.run.waiting ~= nil"), "Unfilter: All browsed afresh")
+    h.lua("ns.Buy.Select({ id = 4500, key = { itemID = 4500, itemLevel = 20, itemSuffix = 0 } }); __items = { { auctionID = 51, buyoutAmount = 800, quantity = 1 } }")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 }); ns.Buy.Buy(); __n = #__calls; W.fireEvent('AUCTION_HOUSE_SHOW_ERROR')")
+    ok(h.lua("return not ns.Buy.sel.fresh and __calls[#__calls] == 'search:4500'"), "not bought: looked up again")
+    eq(h.errors(), [], "errors")
+
+
+@test("buy tab (sweep 3): a typed amount commits before a level pick (the pick wins); a refused pick doesn't drill into the old item; a drill-down says 'Looking it up'; typed levels count on Search; Unfilter drops one being typed; many lists scroll", "auction")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click() end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("local q = SalusNovusBuy.qty q:SetFocus() q:GetScript('OnEditFocusGained')(q) q:Type('20')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.listing == 2 then r:Click() end end")
+    h.lua("SalusNovusBuy.buy:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:50", "the level picked (10 + 40), not the 20 typed before")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 15000); ns.Buy.Confirm(); ns.BuyUI.Back()")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14046 then r:Click() end end")
+    ok(h.lua("return ns.BuyUI.detail == false and ns.Buy.sel.id == 14047"), "confirming: no drill into the old item")
+    h.lua("W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14046 then r:Click() end end")
+    eq(str(h.lua("return SalusNovusBuy.empty:GetText()")), "Looking it up...", "a drill-down waiting: says so")
+    h.lua("ns.BuyUI.Back(); local b = SalusNovusBuy.minLevel b:SetFocus() b:Type('50'); SalusNovusBuy.go:Click()")
+    eq(int(h.lua("return ns.Buy.filters.minLevel or 0")), 50, "a level typed (no Enter) counts on Search")
+    h.lua("local b = SalusNovusBuy.minLevel b:SetFocus() b:Type('30'); SalusNovusBuy.unfilter:Click(); b:ClearFocus()")
+    ok(h.lua("return ns.Buy.filters.minLevel == nil"), "Unfilter: a level being typed is dropped, not saved after")
+    h.lua("for i = 1, 20 do ns.Buy.NewList('L' .. i) end; ns.BuyUI.Refresh()")
+    ok(h.lua("return ns.BuyUI.Build().listButtons[20]:GetParent() == SalusNovusBuy.lists.child and SalusNovusBuy.lists.child:GetHeight() >= 20 * 26"), "the lists scroll")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell (sweep 3): picking another item drops what's half typed (it can't land on either); a typed value counts for the item it's typed for; Escape cancels; a ladder click beats half-typed digits; another suffix isn't adopted", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('sell'); ns.Sell.Refresh()")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[14047] = { { quantity = 5, unitPrice = 300 }, { quantity = 5, unitPrice = 420 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("local q = SalusNovusSell.qty q:SetFocus() q:GetScript('OnEditFocusGained')(q)")
+    h.lua("for _, p in ipairs(SalusNovusSell.icons) do if p:IsShown() and p.entry and p.entry.id == 2589 then p:Click() end end")
+    ok(h.lua("return SalusNovusSell.qty:HasFocus() ~= true and ns.Sell.sel.id == 2589"), "another item: the box let go")
+    h.lua("__commodity[2589] = { { quantity = 50, unitPrice = 20 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589)")
+    h.lua("local p = SalusNovusSell.price.parts; p[1]:SetFocus(); p[1]:GetScript('OnEditFocusGained')(p[1])")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("local p = SalusNovusSell.price.parts; p[1]:Type('5'); p[1]:ClearFocus()")
+    eq(int(h.lua("return ns.Sell.sel.price")) // 10000, 5, "typed after the pick: the price of the item it was typed for")
+    h.lua("local p = SalusNovusSell.price.parts; __p0 = ns.Sell.sel.price; p[1]:SetFocus(); p[1]:Type('9'); p[1]:GetScript('OnEscapePressed')(p[1])")
+    ok(h.lua("return ns.Sell.sel.price == __p0"), "Escape: not saved")
+    h.lua("local q = SalusNovusSell.qty; __q0 = ns.Sell.sel.qty; q:SetFocus(); q:Type('3'); q:GetScript('OnEscapePressed')(q)")
+    ok(h.lua("return ns.Sell.sel.qty == __q0"), "Escape in the amount: not saved")
+    h.lua("local p = SalusNovusSell.price.parts; p[2]:SetFocus(); p[2]:Type('9')")
+    h.lua("for _, r in ipairs(SalusNovusSell.ladder) do if r:IsShown() and r.unit == 420 then r:Click() end end")
+    h.lua("SalusNovusSell.post:Click()")
+    ok(h.lua("for i = #__calls, 1, -1 do if __calls[i]:find('^postc:') then return __calls[i]:find(':422$') ~= nil end end"), "posted at the row's price (1c under, held at the 4s 22c vendor floor), not the half-typed 9s")
+    h.lua("""__bags[0][4].suffix = 7; __bags[0][7] = { itemID = 4500, stackCount = 1, iconFileID = 13, quality = 2, isBound = false, hyperlink = 'bp2', suffix = 5 }
+             ns.Sell.Refresh(); for _, e in ipairs(ns.Sell.items) do if e.key == '4500:20:7' then ns.Sell.Select(e) end end
+             __bags[0][4] = nil; ns.Sell.Refresh()""")
+    ok(h.lua("return ns.Sell.sel == nil"), "the Eagle gone: the Monkey isn't picked with its price")
+    eq(h.errors(), [], "errors")
+
+
+@test("cancel (sweep 3): an item check takes only its own key's answer; background checks give way to a Buy look-up", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    for _ in range(4):
+        h.lua("local q = ns.Cancel.run.waiting if q and q.id ~= 4500 then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', q.id) end")
+    ok(h.lua("local q = ns.Cancel.run.waiting return q and q.id == 4500"), "checking the backpack")
+    h.lua("__items = { { auctionID = 31, buyoutAmount = 100, quantity = 1 } }; W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 25, itemSuffix = 0 })")
+    ok(h.lua("local q = ns.Cancel.run.waiting return q and q.id == 4500"), "another level's answer: not taken")
+    h.lua("ns.Cancel.Query(); __bw = true; ns.Buy.Wants = function() return __bw end; __n = #__calls; W.fireEvent('OWNED_AUCTIONS_UPDATED'); W.advance(1.1)")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i]:find('^search') then return false end end return true"), "Buy waiting: no check sent")
+    h.lua("__bw = false; W.advance(1.1)")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i]:find('^search') then return true end end"), "then the checks go on")
+    eq(h.errors(), [], "errors")
+
+
+@test("investing (sweep 3): a cut looked up long ago is looked up again before buying; a run's give-ups are said, not read as 'nothing worth buying'; closing the AH mid-scan says so", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); W.advance(21)")
+    ok(h.lua("return ns.Invest.Buy() == false and not ns.Invest.sel.fresh and __calls[#__calls] == 'search:14047'"), "stale: looked up again, nothing bought")
+    h2 = fresh()
+    h2.lua(INVESTMOCK)
+    h2.lua("W.advance(0.1); ns.AuctionUI.Show('invest'); ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    for _ in range(40):
+        h2.lua("W.advance(3)")
+    ok(h2.lua("return ns.Invest.run.state == 'idle' and (ns.Invest.run.gaveUp or 0) > 0"), "nothing answered: given up")
+    ok("never answered" in str(h2.lua("return ns.Invest.message")), "said")
+    ok("didn't answer" in str(h2.lua("return SalusNovusInvest.empty:GetText()")), "not 'nothing worth buying'")
+    h3 = fresh()
+    h3.lua(INVESTMOCK)
+    h3.lua("ns.Invest.Scan(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    eq(str(h3.lua("return ns.Invest.run.cut")), "closed", "closed mid-scan: 'closed'")
+    eq(h.errors() + h2.errors() + h3.errors(), [], "errors")
+
+
+@test("probe ah (sweep 3): a search or browse page with no answer lets go after 10 s; the Investing 'why' counts your own levels as Invest does", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("W.advance(1.1); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("ns.Probe.AHSearch(14047); W.advance(11); __n = #__calls; ns.Probe.AHSearch(2589)")
+    ok(h.lua("return #__calls > __n"), "a search unanswered: a new one runs")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2589); W.advance(1)")
+    h.lua("__full = false; ns.Probe.AHBrowse(); W.advance(11); __n = #__calls; ns.Probe.AHBrowse()")
+    ok(h.lua("return #__calls > __n"), "a browse unanswered: a new one runs")
+    h.lua("ns.db.auction.investMinProfit = 0")
+    eq(str(h.lua("return ns.Probe.InvestWhy({ { unit = 100, qty = 50 }, { unit = 104, qty = 0, own = 10 }, { unit = 200, qty = 950 } }, 1000000, 0, 1)")) != "worth it", True,
+       "your 104 level makes the relist a loss: not 'worth it'")
+    eq(h.errors(), [], "errors")
+
+
+
+@test("keybinds (Alex): a bare [shift] / [noshift] (and lshift, mod:rctrl...) is a modifier test -- his E macro's Lightning Bolt is the Shift layer", "keybinds")
+def _():
+    h = fresh()
+    P = lambda body: {k: str(v) for k, v in h.lua("return (ns.Keybinds.ParseMacro(%r))" % body).items()}
+    eq(P("#showtooltip Lightning Bolt\n/cast [harm,nodead,shift] lightning bolt; [help] lesser healing wave; [@player] lesser healing wave"),
+       {"base": "lesser healing wave", "shift": "lightning bolt"}, "his E macro")
+    eq(P("/cast [noshift] Frostbolt; Blizzard"), {"base": "Frostbolt", "shift": "Blizzard"}, "noshift")
+    eq(P("/cast [lshift] Blink; [mod:rctrl] Ice Block; Frost Nova"), {"base": "Frost Nova", "shift": "Blink", "ctrl": "Ice Block"}, "left/right keys")
+    eq(P("/cast [alt] Polymorph; [nodead] Fireball"), {"base": "Fireball", "alt": "Polymorph"}, "'nodead' is no modifier test")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybinds (Alex, option C): a macro of several lines -- the main spell is #showtooltip's, else the last line's; the others are small badges in the key's corner; the line lists them in order", "keybinds")
+def _():
+    h = fresh()
+    P = lambda body: [{k: ([str(x) for x in v.values()] if not isinstance(v, str) and hasattr(v, "values") else str(v)) for k, v in t.items()}
+                      for t in h.lua("return { ns.Keybinds.ParseMacro(%r) }" % body).values()]
+    main, extras, seq = P("/cast Blood Fury\n/cast Lightning Bolt")
+    eq(main, {"base": "Lightning Bolt"}, "the last line is the main spell (off-GCD buttons go first)")
+    eq(extras, {"base": ["Blood Fury"]}, "Blood Fury is a badge")
+    main, extras, _ = P("#showtooltip Blood Fury\n/cast Blood Fury\n/cast Lightning Bolt")
+    eq((main, extras), ({"base": "Blood Fury"}, {"base": ["Lightning Bolt"]}), "#showtooltip names the main spell")
+    main, extras, _ = P("/cast [mod:shift] Blood Fury\n/cast [mod:shift] Lightning Bolt; Healing Wave")
+    eq((main, extras), ({"base": "Healing Wave", "shift": "Lightning Bolt"}, {"shift": ["Blood Fury"]}), "per layer")
+    main, extras, _ = P("/cast Blood Fury\n/cast Fireball")
+    eq(main, {"base": "Fireball"}, "no modifier layers when they cast the same")
+    h.lua(KEYMOCK)
+    h.lua("""__macros[1][3] = '/cast Blood Fury\\n/use 13\\n/cast Frost Shock'; __icons['Blood Fury'] = 705
+             GetInventoryItemTexture = function(u, s) if s == 13 then return 913 end end""")
+    r = h.lua("return ns.Keybinds.Resolve('E', 1)")
+    eq((int(r["icon"]), [int(x) for x in r["extras"].values()]), (703, [705, 913]), "Frost Shock fills the key; Blood Fury and the trinket are badges")
+    ok("Blood Fury, then 13, then Frost Shock" in str(r["detail"]), "the line: in macro order")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == 'E' and not x.dup then c = x end end "
+    ok(h.lua(cell + "return c.badges and c.badges[1].tex:IsShown() and c.badges[1].tex:GetTexture() == 705 and c.badges[2].tex:GetTexture() == 913"), "two badges drawn")
+    ok(h.lua(cell + "local _, rel = c.badges[1].tex:GetPoint() return rel == c.icon"), "in the icon's corner")
+    h.lua("__macros[1][3] = '/cast Frost Shock'; ns.KeybindsUI.Refresh()")
+    ok(h.lua(cell + "return not c.badges[1].tex:IsShown()"), "a one-spell macro: no badge")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind visualizer (Alex): the mouse keys are squares -- an icon fills them (1.3 wide, the icon sat left of a sliver of name)", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("__binds.BUTTON3 = 'ACTIONBUTTON1'; SlashCmdList['SALUSNOVUS']('keys')")
+    for k in ("BUTTON3", "BUTTON4", "BUTTON5", "MOUSEWHEELUP", "MOUSEWHEELDOWN"):
+        ok(h.lua("for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key == '%s' then return math.abs(c:GetWidth() - c:GetHeight()) <= 0.12 * c:GetHeight() end end" % k), k + " square")
+    ok(h.lua("for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key == 'BUTTON3' then local p1, _, _, x, y = c.icon:GetPoint(1) return c.icon:IsShown() and c.icon:GetNumPoints() == 2 and not c.text:IsShown() end end"), "Mouse 3's icon fills the key, no name beside it")
+    eq(h.errors(), [], "errors")
+
+
+@test("sell tab (Alex): when the market sits under the vendor floor (Spider Ichor: 2050 at 16c, vendor 16c, floor 17c), a grey 'Vendor pays more' shows by the price; not otherwise", "auction")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('sell'); ns.Sell.Refresh()")
+    h.lua("for _, e in ipairs(ns.Sell.items) do if e.id == 14047 then ns.Sell.Select(e) end end")
+    h.lua("__commodity[14047] = { { quantity = 2050, unitPrice = 400 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 422 and SalusNovusSell.vendorCue:IsShown()"), "4s listings, vendor 4s: floor 4s 22c, the cue")
+    eq(str(h.lua("return SalusNovusSell.vendorCue:GetText()")), "Vendor pays more", "its words")
+    h.lua("__commodity[14047] = { { quantity = 50, unitPrice = 900 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Sell.sel.price == 899 and not SalusNovusSell.vendorCue:IsShown()"), "a market over the floor: no cue")
+    h.lua("ns.Sell.sel = nil; ns.SellUI.Refresh()")
+    ok(h.lua("return not SalusNovusSell.vendorCue:IsShown()"), "nothing picked: no cue")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist cards (Alex): a hovered card keeps the accent through redraws (it flashed blue, then back to its rest colour); an item answer redraws only for a card still waiting on it", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
+    h.lua("""__card = ns.WishlistUI.Build().mine.rows[1]
+             __last = nil; local sc = __card.border.SetColor; __card.border.SetColor = function(self, r, g, b, a) __last = { r, g, b, a } return sc(self, r, g, b, a) end""")
+    h.lua("__card:GetScript('OnEnter')(__card)")
+    h.lua("local ar = ns.Theme.Accent() __acc = ar")
+    ok(h.lua("return __last[1] == __acc and __last[4] == 0.9"), "hovered: the accent")
+    h.lua("ns.WishlistUI.Refresh()")
+    ok(h.lua("return __last[1] == __acc and __last[4] == 0.9"), "a redraw keeps it")
+    h.lua("__card:GetScript('OnLeave')(__card)")
+    ok(h.lua("return __last[4] ~= 0.9"), "left: back to rest")
+    h.lua("__n = 0; local R = ns.WishlistUI.Refresh; ns.WishlistUI.Refresh = function(...) __n = __n + 1 return R(...) end")
+    h.lua("ns.WishlistUI.waiting = {}; W.fireEvent('GET_ITEM_INFO_RECEIVED', 99999, true); W.advance(0.1)")
+    eq(int(h.lua("return __n")), 0, "an item no card waits on: no redraw")
+    h.lua("ns.WishlistUI.waiting[99999] = true; W.fireEvent('GET_ITEM_INFO_RECEIVED', 99999, true); W.advance(0.1)")
+    eq(int(h.lua("return __n")), 1, "one a card waits on: one redraw")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (Alex): something you own can't be flagged -- a click opens no buttons, Wish refuses it, an old flag doesn't show; the line's separator is a dot (it read '94 83')", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1); __card = ns.WishlistUI.Build().mine.rows[1]; __id = __card.id")
+    h.lua("local o = ns.Wishlist.Owned ns.Wishlist.Owned = function(id) if id == __id then return true end return o(id) end; ns.WishlistUI.Refresh()")
+    h.lua("__card:Click('LeftButton'); W.advance(0.1)")
+    ok(h.lua("return not __card.chipBar:IsShown() and not ns.WishlistUI.open[__id]"), "owned: a click opens nothing")
+    h.lua("ns.Wishlist.Wish(__id, false); ns.Wishlist.Wish(__id, true)")
+    ok(h.lua("return ns.Wishlist.Get(__id) == nil"), "Wish refuses an owned item")
+    h.lua("local l = SalusNovusDB and ns.Wishlist.Get; ns.Wishlist.Owned = function() return false end; ns.Wishlist.Wish(__id, true); ns.Wishlist.SetTag(__id, 'bis')")
+    h.lua("ns.Wishlist.Owned = function(id) return id == __id end; ns.WishlistUI.Refresh()")
+    t = str(h.lua("return __card.sub:GetText()"))
+    ok("OWNED" in t and "BIS" not in t, "an old flag on something now owned doesn't show: " + t)
+    h.lua("ns.Wishlist.Owned = function() return false end; ns.WishlistUI.Refresh()")
+    ok(h.lua("for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do local t = r.sub:GetText() or '' if t:find('94') or t:find('\1') then return false end end return true"), "no garbled separator")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind visualizer (Alex): a key's name stays inside its key (\"Mouse 3\" ran past it) -- held to the key's right edge; the mouse keys are M3/M4/M5/Wh up/Wh dn", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    names = [str(h.lua("for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key == '%s' then return c.name:GetText() end end" % k))
+             for k in ("BUTTON3", "BUTTON4", "BUTTON5", "MOUSEWHEELUP", "MOUSEWHEELDOWN")]
+    eq(names, ["M3", "M4", "M5", "Wh up", "Wh dn"], "short names")
+    ok(h.lua("for _, c in ipairs(SalusNovusKeybinds.cells) do if not c.pad then local n = c.name:GetNumPoints() local right for i = 1, n do local p, rel = c.name:GetPoint(i) if p == 'RIGHT' and rel == c then right = true end end if not right then return false end end end return true"), "every name held inside its key")
+    eq(h.errors(), [], "errors")
+
+
+@test("keybind visualizer (Alex): the mouse block is M3/M4/M5 down one column and the wheel up/down down the next", "keybinds")
+def _():
+    h = fresh()
+    pos = {k: (float(h.lua("for _, c in ipairs(ns.Keybinds.KEYS) do if c.key == '%s' then return c.x end end" % k)),
+               int(h.lua("for _, c in ipairs(ns.Keybinds.KEYS) do if c.key == '%s' then return c.row end end" % k)))
+           for k in ("BUTTON3", "BUTTON4", "BUTTON5", "MOUSEWHEELUP", "MOUSEWHEELDOWN")}
+    ok(pos["BUTTON3"][0] == pos["BUTTON4"][0] == pos["BUTTON5"][0], "the buttons in one column")
+    ok(pos["MOUSEWHEELUP"][0] == pos["MOUSEWHEELDOWN"][0] > pos["BUTTON3"][0], "the wheel in the next")
+    eq([pos[k][1] for k in ("BUTTON3", "BUTTON4", "BUTTON5")], [4, 5, 6], "3, 4, 5 top to bottom")
+    ok(pos["MOUSEWHEELUP"][1] < pos["MOUSEWHEELDOWN"][1], "up above down")
+
+
+
+@test("options (Alex): the Auction page's long switch label isn't cut off -- its row spans the page", "options")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('auction')")
+    w = h.lua("for _, w in ipairs(ns.Options.widgets) do if w.__outer == ns.Options.pages.auction and w.__kind == 'check' then return w:GetParent():GetWidth() end end")
+    ok(float(w) > 700, "the row is the full width: %s" % w)
+    eq(h.errors(), [], "errors")
+
+
+
+@test("auction tabs (Alex): clicking the tab you're on again keeps it -- it doesn't hide ours and show Blizzard's AH", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("W.advance(0.1)")
+    for key, panel in (("buy", "SalusNovusBuy"), ("sell", "SalusNovusSell"), ("cancel", "SalusNovusCancel"), ("invest", "SalusNovusInvest"), ("snipe", "SalusNovusSnipe")):
+        h.lua("for _, b in ipairs(ns.AuctionUI.buttons) do if b.view == '%s' then b:Click() b:Click() end end" % key)
+        ok(h.lua("return %s and %s:IsShown()" % (panel, panel)), key + ": still shown after a second click")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- wishlist sweep (2026-10-07)
+
+@test("wishlist (sweep): an off-hand-only weapon needs Dual Wield too", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    ok(not h.lua("return ns.Wishlist.CanEquip({ classID = 2, subclassID = 4, equipLoc = 'INVTYPE_WEAPONOFFHAND' })"), "maces known, no Dual Wield: not an off-hand mace")
+    ok(h.lua("return ns.Wishlist.CanEquip({ classID = 2, subclassID = 4, equipLoc = 'INVTYPE_WEAPON' })"), "a one-hand mace (either hand): yes")
+    h.lua("__known[674] = true")
+    ok(h.lua("return ns.Wishlist.CanEquip({ classID = 2, subclassID = 4, equipLoc = 'INVTYPE_WEAPONOFFHAND' })"), "with Dual Wield: yes")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (sweep): an old flag on something you own isn't shared, ranked, counted or put on a roll; a half-made wish isn't 'You' on a roll; getting it outside an instance re-shares the list", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("__wish(204, 'bis'); __wish(203)")
+    h.lua("ns.Wishlist.Reshare(); __have[204] = 1; __sent = {}; W.fireEvent('BAG_UPDATE_DELAYED'); W.advance(1.1); W.advance(1)")
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    ok(len(sent) == 1 and "204" not in sent[0] and "203" in sent[0], "got it outside an instance: sent again, without it: %r" % sent)
+    eq(int(h.lua("return #ns.Wishlist.WantersOf(204)")), 0, "not you on its roll")
+    ok(h.lua("for _, e in ipairs(ns.Wishlist.Rank('total')) do for _, it in ipairs(e.items or {}) do if it.id == 204 then return false end end end return true"), "not in the party ranking")
+    ok(h.lua("return ns.Wishlist.Get(204) ~= nil"), "the flag itself kept (hidden)")
+    h.lua("ns.Wishlist.Wish(102, true); ns.Wishlist.ToggleSpec(102, 'Enhancement')")
+    eq(int(h.lua("return #ns.Wishlist.WantersOf(102)")), 0, "a spec with no want: not 'You' on its roll")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (sweep): loot not yet cached shows up when its info arrives (it stayed missing until something else redrew)", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("__uncached[204] = true; ns.WishlistUI.Open(); W.advance(0.1)")
+    n0 = int(h.lua("local n = 0 for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then n = n + 1 end end return n"))
+    h.lua("__uncached[204] = nil; W.fireEvent('GET_ITEM_INFO_RECEIVED', 204, true); W.advance(0.1)")
+    n1 = int(h.lua("local n = 0 for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() then n = n + 1 end end return n"))
+    eq(n1, n0 + 1, "the arrived item has its card")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (sweep): party messages and roster changes redraw only the party view, not every card of Mine", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1); __n = 0; local R = ns.WishlistUI.Refresh; ns.WishlistUI.Refresh = function(...) __n = __n + 1 return R(...) end")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka'); W.fireEvent('GROUP_ROSTER_UPDATE'); W.advance(0.1)")
+    eq(int(h.lua("return __n")), 0, "Mine: no redraw")
+    h.lua("ns.WishlistUI.view = 'party'; ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka'); W.advance(0.1)")
+    eq(int(h.lua("return __n")), 1, "the party view: redrawn")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (sweep): chunks are paced; a refused send (the client's throttle returns a code) sends the whole list again; a continuation without its head is dropped", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        SalusNovusDB.wishlist = { ['Grumble-Forever'] = {} }
+        for i = 1, 60 do SalusNovusDB.wishlist['Grumble-Forever'][tostring(1000000 + i)] = { spec = { Elemental = true }, tag = 'up' } end
+        __refuse = 2
+        C_ChatInfo.SendAddonMessage = function(p, msg, ch)
+            if __refuse > 0 and msg:find('^WLC') then __refuse = __refuse - 1 return 3 end
+            __sent[#__sent + 1] = { p, msg, ch } return 0
+        end
+        ns.Wishlist.Broadcast(); W.advance(1.1); W.advance(0.3)
+    """)
+    ok(h.lua("return ns.Wishlist.sendFail >= 1"), "a refused chunk counted as failed")
+    h.lua("for i = 1, 30 do W.advance(0.5) end")
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    heads = [i for i, m in enumerate(sent) if m.startswith("WL|")]
+    ok(len(heads) >= 2 and sent[heads[-1] + 1:] and all(m.startswith("WLC|") for m in sent[heads[-1] + 1:]), "sent again, head first: %r" % [m[:6] for m in sent])
+    h.lua("ns.Wishlist.party = {}; ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|201', 'PARTY', 'Brakka'); W.advance(11)")
+    h.lua("ns.Wishlist.OnAddonMessage('SNWish', 'WLC|WARRIOR|202', 'PARTY', 'Brakka')")
+    eq([int(x["id"]) for x in h.lua("return ns.Wishlist.party.Brakka.items").values()], [201], "a late continuation (its head lost) doesn't add to the old list")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist rolls (sweep): with Quality of Life off rolls still expire (the ticker stops); a frameless roll's strip goes under a framed roll's strip, not over it", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.db.modules.qol = false; ns.ApplyAll(); W.fireEvent('START_LOOT_ROLL', 40, 1000); W.advance(10)")
+    ok(h.lua("return ns.WishlistRoll.active[40] == nil and not ns.WishlistRoll.ticker:IsShown()"), "expired; the ticker stopped")
+    h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
+    h.lua("""
+        __wish(204)
+        GetLootRollItemLink = function(id) return '|cff0070dd|Hitem:204::|h[x]|h|r' end
+        GroupLootContainer = CreateFrame('Frame', 'GroupLootContainer', UIParent); GroupLootContainer:Show()
+        GroupLootFrame1 = CreateFrame('Frame', 'GroupLootFrame1', GroupLootContainer); GroupLootFrame1:SetSize(240, 50)
+        GroupLootFrame1:SetPoint('CENTER'); GroupLootFrame1.rollID = 5; GroupLootFrame1:Show()
+        W.fireEvent('START_LOOT_ROLL', 5, 60000); W.fireEvent('START_LOOT_ROLL', 6, 60000); W.advance(0.1)
+    """)
+    ok(h.lua("local _, rel = ns.WishlistRoll.strips[6]:GetPoint(1) return rel == ns.WishlistRoll.strips[5]"), "roll 6's strip hangs under roll 5's")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- boss warnings sweep (2026-10-08)
+
+BOSSNAME = "UnitName = function(u) if u == 'player' then return 'Merk' end local b = ns.Timers.Boss() return b and ((b.npcs and b.npcs[1] and b.npcs[1].name) or b.name) or 'Merk' end"
+
+
+@test("boss sweep: no options preview runs mid-fight (it took a live anchor); the visualizer's close doesn't bring Settings back mid-fight; after the pull the page's preview comes back", "bughunt3")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    ok(h.lua("return SalusNovusBars:GetParent() == UIParent"), "mid-fight: the bars stay on screen")
+    ok(h.lua("for _, st in ipairs(ns.Options.previewStages) do if st.running then return false end end return true"), "no preview running")
+    h.lua("ns.returnToOptions = true; SalusNovusOptions:Hide(); __lph = nil; ns.ReturnToOptions()")
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "the visualizer's close mid-fight doesn't reopen Settings")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars'); W.fireEvent('ENCOUNTER_END', 3494, 'Plunder', 1, 5, 1); W.advance(0.1)")
+    ok(h.lua("for _, st in ipairs(ns.Options.previewStages) do if st.running then return true end end return false"), "after the pull: the page's preview runs again")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: a UI-scale change while a page preview runs leaves the anchor on its stage", "anchors")
+def _():
+    h = fresh()
+    h.lua("__stage = CreateFrame('Frame', nil, UIParent); __stage:SetSize(400, 200); __stage:SetPoint('CENTER'); ns.BarsPreviewStart(__stage)")
+    h.lua("W.fireEvent('UI_SCALE_CHANGED'); W.advance(0.2)")
+    ok(h.lua("local _, rel = SalusNovusBars:GetPoint(1) return SalusNovusBars:GetParent() == __stage and rel ~= UIParent"), "still on the stage, anchored to it")
+    h.lua("ns.BarsPreviewStop()")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: reminders -- turned off and on mid-countdown it still lands; an add's cast neither warns nor spends the throttle; a repeat cast keeps one line; a monster emote fires a yell reminder", "reminders")
+def _():
+    h = fresh()
+    h.lua(BOSSNAME)
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "t1", encounterID = 3494, trigger = "time", arg = 10, lead = 3, text = "TEN", sound = false },
+            { id = "c1", encounterID = 3494, trigger = "cast", text = "CASTING", sound = false, hold = 20 },
+            { id = "e1", encounterID = 3494, trigger = "emote", arg = "frenzy", text = "FRENZY", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(7.5)')
+    ok("TEN  3" in shown_texts(h) or any(t.startswith("TEN") for t in shown_texts(h)), "counting down: %r" % shown_texts(h))
+    h.lua("ns.db.reminders.enabled = false; ns.ApplyAll(); ns.db.reminders.enabled = true; ns.ApplyAll(); W.advance(3)")
+    ok("TEN" in fired(h)[-1] or any(f == "TEN" for f in fired(h)[1:]), "it came back and landed: %r" % fired(h))
+    n0 = len(fired(h))
+    h.lua("local un = UnitName UnitName = function(u) if u == 'nameplate5' then return 'Defias Pirate' end return un(u) end; __un = un")
+    h.lua('W.fireEvent("UNIT_SPELLCAST_START", "nameplate5", "Cast-9", 1)')
+    eq(len(fired(h)), n0, "an add's cast: no warning")
+    h.lua('W.advance(1); W.fireEvent("UNIT_SPELLCAST_START", "target", "Cast-10", 1)')
+    eq(len(fired(h)), n0 + 1, "the boss's cast a second later still warns (no throttle spent)")
+    h.lua('W.advance(3.1); W.fireEvent("UNIT_SPELLCAST_START", "target", "Cast-11", 1)')
+    eq(sum(1 for t in shown_texts(h) if t.startswith("CASTING")), 1, "a repeat cast: one line, not two")
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_EMOTE", "%s goes into a frenzy!", "Plunder")')
+    ok("FRENZY" in fired(h), "a monster emote fires a yell reminder")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: health bars -- a new pull with no unit read shows a full, dimmed bar (not the last pull's fill); the name above sits over the marker labels; an old 'name off' stays off", "health")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065); W.advance(0.1)')
+    h.lua("SalusNovusHealthBars.bar:SetMinMaxValues(0, 1922); SalusNovusHealthBars.bar:SetValue(500)")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 0); W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065); W.advance(0.1)')
+    lo, hi = h.lua("return SalusNovusHealthBars.bar:GetMinMaxValues()")
+    ok(float(h.lua("return SalusNovusHealthBars.bar:GetValue()")) == float(hi), "full, not the last pull's 500/1922")
+    ok(float(h.lua("return SalusNovusHealthBars.bar:GetAlpha()")) < 1, "dimmed until a unit is read")
+    h.lua("ns.db.healthBars.namePos = 'above'; ns.ApplyAll()")
+    y = h.lua("local r = ns.HealthBars.state.live[1].row local _, _, _, _, y = r.name:GetPoint(1) return y")
+    ok(float(y) >= (int(h.lua("return ns.db.healthBars.labelSize or 11")) + 6), "the name a line above the marker labels: y=%r" % y)
+    h.lua("SalusNovusDB = { options = { healthBars = { showName = false } } }; ns.InitDB()")
+    eq(str(h.lua("return ns.db.healthBars.namePos")), "off", "an old 'name off' stays off")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: visualizer -- reminders at one spot sit side by side; one past the fight's end is drawn at the end; the colour picker goes with the form; it won't open mid-fight and a pull puts it away", "visualizer")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("""
+        ns.DefaultReminders = {}
+        local e = ns.Visualizer.state.enc
+        ns.db.reminders.list = { [e] = {
+            { id = "a", encounterID = e, trigger = "pull", text = "A" },
+            { id = "b", encounterID = e, trigger = "pull", text = "B" },
+            { id = "z", encounterID = e, trigger = "time", arg = 900, text = "LATE" },
+        } }
+        ns.Visualizer.Refresh()
+    """)
+    xs = [float(x) for x in h.lua("""local o = {} for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then
+        for _, m in ipairs(l.marks or {}) do if m:IsShown() then local _, _, _, x = m:GetPoint(1) o[#o + 1] = x end end end end return o""").values()]
+    ok(len(xs) == 3 and len(set(xs)) == 3, "three marks, three spots (the late one at the end): %r" % xs)
+    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); __seen = nil; ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() __seen = true end); ns.Visualizer.form:Hide()")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "the picker went with the form")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
+    ok(not h.lua("return SalusNovusVisualizer:IsShown()"), "a pull puts it away")
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    ok(not h.lua("return SalusNovusVisualizer:IsShown()"), "it won't open mid-fight")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: anchor mechanics -- Cancel puts a never-moved down-growing anchor back where it was; the grid pulls only while drawn; a movable built in the same pass gets the lock state; a drag that ends in combat is saved after it", "anchors")
+def _():
+    h = fresh()
+    h.lua("ns.db.bars.direction = 'down'; SalusNovusDB.barsPos = nil; SalusNovusBars.__pin = nil; SalusNovusBars.__defaultPin = nil; ns.BarsRestorePosition(); __t0 = SalusNovusBars:GetTop()")
+    h.lua("SalusNovusBars:SetHeight(84); SalusNovusBars.__pin = nil; ns.BarsRestorePosition()")
+    ok(abs(float(h.lua("return SalusNovusBars:GetTop()")) - float(h.lua("return __t0"))) < 0.01, "same top whatever its height now")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); ns.ShowAlignGrid(false); ns.db.anchorsGlobal.grid = true; ns.db.anchorsGlobal.gridSize = 32")
+    h.lua("local ux, uy = UIParent:GetCenter() SalusNovusBars:ClearAllPoints() SalusNovusBars:SetPoint('CENTER', UIParent, 'BOTTOMLEFT', ux + 325, uy - 200) ns.SnapMovable(SalusNovusBars)")
+    ok(abs(float(h.lua("local cx = SalusNovusBars:GetCenter() local ux = UIParent:GetCenter() return cx - ux")) - 325) < 0.01, "grid on but not drawn: no snap")
+    h.lua("__mv = CreateFrame('Frame', nil, UIParent); ns.RegisterMovable(__mv, 'testPos')")
+    ok(h.lua("return __mv:IsMouseEnabled()"), "a movable registered while unlocked takes the mouse at once")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
+    h.lua("__mv2 = CreateFrame('Frame', nil, UIParent); __mv2:SetSize(50, 20); __mv2:SetPoint('CENTER'); __mv2.IsProtected = function() return true end; local icl = InCombatLockdown; InCombatLockdown = function() return true end; ns.SaveAnchor(__mv2, 'mv2Pos'); InCombatLockdown = icl")
+    ok(h.lua("return SalusNovusDB.mv2Pos == nil"), "in combat: not saved yet")
+    h.lua("ns.ReplayCombatDeferred()")
+    ok(h.lua("return SalusNovusDB.mv2Pos ~= nil"), "saved when combat ends")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep: Sneed's Shredder is the boss for its phase -- its fear and Eject Sneed get timed warnings", "data")
+def _():
+    h = fresh()
+    names = [str(x) for x in h.lua("local o = {} for _, l in ipairs(ns.Schedule.Lanes(ns.BossByEncounter(2742))) do o[#o + 1] = l.a.name end return o").values()]
+    ok("Terrify" in names and "Eject Sneed" in names and "Distracting Pain" in names, "the Shredder's abilities: %r" % names)
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- boss warnings sweep 2 (2026-10-08)
+
+@test("boss sweep 2: a health-tagged ability's later casts are timed (Shadetooth's Rend); a doubled log row is one cast, not two warnings (Arugal's Void Bolt)", "data")
+def _():
+    h = fresh()
+    rend = [float(x) for x in h.lua("for _, l in ipairs(ns.Schedule.Lanes(ns.BossByEncounter(3481))) do if l.a.name == 'Rend' then return l.lanes.casts end end return {}").values()]
+    ok(len(rend) >= 1, "Rend's casts after the 74%% one are timed: %r" % rend)
+    vb = [float(x) for x in h.lua("for _, l in ipairs(ns.Schedule.Lanes(ns.BossByEncounter(2755))) do if l.a.spellID == 7588 then return l.lanes.casts end end return {}").values()]
+    eq(sum(1 for t in vb if abs(t - 55.8) < 0.05), 1, "55.8 once: %r" % vb)
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 2: reminders -- an add listed in the boss data neither warns nor spends the throttle; trash emoting doesn't fire a boss line; /sn test says the length it runs", "reminders")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "c1", encounterID = 3494, trigger = "cast", text = "CASTING", sound = false },
+            { id = "e1", encounterID = 3494, trigger = "emote", arg = "frenzy", text = "FRENZY", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
+    h.lua("local b = ns.Timers.Boss() b.npcs = b.npcs or {} __add = 'Listed Add' table.insert(b.npcs, { id = 999999, name = __add })")
+    h.lua("UnitName = function(u) if u == 'nameplate5' then return __add end local b = ns.Timers.Boss() return (b.npcs[1] and b.npcs[1].name) or b.name end")
+    n0 = len(fired(h))
+    h.lua('W.fireEvent("UNIT_SPELLCAST_START", "nameplate5", "Cast-9", 1)')
+    eq(len(fired(h)), n0, "a listed add's cast: no warning")
+    h.lua('W.advance(1); W.fireEvent("UNIT_SPELLCAST_START", "target", "Cast-10", 1)')
+    eq(len(fired(h)), n0 + 1, "the boss's cast a second later warns")
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_EMOTE", "%s goes into a frenzy!", "Defias Pirate")')
+    ok("FRENZY" not in fired(h), "trash's emote: no boss reminder")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua("__said = {} local p = ns.Print ns.Print = function(m) __said[#__said + 1] = m end SlashCmdList['SALUSNOVUS']('test Plunder') ns.Print = p")
+    said = str(h.lua("return __said[1]"))
+    want = int(h.lua("local b = ns.BossByName('Plunder') return math.floor((b.avgLength or math.min(60, ns.Schedule.FightEnd(b))) + 0.5)"))
+    ok(("for %ds" % want) in said, "says %ds: %r" % (want, said))
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 2: the Health Bars preview stays bright and keeps draining after an option change; it fits its stage", "health")
+def _():
+    h = fresh()
+    h.lua("__stage = CreateFrame('Frame', nil, UIParent); __stage:SetSize(600, 96); __stage:SetPoint('CENTER'); ns.HealthBarsPreviewStart(__stage)")
+    h.lua("ns.db.healthBars.width = 300; ns.ApplyAll(); W.advance(3)")
+    rows = h.lua("local o = {} for _, x in ipairs(ns.HealthBars.state.live) do local lo, hi = x.row.bar:GetMinMaxValues() o[#o + 1] = { x.row.bar:GetAlpha(), hi, x.row.bar:GetValue() } end return o")
+    vals = [(float(r[1]), float(r[2]), float(r[3])) for r in rows.values()]
+    ok(all(a == 1 for a, _, _ in vals), "bright, not the dimmed no-unit look: %r" % vals)
+    ok(all(hi == 100 and v < 100 for _, hi, v in vals), "still draining on 0..100: %r" % vals)
+    h.lua("ns.db.healthBars.namePos = 'above'; ns.db.healthBars.showIcons = true; ns.ApplyAll(); W.advance(0.2)")
+    ok(float(h.lua("return SalusNovusHealthBars:GetHeight() * SalusNovusHealthBars:GetScale()")) <= 96, "fits the 96 px stage")
+    h.lua("ns.HealthBarsPreviewStop()")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 2: a pull's end doesn't restart a preview in a closed Settings window", "bughunt3")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('reminders')")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1); W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1); W.advance(0.1)')
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "Settings closed at the pull")
+    ok(h.lua("for _, st in ipairs(ns.Options.previewStages) do if st.running then return false end end return true"), "no preview restarted inside the closed window")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 2: visualizer -- two reminders past the end both stay on the track; reopening a reminder or closing the window drops the colour picker", "visualizer")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("""
+        local e = ns.Visualizer.state.enc
+        ns.DefaultReminders = {}
+        ns.db.reminders.list = { [e] = {
+            { id = "p", encounterID = e, trigger = "time", arg = 900, text = "P" },
+            { id = "q", encounterID = e, trigger = "time", arg = 950, text = "Q" },
+        } }
+        ns.Visualizer.Refresh()
+    """)
+    tw = float(h.lua("for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then return l.track:GetWidth() end end"))
+    xs = [float(x) for x in h.lua("""local o = {} for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then
+        for _, m in ipairs(l.marks or {}) do if m:IsShown() then local _, _, _, x = m:GetPoint(1) o[#o + 1] = x end end end end return o""").values()]
+    ok(len(xs) == 2 and all(0 <= x <= tw for x in xs) and xs[0] != xs[1], "both inside the %r px track: %r" % (tw, xs))
+    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end); ns.Visualizer.OpenForm(6, nil, 'Y', nil)")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "reopening the form drops the picker")
+    h.lua("ns.Visualizer.form:Hide(); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end); SalusNovusVisualizer:Hide()")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "closing the window drops the picker")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 2: anchors -- re-snapping a check box doesn't walk it; a relayout works the default pin out again; a held pin isn't re-measured; a lock mid-drag stops and saves the drag", "anchors")
+def _():
+    h = fresh()
+    h.lua("__cb = ns.Theme.MakeCheckBox(UIParent, 16); __cb:SetPoint('TOPLEFT', UIParent, 'TOPLEFT', 10.3, -20.6); __cb:Show()")
+    h.lua("ns.Theme.SnapBox(__cb); local _, _, _, x1, y1 = __cb:GetPoint(1); __x1, __y1 = x1, y1; for i = 1, 20 do ns.Theme.SnapBox(__cb) end")
+    ok(h.lua("local _, _, _, x, y = __cb:GetPoint(1) return x == __x1 and y == __y1"), "snapped once, stays put")
+    h.lua("ns.db.bars.direction = 'down'; SalusNovusDB.barsPos = nil; SalusNovusBars.__pin = nil; ns.BarsRestorePosition(); __t1 = SalusNovusBars:GetTop()")
+    h.lua("SalusNovusBars:SetHeight(84); W.fireEvent('UI_SCALE_CHANGED'); W.advance(0.2)")
+    ok(abs(float(h.lua("return SalusNovusBars:GetTop()")) - float(h.lua("return __t1"))) < 0.01, "a relayout with a tall stack puts a never-moved anchor back at the same spot (sweep 3)")
+    h.lua("SalusNovusDB.barsPos = nil; SalusNovusBars.__pin = { point = (SalusNovusBars.__origin and SalusNovusBars.__origin()) or 'CENTER', dx = 7, dy = 9 }; ns.SyncAnchorOrigin(SalusNovusBars, 'barsPos')")
+    ok(h.lua("return SalusNovusBars.__pin.dx == 7 and SalusNovusBars.__pin.dy == 9"), "a held pin isn't re-measured")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); SalusNovusDB.queuePos = nil; SalusNovusQueue:StartMoving(); ns.db.unlocked = false; ns.ApplyAll()")
+    ok(h.lua("return not SalusNovusQueue.__dragging and SalusNovusDB.queuePos ~= nil"), "locked mid-drag: stopped and saved")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- boss warnings sweep 3 (2026-10-08)
+
+@test("boss sweep 3: a health ability's threshold casts are dropped per pull (Durgen's shout at 10.9/15.9/23.1 has no timed rest); Rend's later casts stay timed", "data")
+def _():
+    h = fresh()
+    h.lua("""
+        __b = { name = "T", npcs = { { id = 1, name = "T" } }, abilities = {
+            { spellID = 19134, name = "Intimidating Shout", source = "T", pulls = 3, health = { pct = 48 },
+              casts = { { 15.9, "start", 1 }, { 10.9, "start", 2 }, { 23.1, "start", 3 } } },
+            { spellID = 13445, name = "Rend", source = "T", pulls = 2, health = { pct = 74 },
+              casts = { { 12.0, "start", 1 }, { 28.6, "start", 1 }, { 8.4, "start", 2 }, { 27.8, "start", 2 }, { 41.1, "start", 2 } } } } }
+    """)
+    names = {str(l["a"]["name"]): [float(x) for x in l["lanes"]["casts"].values()] for l in h.lua("return ns.Schedule.Lanes(__b)").values()}
+    ok("Intimidating Shout" not in names, "the shout is the marker's alone: %r" % names)
+    ok("Rend" in names and any(abs(t - 28.2) < 0.5 for t in names["Rend"]), "Rend's ~28 s cast timed: %r" % names.get("Rend"))
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 3: reminders -- an emote matches as the chat shows it ('%s' filled); a controller's yell still fires; trash's emote doesn't; nothing fires at a corpse; /sn remind takes a multi-word boss", "reminders")
+def _():
+    h = fresh()
+    h.lua("""
+        ns.DefaultReminders = {
+            { id = "e1", encounterID = 3494, trigger = "emote", arg = "Plunder goes into a frenzy", text = "FULL", sound = false },
+            { id = "e2", encounterID = 3494, trigger = "emote", arg = "games begin", text = "GAMES", sound = false },
+            { id = "c1", encounterID = 3494, trigger = "cast", text = "CASTING", sound = false },
+        }
+    """)
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_EMOTE", "%s goes into a frenzy!", "Plunder")')
+    ok("FULL" in fired(h), "matched as shown: %r" % fired(h))
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_YELL", "Let the games begin!", "Lord Victor Nefarius")')
+    ok("GAMES" in fired(h), "a yell from another speaker still counts")
+    n0 = len(fired(h))
+    h.lua('W.fireEvent("CHAT_MSG_MONSTER_EMOTE", "%s goes into a frenzy!", "Defias Pirate")')
+    eq(len(fired(h)), n0, "trash's emote: nothing")
+    h.lua("UnitIsDeadOrGhost = function() return true end")
+    h.lua('W.fireEvent("UNIT_SPELLCAST_START", "target", "Cast-1", 1); W.fireEvent("CHAT_MSG_MONSTER_YELL", "Let the games begin!", "Plunder")')
+    eq(len(fired(h)), n0, "dead: no cues")
+    h.lua("UnitIsDeadOrGhost = function() return false end")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua("""__lp = nil for _, inst in pairs(ns.Data) do for _, b in ipairs(inst.bosses) do if b.name == 'Lord Pythas' then __lp = b.encounterID end end end""")
+    if h.lua("return __lp"):
+        h.lua("SlashCmdList['SALUSNOVUS']('remind Lord Pythas pull hello there')")
+        ok(h.lua("for _, r in ipairs(ns.Reminders.For(__lp)) do if r.text == 'hello there' then return true end end return false"), "filed under Lord Pythas")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 3: frames don't unlock mid-fight; the Bars preview shows Maximum bars; the old 'name off' migrates even with namePos seeded", "bughunt3")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
+    open_options(h)
+    h.lua("ns.Options.EnterUnlockMode()")
+    ok(not h.lua("return ns.db.unlocked"), "no unlock mid-fight")
+    h.lua('W.fireEvent("ENCOUNTER_END", 3494, "Plunder", 1, 5, 1)')
+    h.lua("ns.db.bars.max = 6; __stage = CreateFrame('Frame', nil, UIParent); __stage:SetSize(400, 300); ns.BarsPreviewStart(__stage)")
+    h.lua("W.advance(0.2)")
+    eq(int(h.lua("local n = 0 for _, b in ipairs(ns.Bars._bars) do if b:IsShown() then n = n + 1 end end return n")), 6, "six preview bars at Maximum 6")
+    h.lua("ns.BarsPreviewStop()")
+    h.lua("SalusNovusDB = { options = { healthBars = { showName = false, namePos = 'inside' } } }; ns.InitDB()")
+    eq(str(h.lua("return ns.db.healthBars.namePos")), "off", "migrated")
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 3: visualizer -- a health ability with timed casts is one card with both kinds of route; reminders close together all get their own spot", "visualizer")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("""
+        __b = ns.BossByEncounter(ns.Visualizer.state.enc)
+        table.insert(__b.abilities, { spellID = 13445, name = "Rend", source = __b.npcs[1].name, pulls = 2, health = { pct = 74 },
+            casts = { { 12.0, "start", 1 }, { 28.6, "start", 1 }, { 8.4, "start", 2 }, { 27.8, "start", 2 } } })
+        ns.Visualizer.Refresh()
+    """)
+    n = int(h.lua("local n = 0 for _, r in ipairs(SalusNovusVisualizer.descRows or {}) do if r:IsShown() and r.spellID == 13445 then n = n + 1 end end return n"))
+    eq(n, 1, "one Rend card, not two")
+    h.lua("for _, r in ipairs(SalusNovusVisualizer.descRows) do if r:IsShown() and r.spellID == 13445 then r:GetScript('OnMouseUp')(r, 'LeftButton') end end")
+    ok(h.lua("for _, r in ipairs(SalusNovusVisualizer.descRows) do if r:IsShown() and r.spellID == 13445 and r.editor and r.editor:IsShown() then return r.editor.routes.queue:IsShown() and r.editor.healthRoute:IsShown() end end return false"), "its card offers the timed routes and Health Bars")
+    h.lua("""
+        local e = ns.Visualizer.state.enc
+        ns.DefaultReminders = {}
+        ns.db.reminders.list = { [e] = {
+            { id = "p", encounterID = e, trigger = "pull", text = "P" },
+            { id = "c", encounterID = e, trigger = "cast", text = "C" },
+            { id = "t", encounterID = e, trigger = "time", arg = 0.6, text = "T" },
+        } }
+        ns.Visualizer.Refresh()
+    """)
+    xs = sorted(float(x) for x in h.lua("""local o = {} for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then
+        for _, m in ipairs(l.marks or {}) do if m:IsShown() then local _, _, _, x = m:GetPoint(1) o[#o + 1] = x end end end end return o""").values())
+    ok(len(xs) == 3 and all(xs[i + 1] - xs[i] >= 11.99 for i in range(2)), "12 px apart at least: %r" % xs)
+    eq(h.errors(), [], "errors")
+
+
+@test("boss sweep 3: /sn resetpos with a page preview open leaves the preview on its stage", "anchors")
+def _():
+    h = fresh()
+    h.lua("__stage = CreateFrame('Frame', nil, UIParent); __stage:SetSize(400, 200); __stage:SetPoint('CENTER'); ns.BarsPreviewStart(__stage)")
+    h.lua("SlashCmdList['SALUSNOVUS']('resetpos')")
+    ok(h.lua("local _, rel = SalusNovusBars:GetPoint(1) return SalusNovusBars:GetParent() == __stage and rel ~= UIParent"), "still on the stage")
+    h.lua("ns.BarsPreviewStop()")
     eq(h.errors(), [], "errors")

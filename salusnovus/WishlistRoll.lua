@@ -66,9 +66,15 @@ function R.Line(w)
     return name .. spec .. tag
 end
 
+-- Strips no roll is using go back here; a long session's rolls reuse them.
+local pool = {}
+R.pool = pool
+
 local function Strip(rollID)
     local s = strips[rollID]
     if s then return s end
+    s = table.remove(pool)
+    if s then strips[rollID] = s return s end
     local Th = T()
     s = CreateFrame("Frame", nil, UIParent)
     s:SetFrameStrata("DIALOG")
@@ -125,10 +131,12 @@ end
 --- Re-find every open roll and put (or take away) its strip.
 function R.Sweep()
     local used = {}
+    -- (expiry first, module on or off: off, rolls never expired and the
+    -- ticker ran all session -- the sweep)
+    local now = GetTime and GetTime() or 0
+    for id, untilT in pairs(active) do if untilT < now then active[id] = nil; framedOnce[id] = nil end end
     if Enabled() and W() then
-        local now = GetTime and GetTime() or 0
-        for id, untilT in pairs(active) do if untilT < now then active[id] = nil; framedOnce[id] = nil end end
-        local framed = {}
+        local framed, lowest = {}, nil
         -- Rolls on screen: the strip hangs under their frame.
         for _, f in ipairs(RollFrames()) do
             local rollID = ns.Num(f.rollID) and f.rollID or nil
@@ -145,11 +153,13 @@ function R.Sweep()
                     s:SetFrameLevel((f:GetFrameLevel() or 0) + 5)
                     s:Show()
                     used[rollID] = true
+                    local b = tonumber(s:GetBottom())
+                    if not lowest or (b and (not lowest.b or b < lowest.b)) then lowest = { s = s, b = b } end
                 end
             end
         end
         -- Rolls whose frame wasn't found: stacked under the container, or at the top.
-        local n = 0
+        local n, yOff = 0, 0
         for rollID in pairs(active) do
             if not framed[rollID] and not framedOnce[rollID] then
                 local wanters = Wanted(rollID)
@@ -159,19 +169,31 @@ function R.Sweep()
                     s:ClearAllPoints()
                     s:SetWidth(280)
                     local c = rawget(_G, "GroupLootContainer")
-                    if type(c) == "table" and c.GetBottom and Shown(c) then
-                        s:SetPoint("TOP", c, "BOTTOM", 0, -4 - n * 70)
+                    -- Stacked by their real heights: five wanters is taller than 70.
+                    if lowest then
+                        -- under the lowest framed roll's strip, not over it (it read
+                        -- as that roll's wanters: the sweep)
+                        s:SetPoint("TOP", lowest.s, "BOTTOM", 0, -4 - yOff)
+                    elseif type(c) == "table" and c.GetBottom and Shown(c) then
+                        s:SetPoint("TOP", c, "BOTTOM", 0, -4 - yOff)
                     else
-                        s:SetPoint("TOP", UIParent, "TOP", 0, -160 - n * 70)
+                        s:SetPoint("TOP", UIParent, "TOP", 0, -160 - yOff)
                     end
                     s:Show()
                     used[rollID] = true
                     n = n + 1
+                    yOff = yOff + (tonumber(s:GetHeight()) or 70) + 4
                 end
             end
         end
     end
-    for rollID, s in pairs(strips) do if not used[rollID] then s:Hide() end end
+    for rollID, s in pairs(strips) do
+        if not used[rollID] then
+            s:Hide()
+            strips[rollID] = nil
+            pool[#pool + 1] = s
+        end
+    end
     R.ticker:SetShown(next(active) ~= nil or next(used) ~= nil)
     return used
 end
@@ -197,6 +219,8 @@ ns.On("START_LOOT_ROLL", function(rollID, rollTime)
     active[rollID] = (GetTime and GetTime() or 0) + secs + 2
     Soon()
 end)
+-- A /reload mid-roll: the client restores the roll frames but no event says so.
+ns.On("PLAYER_ENTERING_WORLD", function() R.Sweep() end)   -- direct: no timer for an empty sweep
 ns.On("CANCEL_LOOT_ROLL", function(rollID)
     if ns.Num(rollID) then active[rollID] = nil; framedOnce[rollID] = nil end
     Soon()

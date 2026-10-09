@@ -18,7 +18,7 @@ ns.Data[33] = {
             avgLength = 29.3,
             npcs = {
                 { id = 3914, name = "Rethilgore", displayID = 524 },
-                { id = 3861, name = "Bleak Worg", displayID = nil },
+                { id = 3861, name = "Bleak Worg", displayID = 801 },
             },
             abilities = {
                 { spellID = 7127, name = "Wavering Will", source = "Bleak Worg", pulls = 1,
@@ -37,7 +37,7 @@ ns.Data[33] = {
             avgLength = 18.7,
             npcs = {
                 { id = 3886, name = "Razorclaw the Butcher", displayID = 524 },
-                { id = 3857, name = "Shadowfang Glutton", displayID = nil },
+                { id = 3857, name = "Shadowfang Glutton", displayID = 202 },
             },
             abilities = {
                 { spellID = 7122, name = "Blood Tap", source = "Shadowfang Glutton", pulls = 1,
@@ -53,7 +53,7 @@ ns.Data[33] = {
             avgLength = 44.3,
             npcs = {
                 { id = 3887, name = "Baron Silverlaine", displayID = 3222 },
-                { id = 3875, name = "Haunted Servitor", displayID = nil },
+                { id = 3875, name = "Haunted Servitor", displayID = 3229 },
             },
             abilities = {
                 { spellID = 7068, name = "Veil of Shadow", source = "Baron Silverlaine", pulls = 1,
@@ -72,7 +72,7 @@ ns.Data[33] = {
             avgLength = 60.0,
             npcs = {
                 { id = 4278, name = "Commander Springvale", displayID = 3223 },
-                { id = 3875, name = "Haunted Servitor", displayID = nil },
+                { id = 3875, name = "Haunted Servitor", displayID = 3229 },
             },
             abilities = {
                 { spellID = 5588, name = "Hammer of Justice", source = "Commander Springvale", pulls = 1,
@@ -97,8 +97,8 @@ ns.Data[33] = {
             avgLength = 46.0,
             npcs = {
                 { id = 4279, name = "Odo the Blindwatcher", displayID = 522 },
-                { id = 3868, name = "Blood Seeker", displayID = nil },
-                { id = 3866, name = "Vile Bat", displayID = nil },
+                { id = 3868, name = "Blood Seeker", displayID = 1955 },
+                { id = 3866, name = "Vile Bat", displayID = 138628 },
             },
             abilities = {
                 { spellID = 7140, name = "Expose Weakness", source = "Blood Seeker", pulls = 1,

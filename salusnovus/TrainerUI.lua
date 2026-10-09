@@ -272,7 +272,7 @@ function UI.Refresh()
     end
     if not st then
         for _, r in ipairs(rows) do r:Hide() end
-        content.empty:SetText("No trainer list for this class yet. Open a class trainer once and it is captured.")
+        content.empty:SetText("No trainer list for this class yet.")
         content.empty:Show()
         content.list:SetHeight(10)
         return
@@ -535,11 +535,19 @@ local function TryAttach()
     if tab then return true end
     if not T().Enabled() then UI.why = "the setting is off" return false end
     if not FindHost() then UI.why = "no spellbook frame yet (PlayerSpellsFrame / SpellBookFrame)" return false end
+    local hadContent, hadTab = content ~= nil, tab ~= nil
     local ok, err = pcall(function()
         BuildContent(host.book, host.page)
         BuildTab()
     end)
-    if not ok then UI.why = "build error: " .. ns.S(err) return false end
+    if not ok then
+        -- A half-built frame must not count as built: the next attach would
+        -- report success over a page with no list (and error on refresh).
+        if not hadContent and content then content:Hide() content = nil end
+        if not hadTab and tab then tab:Hide() tab = nil UI.tab = nil end
+        UI.why = "build error: " .. ns.S(err)
+        return false
+    end
     UI.why = nil
     return true
 end

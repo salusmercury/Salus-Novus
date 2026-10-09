@@ -253,6 +253,7 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
         header = fh.readline()
         advanced = "ADVANCED_LOG_ENABLED,1" in header
         current_enc = None   # the ENCOUNTER_START..END we're inside, if any
+        struck = set()       # creature GUIDs a player hit first (a critter hitting back is not an enemy)
 
         def close_on_death():
             # Forever sometimes never sends ENCOUNTER_END (Mr. Smite, Deadmines
@@ -346,6 +347,8 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
             dest_guid = fields[5] if len(fields) > 5 else ""
             dest_name = fields[6] if len(fields) > 6 else ""
             dest_flags = fields[7] if len(fields) > 7 else ""
+            if subevent in DAMAGE_EVENTS and source_guid.startswith("Player-") and dest_guid.startswith("Creature-"):
+                struck.add(dest_guid)
 
             if subevent == "SPELL_SUMMON" and source_guid.startswith(("Player-", "Pet-")):
                 snpc, _ = npc_id_and_instance(dest_guid)
@@ -493,11 +496,17 @@ def parse_file(path, dungeons, zone_names, stats, encounters):
             mob["events"] += 1
             try:
                 sf = int(source_flags, 16)
-                # A NEUTRAL creature acting on a player is an enemy too: the
-                # Relic Guardian (Excavation Site: Wetlands, 2026-10-04) is
-                # flagged neutral (0xa28) the whole fight, so the boss and its
-                # four abilities were dropped. Critters never touch a player.
-                if sf & REACTION_HOSTILE or (sf & REACTION_NEUTRAL and dest_guid.startswith("Player-")):
+                # A NEUTRAL creature HARMING a player is an enemy too: the Relic
+                # Guardian (Excavation Site: Wetlands, 2026-10-04) is flagged
+                # neutral (0xa28) the whole fight, so the boss and its four
+                # abilities were dropped. Harm only (a buffing NPC isn't one),
+                # and inside a boss pull or unprovoked (a frog hitting back
+                # after a player struck it isn't one either).
+                harmful = subevent in DAMAGE_EVENTS or (
+                    subevent == "SPELL_AURA_APPLIED" and len(fields) > 12 and fields[12] == "DEBUFF")
+                if sf & REACTION_HOSTILE or (
+                        sf & REACTION_NEUTRAL and harmful and dest_guid.startswith("Player-")
+                        and (current_enc is not None or source_guid not in struck)):
                     mob["hostile"] = True
             except (ValueError, TypeError):
                 pass

@@ -105,6 +105,121 @@
    ],
    "length": 30.3,
    "success": true
+  },
+  {
+   "name": "Infurnus",
+   "encounter_id": 3495,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092526_215116.txt",
+   "casts": [
+    [
+     0.0,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     2.4,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     5.4,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "success"
+    ],
+    [
+     6.1,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     7.3,
+     11970,
+     "Fire Nova",
+     "Magmatus",
+     "success"
+    ],
+    [
+     9.8,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     10.6,
+     1293228,
+     "Combust",
+     "Magmatus",
+     "start"
+    ],
+    [
+     12.8,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "success"
+    ],
+    [
+     13.4,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     13.6,
+     1293228,
+     "Combust",
+     "Magmatus",
+     "success"
+    ],
+    [
+     15.9,
+     1291218,
+     "Summon Fiery Assistant",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     19.5,
+     11970,
+     "Fire Nova",
+     "Magmatus",
+     "success"
+    ],
+    [
+     21.9,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ],
+    [
+     24.9,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "success"
+    ],
+    [
+     25.5,
+     20793,
+     "Fireball",
+     "Dark Iron Summoner",
+     "start"
+    ]
+   ],
+   "length": 26.9,
+   "success": true
   }
  ],
  "Plunder": [
@@ -224,6 +339,44 @@
     ]
    ],
    "length": 29.7,
+   "success": true
+  },
+  {
+   "name": "Plunder",
+   "encounter_id": 3494,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092526_215116.txt",
+   "casts": [
+    [
+     9.7,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ],
+    [
+     13.4,
+     21055,
+     "Crush Armor",
+     "Plunder",
+     "success"
+    ],
+    [
+     18.2,
+     22911,
+     "Charge",
+     "Plunder",
+     "success"
+    ],
+    [
+     27.2,
+     11130,
+     "Knock Away",
+     "Plunder",
+     "success"
+    ]
+   ],
+   "length": 29.3,
    "success": true
   }
  ],
@@ -386,6 +539,107 @@
     ]
    ],
    "length": 25.8,
+   "success": true
+  },
+  {
+   "name": "Durgen Dirgehammer",
+   "encounter_id": 3496,
+   "difficulty": "1",
+   "file": "WoWCombatLog-092526_215116.txt",
+   "casts": [
+    [
+     8.5,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     9.7,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     10.0,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     11.9,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     21.8,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     22.9,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     23.1,
+     19134,
+     "Intimidating Shout",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     24.3,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     27.9,
+     11977,
+     "Rend",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     32.4,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ],
+    [
+     32.8,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     35.3,
+     5568,
+     "Trample",
+     "Lesser Stone Golem",
+     "success"
+    ],
+    [
+     40.4,
+     25710,
+     "Heroic Strike",
+     "Durgen Dirgehammer",
+     "success"
+    ]
+   ],
+   "length": 40.9,
    "success": true
   }
  ],
@@ -613,6 +867,1475 @@
    "length": 90.2,
    "success": true,
    "closed_by": "boss death (no ENCOUNTER_END)"
+  }
+ ],
+ "Witherfang": [
+  {
+   "name": "Witherfang",
+   "encounter_id": 3353,
+   "difficulty": "1",
+   "file": "WoWCombatLog-093026_191745.txt",
+   "casts": [
+    [
+     1.6,
+     3358,
+     "Leech Poison",
+     "Witherfang",
+     "success"
+    ]
+   ],
+   "length": 21.0,
+   "success": true
+  }
+ ],
+ "The Abandoned": [
+  {
+   "name": "The Abandoned",
+   "encounter_id": 3357,
+   "difficulty": "1",
+   "file": "WoWCombatLog-093026_191745.txt",
+   "casts": [
+    [
+     9.7,
+     1266011,
+     "Life Drain",
+     "The Abandoned",
+     "start"
+    ],
+    [
+     11.7,
+     1266011,
+     "Life Drain",
+     "The Abandoned",
+     "success"
+    ],
+    [
+     11.7,
+     14907,
+     "Frost Nova",
+     "The Abandoned",
+     "success"
+    ],
+    [
+     20.6,
+     1266011,
+     "Life Drain",
+     "The Abandoned",
+     "start"
+    ]
+   ],
+   "length": 28.7,
+   "success": true
+  }
+ ],
+ "Rath'mael": [
+  {
+   "name": "Rath'mael",
+   "encounter_id": 3354,
+   "difficulty": "1",
+   "file": "WoWCombatLog-093026_191745.txt",
+   "casts": [
+    [
+     10.9,
+     18399,
+     "Flamestrike",
+     "Rath'mael",
+     "start"
+    ],
+    [
+     13.9,
+     18399,
+     "Flamestrike",
+     "Rath'mael",
+     "success"
+    ]
+   ],
+   "length": 28.5,
+   "success": true
+  }
+ ],
+ "Bjork": [
+  {
+   "name": "Bjork",
+   "encounter_id": 3412,
+   "difficulty": "1",
+   "file": "WoWCombatLog-093026_191745.txt",
+   "casts": [
+    [
+     5.0,
+     14099,
+     "Mighty Blow",
+     "Bjork",
+     "success"
+    ],
+    [
+     11.1,
+     14099,
+     "Mighty Blow",
+     "Bjork",
+     "success"
+    ],
+    [
+     14.8,
+     1301635,
+     "Anti-Magic Shield",
+     "Bjork",
+     "start"
+    ],
+    [
+     16.8,
+     1301635,
+     "Anti-Magic Shield",
+     "Bjork",
+     "success"
+    ],
+    [
+     22.1,
+     14099,
+     "Mighty Blow",
+     "Bjork",
+     "success"
+    ],
+    [
+     24.6,
+     14099,
+     "Mighty Blow",
+     "Living Monstrosity",
+     "success"
+    ],
+    [
+     30.6,
+     14099,
+     "Mighty Blow",
+     "Bjork",
+     "success"
+    ]
+   ],
+   "length": 31.9,
+   "success": true
+  }
+ ],
+ "The Butcher": [
+  {
+   "name": "The Butcher",
+   "encounter_id": 3355,
+   "difficulty": "1",
+   "file": "WoWCombatLog-093026_191745.txt",
+   "casts": [
+    [
+     14.0,
+     17307,
+     "Knockout",
+     "The Baron",
+     "success"
+    ],
+    [
+     14.6,
+     5568,
+     "Trample",
+     "The Baron",
+     "success"
+    ],
+    [
+     26.7,
+     5568,
+     "Trample",
+     "The Baron",
+     "success"
+    ]
+   ],
+   "length": 28.3,
+   "success": true
+  }
+ ],
+ "Rethilgore": [
+  {
+   "name": "Rethilgore",
+   "encounter_id": 2748,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     2.1,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     7.0,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     8.2,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     9.4,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     10.7,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     10.7,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     13.1,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     14.3,
+     7295,
+     "Soul Drain",
+     "Rethilgore",
+     "start"
+    ],
+    [
+     16.8,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     20.4,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     22.8,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     24.1,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     27.7,
+     7295,
+     "Soul Drain",
+     "Rethilgore",
+     "start"
+    ],
+    [
+     27.7,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ],
+    [
+     28.9,
+     7127,
+     "Wavering Will",
+     "Bleak Worg",
+     "success"
+    ]
+   ],
+   "length": 29.3,
+   "success": true
+  }
+ ],
+ "Razorclaw the Butcher": [
+  {
+   "name": "Razorclaw the Butcher",
+   "encounter_id": 2749,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     12.7,
+     7122,
+     "Blood Tap",
+     "Shadowfang Glutton",
+     "success"
+    ]
+   ],
+   "length": 18.7,
+   "success": true
+  }
+ ],
+ "Baron Silverlaine": [
+  {
+   "name": "Baron Silverlaine",
+   "encounter_id": 2750,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     0.0,
+     7068,
+     "Veil of Shadow",
+     "Baron Silverlaine",
+     "start"
+    ],
+    [
+     1.5,
+     7068,
+     "Veil of Shadow",
+     "Baron Silverlaine",
+     "success"
+    ],
+    [
+     2.4,
+     7057,
+     "Haunting Spirits",
+     "Haunted Servitor",
+     "start"
+    ],
+    [
+     23.2,
+     7068,
+     "Veil of Shadow",
+     "Baron Silverlaine",
+     "start"
+    ],
+    [
+     24.7,
+     7068,
+     "Veil of Shadow",
+     "Baron Silverlaine",
+     "success"
+    ],
+    [
+     29.3,
+     7057,
+     "Haunting Spirits",
+     "Haunted Servitor",
+     "start"
+    ]
+   ],
+   "length": 44.3,
+   "success": true
+  }
+ ],
+ "Commander Springvale": [
+  {
+   "name": "Commander Springvale",
+   "encounter_id": 2751,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     2.5,
+     5588,
+     "Hammer of Justice",
+     "Commander Springvale",
+     "success"
+    ],
+    [
+     5.8,
+     7057,
+     "Haunting Spirits",
+     "Haunted Servitor",
+     "start"
+    ],
+    [
+     7.8,
+     7057,
+     "Haunting Spirits",
+     "Haunted Servitor",
+     "success"
+    ],
+    [
+     31.3,
+     1026,
+     "Holy Light",
+     "Commander Springvale",
+     "start"
+    ],
+    [
+     32.5,
+     642,
+     "Divine Shield",
+     "Commander Springvale",
+     "success"
+    ],
+    [
+     49.6,
+     1026,
+     "Holy Light",
+     "Commander Springvale",
+     "start"
+    ],
+    [
+     52.1,
+     1026,
+     "Holy Light",
+     "Commander Springvale",
+     "success"
+    ]
+   ],
+   "length": 60.0,
+   "success": true
+  }
+ ],
+ "Odo the Blindwatcher": [
+  {
+   "name": "Odo the Blindwatcher",
+   "encounter_id": 2752,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     6.3,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     7.0,
+     7145,
+     "Diving Sweep",
+     "Vile Bat",
+     "success"
+    ],
+    [
+     9.5,
+     6713,
+     "Disarm",
+     "Vile Bat",
+     "success"
+    ],
+    [
+     10.3,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     14.6,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     20.0,
+     7145,
+     "Diving Sweep",
+     "Vile Bat",
+     "success"
+    ],
+    [
+     22.1,
+     7481,
+     "Howling Rage",
+     "Odo the Blindwatcher",
+     "start"
+    ],
+    [
+     24.6,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     30.7,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     32.0,
+     6713,
+     "Disarm",
+     "Vile Bat",
+     "success"
+    ],
+    [
+     32.6,
+     7483,
+     "Howling Rage",
+     "Odo the Blindwatcher",
+     "start"
+    ],
+    [
+     34.0,
+     7145,
+     "Diving Sweep",
+     "Vile Bat",
+     "success"
+    ],
+    [
+     34.1,
+     7483,
+     "Howling Rage",
+     "Odo the Blindwatcher",
+     "success"
+    ],
+    [
+     37.5,
+     7484,
+     "Howling Rage",
+     "Odo the Blindwatcher",
+     "start"
+    ],
+    [
+     38.7,
+     7140,
+     "Expose Weakness",
+     "Blood Seeker",
+     "success"
+    ],
+    [
+     39.0,
+     7484,
+     "Howling Rage",
+     "Odo the Blindwatcher",
+     "success"
+    ]
+   ],
+   "length": 46.0,
+   "success": true
+  }
+ ],
+ "Fenrus the Devourer": [
+  {
+   "name": "Fenrus the Devourer",
+   "encounter_id": 2753,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     17.2,
+     7125,
+     "Toxic Saliva",
+     "Fenrus the Devourer",
+     "start"
+    ],
+    [
+     17.8,
+     7125,
+     "Toxic Saliva",
+     "Fenrus the Devourer",
+     "success"
+    ]
+   ],
+   "length": 36.8,
+   "success": true
+  }
+ ],
+ "Wolf Master Nandos": [
+  {
+   "name": "Wolf Master Nandos",
+   "encounter_id": 2754,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     46.4,
+     7488,
+     "Call Slavering Worg",
+     "Wolf Master Nandos",
+     "start"
+    ],
+    [
+     47.7,
+     7488,
+     "Call Slavering Worg",
+     "Wolf Master Nandos",
+     "success"
+    ]
+   ],
+   "length": 55.5,
+   "success": true
+  }
+ ],
+ "Archmage Arugal": [
+  {
+   "name": "Archmage Arugal",
+   "encounter_id": 2755,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100126_235045.txt",
+   "casts": [
+    [
+     0.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     5.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     8.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     11.9,
+     7803,
+     "Thundershock",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     14.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     17.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     18.0,
+     7621,
+     "Arugal's Curse",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     27.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     30.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     31.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     34.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     38.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     41.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     42.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     47.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     50.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     50.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     53.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     55.8,
+     7621,
+     "Arugal's Curse",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     55.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     55.8,
+     7803,
+     "Thundershock",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     55.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     58.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     59.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     62.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     63.5,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     66.5,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     67.2,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     68.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     71.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     74.5,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     80.6,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     83.6,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     84.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     88.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     91.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     91.6,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     98.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     101.9,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     103.8,
+     7621,
+     "Arugal's Curse",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     104.0,
+     7803,
+     "Thundershock",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     104.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     108.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     111.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     112.3,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     115.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     117.2,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     125.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     128.8,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     129.4,
+     7621,
+     "Arugal's Curse",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     129.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     130.6,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     144.1,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     148.9,
+     7803,
+     "Thundershock",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     150.1,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     153.1,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     158.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     161.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     163.5,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     168.4,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     175.7,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     180.6,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     185.5,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     189.1,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     194.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     200.1,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ],
+    [
+     205.0,
+     7621,
+     "Arugal's Curse",
+     "Archmage Arugal",
+     "success"
+    ],
+    [
+     205.0,
+     7588,
+     "Void Bolt",
+     "Archmage Arugal",
+     "start"
+    ]
+   ],
+   "length": 205.0,
+   "success": false
+  }
+ ],
+ "Saltspine": [
+  {
+   "name": "Saltspine",
+   "encounter_id": 3480,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100426_005105.txt",
+   "casts": [
+    [
+     3.2,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     3.2,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     5.0,
+     3604,
+     "Tendon Rip",
+     "Saltspine",
+     "success"
+    ],
+    [
+     10.0,
+     1316382,
+     "Dust Storm",
+     "Saltspine",
+     "success"
+    ],
+    [
+     31.5,
+     1316382,
+     "Dust Storm",
+     "Saltspine",
+     "success"
+    ],
+    [
+     34.8,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     35.3,
+     3604,
+     "Tendon Rip",
+     "Saltspine",
+     "success"
+    ],
+    [
+     48.5,
+     3604,
+     "Tendon Rip",
+     "Marsh Skulker",
+     "success"
+    ]
+   ],
+   "length": 48.8,
+   "success": true
+  }
+ ],
+ "Shadetooth": [
+  {
+   "name": "Shadetooth",
+   "encounter_id": 3481,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100426_005105.txt",
+   "casts": [
+    [
+     12.0,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     12.2,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     12.2,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     14.1,
+     14100,
+     "Terrifying Roar",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     16.1,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     16.9,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     17.3,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     28.6,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ]
+   ],
+   "length": 37.6,
+   "success": false
+  },
+  {
+   "name": "Shadetooth",
+   "encounter_id": 3481,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100426_005105.txt",
+   "casts": [
+    [
+     3.7,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     8.4,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     11.2,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     12.1,
+     14100,
+     "Terrifying Roar",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     19.3,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     22.2,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     22.2,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     27.8,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     30.2,
+     1284435,
+     "Enrage",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     34.3,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     35.1,
+     14100,
+     "Terrifying Roar",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     35.5,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     41.1,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ],
+    [
+     42.6,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     46.4,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     48.8,
+     1309069,
+     "Rend Flesh",
+     "Thicket Lurker",
+     "success"
+    ],
+    [
+     51.3,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     51.3,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     52.6,
+     3427,
+     "Infected Wound",
+     "Thicket Hunter",
+     "success"
+    ],
+    [
+     54.5,
+     13445,
+     "Rend",
+     "Shadetooth",
+     "success"
+    ]
+   ],
+   "length": 55.0,
+   "success": true
+  }
+ ],
+ "Relic Guardian": [
+  {
+   "name": "Relic Guardian",
+   "encounter_id": 3482,
+   "difficulty": "1",
+   "file": "WoWCombatLog-100426_005105.txt",
+   "casts": [
+    [
+     2.9,
+     8374,
+     "Arcing Smash",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     15.4,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     15.4,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     15.4,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     15.9,
+     8078,
+     "Thunderclap",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     32.8,
+     10101,
+     "Knock Away",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     45.3,
+     8078,
+     "Thunderclap",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     45.7,
+     744,
+     "Poison",
+     "Highland Spider",
+     "success"
+    ],
+    [
+     50.1,
+     11876,
+     "War Stomp",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     58.6,
+     10101,
+     "Knock Away",
+     "Relic Guardian",
+     "success"
+    ],
+    [
+     67.9,
+     8374,
+     "Arcing Smash",
+     "Relic Guardian",
+     "success"
+    ]
+   ],
+   "length": 74.1,
+   "success": true
   }
  ]
 }

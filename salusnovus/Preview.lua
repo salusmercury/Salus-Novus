@@ -182,6 +182,9 @@ local function Apply()
         return
     end
     Build()
+    -- A settings change (size, colour, icon, font) re-styles the lines now
+    -- showing: their per-key latch would otherwise skip them.
+    for _, f in ipairs(lines) do f.lastKey = nil end
     if ns.SetMovableScale(frame, state.preview and 1 or ns.AnchorScale()) and not state.preview then RestorePosition() end
     local unlocked = ns.db and ns.db.unlocked
     if state.preview then
@@ -211,17 +214,17 @@ ns.Timers.Register({
     OnChange = function()
         if state.preview or not Enabled() then return end
         Build()
-        Refresh()
+        Refresh((ns.db and ns.db.unlocked and not ns.Timers.Any()) and true or false)   -- unlocked with nothing live: keep the placeholders
     end,
     OnTick = function()
         if state.preview or not Enabled() or not frame then return end
-        Refresh()
+        Refresh((ns.db and ns.db.unlocked and not ns.Timers.Any()) and true or false)
     end,
 })
 
 -- Preview stage: three fakes counting down, re-armed when they run out.
 local function ArmPreviewBars()
-    state.previewBars = ns.Timers.FakeBars(3, 2, false)
+    state.previewBars = ns.Timers.FakeBars(MAX_LINES, 2, false)   -- Max lines shows in its preview (the sweep)
 end
 function ns.PreviewPreviewStart(stage)
     Build()

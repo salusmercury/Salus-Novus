@@ -17,9 +17,9 @@ ns.Data[2998] = {
             pulls = 1, kills = 1,
             avgLength = 48.8,
             npcs = {
-                { id = 260322, name = "Saltspine", displayID = nil },
-                { id = 260803, name = "Highland Spider", displayID = nil },
-                { id = 274715, name = "Marsh Skulker", displayID = nil },
+                { id = 260322, name = "Saltspine", displayID = 144209 },
+                { id = 260803, name = "Highland Spider", displayID = 1088 },
+                { id = 274715, name = "Marsh Skulker", displayID = 807 },
             },
             abilities = {
                 { spellID = 744, name = "Poison", source = "Highland Spider", pulls = 1,
@@ -43,10 +43,10 @@ ns.Data[2998] = {
             pulls = 2, kills = 1,
             avgLength = 46.3,
             npcs = {
-                { id = 260325, name = "Shadetooth", displayID = nil },
-                { id = 260801, name = "Thicket Hunter", displayID = nil },
-                { id = 260803, name = "Highland Spider", displayID = nil },
-                { id = 260800, name = "Thicket Lurker", displayID = nil },
+                { id = 260325, name = "Shadetooth", displayID = 144210 },
+                { id = 260801, name = "Thicket Hunter", displayID = 11316 },
+                { id = 260803, name = "Highland Spider", displayID = 1088 },
+                { id = 260800, name = "Thicket Lurker", displayID = 1337 },
             },
             abilities = {
                 { spellID = 3427, name = "Infected Wound", source = "Thicket Hunter", pulls = 2,
@@ -75,7 +75,7 @@ ns.Data[2998] = {
             order = 1500,
             pulls = 0, kills = 0,
             npcs = {
-                { id = 260808, name = "Highland Horror", displayID = nil },
+                { id = 260808, name = "Highland Horror", displayID = 9010 },
             },
             abilities = {
             },
@@ -87,8 +87,8 @@ ns.Data[2998] = {
             pulls = 1, kills = 1,
             avgLength = 74.1,
             npcs = {
-                { id = 260326, name = "Relic Guardian", displayID = nil },
-                { id = 260803, name = "Highland Spider", displayID = nil },
+                { id = 260326, name = "Relic Guardian", displayID = 144224 },
+                { id = 260803, name = "Highland Spider", displayID = 1088 },
             },
             abilities = {
                 { spellID = 8374, name = "Arcing Smash", source = "Relic Guardian", pulls = 1,

@@ -3,9 +3,10 @@
 Laid out like the Boss Visualizer: a sidebar with a Mine / Party switch over
 the dungeon list (multiselect rows, name and level range; opened on the
 dungeons within 8 levels), and the content to the right. Mine: a slot filter
-across the picked dungeons and one row per item you can equip, with spec and
-BIS/Upgrade tags and a wish box. Party: dungeons ranked by the group's
-wishes, by most wanted entries or by most party members.
+across the picked dungeons and a card per item you can equip, in two
+columns: the item's own tooltip (exactly as on hover), and on a click its
+spec and BIS/Upgrade tags (a right-click clears them). Party: dungeons ranked
+by the group's wishes, by most wanted entries or by most party members.
 ]]
 
 local _, ns = ...
@@ -14,7 +15,7 @@ local UI = {}
 ns.WishlistUI = UI
 local W = function() return ns.Wishlist end
 
-local WIN_W, WIN_H, SIDEBAR_W, HEADER_H = 1000, 680, 250, 64
+local WIN_W, WIN_H, SIDEBAR_W, HEADER_H = 1000, 680, 250, 64     -- the least; Build sizes it to the screen
 local PAD = 22
 local ROW_H, ROW_H_TAGGED, CARD_GAP, ICON = 60, 94, 6, 40
 local CARD_A, CARD_HOVER_A = 0.03, 0.09
@@ -104,13 +105,16 @@ end
 local function Build()
     if frame then return frame end
     local Th = T()
+    -- Tall as most of the screen (Alex: use the real estate); the width
+    -- follows the three columns (UI.Fit)
+    local sh = UIParent and UIParent:GetHeight()
+    if ns.Num(sh) and sh > 0 then WIN_H = math.max(WIN_H, math.floor(sh * 0.94)) end
     shell = Th.MakeShell("SalusNovusWishlist", WIN_W, WIN_H, SIDEBAR_W, HEADER_H, "Wishlist")
     frame = shell.frame
     frame.shell = shell
     frame:SetFrameLevel(120)
     -- Opened from the settings sidebar, closing brings the settings back.
     frame:SetScript("OnHide", function()
-        if itemTip then itemTip:Hide() end
         if ns.ReturnToOptions then ns.ReturnToOptions() end
     end)
     shell.subtitle:SetText("")
@@ -224,7 +228,7 @@ end
 -- Wishes per dungeon (by name, as the catalog files its sources).
 local function WishCounts()
     local n, cat = {}, W().catalog
-    for _, id in ipairs(W().MyItems()) do
+    for _, id in ipairs(W().Shared()) do                  -- (an owned one's hidden flag isn't counted)
         local src = cat and cat.source[id]
         if src then n[src.dungeon] = (n[src.dungeon] or 0) + 1 end
     end
@@ -276,25 +280,11 @@ end
 
 -- ------------------------------------------------------------ rows
 
--- Our own tooltip, not GameTooltip: GameTooltip compares with what you
--- have equipped (a second panel; Alex wants only the hovered item), and
--- switching that off on Blizzard's shared tooltip from an addon taints it.
--- A fresh GameTooltip never opts into comparison.
-local itemTip
-local function ItemTip()
-    if itemTip then return itemTip end
-    local ok, t = pcall(CreateFrame, "GameTooltip", "SalusNovusItemTooltip", UIParent, "GameTooltipTemplate")
-    if not ok or not t then return rawget(_G, "GameTooltip") end
-    t:SetFrameStrata("TOOLTIP")
-    t.supportsItemComparison = false
-    itemTip = t
-    return t
-end
-UI.ItemTip = ItemTip
-
 -- An item card, shared by both tabs: square icon (Blizzard's rounded rim
--- cropped off) on a crisp black frame, quality-coloured name, a detail
--- line; hover lifts it and shows the item's tooltip.
+-- cropped off) on a crisp black frame, the item's real tooltip beside it --
+-- a GameTooltip of its own, so it reads exactly as on hover (Alex: not split
+-- into columns) -- and a line under it (where it drops, who wants it).
+local tipN = 0
 local function ItemCard(parent)
     local Th = T()
     local r = CreateFrame("Button", nil, parent)
@@ -312,82 +302,159 @@ local function ItemCard(parent)
     r.iconTex:SetSize(ICON, ICON)
     r.iconTex:SetPoint("CENTER", r.iconEdge, "CENTER", 0, 0)
     r.iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    r.name = Th.MakeText(r, 15, Th.TEXT)
-    r.name:SetPoint("TOPLEFT", r.iconEdge, "TOPRIGHT", 12, -2)
-    r.name:SetPoint("RIGHT", r, "RIGHT", -48, 0)
-    r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
+    tipN = tipN + 1
+    r.tip = CreateFrame("GameTooltip", "SalusNovusWishTip" .. tipN, r, "GameTooltipTemplate")
     r.sub = Th.MakeText(r, 13, Th.TEXT_MUTE)
-    r.sub:SetPoint("TOPLEFT", r.name, "BOTTOMLEFT", 0, -4)
-    r.sub:SetPoint("RIGHT", r, "RIGHT", -48, 0)
     r.sub:SetJustifyH("LEFT")
-    r.sub:SetWordWrap(false)
-    r:SetScript("OnEnter", function(self)
-        self.bg:SetVertexColor(1, 1, 1, CARD_HOVER_A)
-        local ar, ag, ab = Th.Accent()
-        self.border:SetColor(ar, ag, ab, 0.9)
-        local tip = ItemTip()
-        if tip and self.id then
-            tip:SetOwner(self, "ANCHOR_CURSOR_RIGHT", 18, -8)   -- by the cursor, not out past the card's right edge
-            local ok = tip.SetItemByID and pcall(tip.SetItemByID, tip, self.id)
-            if not ok and tip.SetHyperlink then pcall(tip.SetHyperlink, tip, "item:" .. self.id) end
-            tip:Show()
+    r.sub:SetWordWrap(true)
+    -- hovered: the accent, kept through redraws (a redraw repainted it at
+    -- rest the next frame -- the blue only flashed: Alex)
+    r:SetScript("OnEnter", function(self) self.hover = true self.Rest() end)
+    r:SetScript("OnLeave", function(self) self.hover = false self.Rest() end)
+    --- At rest: an owned item's card is green (Alex) -- a light green
+    -- ground, a dark green edge; the rest plain
+    function r.Rest()
+        if r.hover then
+            r.bg:SetVertexColor(1, 1, 1, CARD_HOVER_A)
+            local ar, ag, ab = Th.Accent()
+            r.border:SetColor(ar, ag, ab, 0.9)
+        elseif r.owned then
+            r.bg:SetVertexColor(0.31, 0.82, 0.37, 0.10)
+            r.border:SetColor(0.12, 0.45, 0.16, 1)
+        elseif r.wanted then
+            r.bg:SetVertexColor(0.91, 0.42, 0.37, 0.10)
+            r.border:SetColor(0.50, 0.14, 0.12, 1)
+        else
+            r.bg:SetVertexColor(1, 1, 1, CARD_A)
+            r.border:SetColor(1, 1, 1, 0.06)
         end
-    end)
-    r:SetScript("OnLeave", function(self)
-        self.bg:SetVertexColor(1, 1, 1, CARD_A)
-        self.border:SetColor(1, 1, 1, 0.06)
-        local tip = ItemTip()
-        if tip then tip:Hide() end
-    end)
+    end
     return r
 end
 
---- Fill a card's icon and name from the item cache.
+--- Show the card's item in its own tooltip, inside the card (in the card's
+-- strata, so the scroll clips it); returns its height (0 until the item is
+-- in the cache -- the card fills in when it arrives).
+local function FillTip(r)
+    local tip = r.tip
+    if not (tip and r.id) then return 0 end
+    pcall(tip.SetOwner, tip, r, "ANCHOR_NONE")
+    pcall(tip.SetClampedToScreen, tip, false)      -- with its card, not pushed on screen over the others
+    pcall(tip.SetItemByID, tip, r.id)
+    tip:ClearAllPoints()
+    tip:SetPoint("TOPLEFT", r.iconEdge, "TOPRIGHT", 8, 1)
+    pcall(tip.SetFrameStrata, tip, r:GetFrameStrata())
+    pcall(tip.SetFrameLevel, tip, (r:GetFrameLevel() or 0) + 2)
+    tip:Show()
+    local h = tonumber(tip:GetHeight()) or 0
+    -- not in the cache yet: its arrival redraws (only then -- every item
+    -- answer redrew the window, and the redraw asked again: a loop)
+    if h <= 0 or not W().Info(r.id) then UI.waiting[r.id] = true end
+    return h > 0 and h or 0
+end
+UI.FillTip = FillTip
+UI.waiting = {}
+
+--- Fill a card's icon and item; the name is the tooltip's first line.
 local function FillCard(r, id, info)
     r.id = id
     info = info or W().Info(id)
     r.iconTex:SetTexture(info and info.icon or 134400)
-    local q = QUALITY[info and info.quality] or QUALITY[1]
-    r.name:SetText(info and info.name or ("item " .. id))
-    r.name:SetTextColor(q[1], q[2], q[3], 1)
+end
+
+--- Lay a card out: tooltip, the line under it (when it has one), and
+-- (Mine, opened) the chips; returns its height.
+local function LayoutCard(r, width, chips)
+    local tipH = FillTip(r)
+    -- a column narrowed to fit the screen: the tooltip shrinks with it (it
+    -- spilled over the next card: the sweep)
+    if r.tip then
+        local tw, avail = tonumber(r.tip:GetWidth()) or 0, width - 77
+        local sc = (tw > 0 and tw > avail and avail > 0) and avail / tw or 1
+        pcall(r.tip.SetScale, r.tip, sc)
+        tipH = tipH * sc
+    end
+    local top = 9 + math.max(ICON + 2, tipH)
+    local h = top + 9
+    local text = r.sub:GetText()
+    r.sub:SetShown(text ~= nil and text ~= "")
+    if r.sub:IsShown() then
+        r.sub:ClearAllPoints()
+        r.sub:SetPoint("TOPLEFT", r, "TOPLEFT", 9, -(top + 6))
+        r.sub:SetWidth(math.max(80, width - 18))
+        local subH = tonumber(r.sub:GetStringHeight()) or 0
+        if subH <= 0 then subH = 14 end
+        h = top + 6 + subH + 9
+    end
+    -- Opened, the buttons come in over the card's foot -- the card keeps its
+    -- size, so nothing below it moves (Alex)
+    local bar = r.chipBar
+    if bar then
+        if chips and #chips > 0 then
+            bar:SetWidth(width - 2)
+            local fh = Flow(chips, bar, 8, -8, width - 18, 6)
+            bar:SetHeight(fh + 16)
+            bar:ClearAllPoints()
+            bar:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 1, 1)
+            bar:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", -1, 1)
+            bar:Show()
+        else
+            bar:Hide()
+        end
+    end
+    return h
 end
 
 local function ItemRow(i)
     local m = frame.mine
     local r = m.rows[i]
     if r then return r end
-    local Th = T()
-    -- Mine: the whole card toggles the wish; the chips and the box keep
-    -- their own clicks.
+    -- Mine (Alex): a click opens the card's spec / BIS / Upgrade buttons and a
+    -- second click folds them away, picks kept; a right-click clears them all.
     r = ItemCard(m.scroll.list)
-    local function Toggle()
-        if not r.id then return end
-        W().Wish(r.id, not W().Get(r.id))
-    end
-    r.wish = Th.MakeCheckBox(r, 20)
-    r.wish:SetPoint("RIGHT", r, "RIGHT", -14, 0)
-    if r.wish.text then r.wish.text:Hide() end
-    r.wish:SetScript("OnClick", Toggle)
-    r:SetScript("OnClick", Toggle)
+    r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    r:SetScript("OnClick", function(self, button)
+        if not self.id then return end
+        if button == "RightButton" then
+            if W().Get(self.id) then W().Wish(self.id, false) end
+            return
+        end
+        -- something you own isn't flagged at all (Alex): no buttons
+        if W().Owned(self.id) then UI.open[self.id] = nil return end
+        UI.open[self.id] = not UI.open[self.id] or nil
+        UI.Refresh()
+    end)
     r.chips = {}
+    -- the strip the buttons come in on: solid, over the tooltip
+    r.chipBar = CreateFrame("Frame", nil, r)
+    r.chipBar:SetFrameLevel((r:GetFrameLevel() or 0) + 8)
+    r.chipBar.bg = T().SolidTex(r.chipBar, "BACKGROUND", T().BG[1], T().BG[2], T().BG[3], 0.96)
+    r.chipBar.bg:SetAllPoints()
+    r.chipBar.line = T().SolidTex(r.chipBar, "ARTWORK", 1, 1, 1, 0.10)
+    r.chipBar.line:SetHeight(1)
+    r.chipBar.line:SetPoint("TOPLEFT")
+    r.chipBar.line:SetPoint("TOPRIGHT")
+    r.chipBar:Hide()
     m.rows[i] = r
     return r
 end
+UI.open = {}
 
+--- The card's spec / BIS / Upgrade chips (shown when the card is open); a
+-- click on an item not yet wished wishes it. Returns the shown chips.
 local function RowChips(r, e, rec)
-    -- Always shown (Alex); a click on an item not yet wished wishes it.
     for _, c in ipairs(r.chips) do c:Hide() end
+    if not UI.open[e.id] or r.owned then return {} end
     rec = rec or {}
+    local shown = {}
     local labels = {}
     for _, s in ipairs(W().MySpecs()) do labels[#labels + 1] = { "spec", s } end
     labels[#labels + 1] = { "tag", "bis", "BIS" }
     labels[#labels + 1] = { "tag", "up", "Upgrade" }
-    local x = 9 + ICON + 2 + 12
     for i, l in ipairs(labels) do
         local c = r.chips[i]
         if not c then
-            c = Chip(r, l[3] or l[2], 15, nil)
+            c = Chip(r.chipBar or r, l[3] or l[2], 15, nil)
             r.chips[i] = c
         end
         c:SetText(l[3] or l[2])
@@ -400,15 +467,74 @@ local function RowChips(r, e, rec)
             if not W().Get(e.id) then W().Wish(e.id, true) end
             if l[1] == "spec" then W().ToggleSpec(e.id, l[2]) else W().SetTag(e.id, l[2]) end
         end)
-        c:ClearAllPoints()
-        c:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", x, 9)
-        c:Show()
-        x = x + c:GetWidth() + 6
+        shown[#shown + 1] = c
     end
+    return shown
+end
+
+--- What you picked for an item, for its line while the chips are folded.
+local function Picks(rec)
+    if not rec then return nil end
+    local out = {}
+    for _, s in ipairs(W().MySpecs()) do if rec.spec and rec.spec[s] then out[#out + 1] = s end end
+    if rec.tag == "bis" then out[#out + 1] = BIS_RED .. "BIS|r" elseif rec.tag == "up" then out[#out + 1] = "Upgrade" end
+    return #out > 0 and table.concat(out, ", ") or nil            -- never just "Wished" (Alex)
+end
+
+--- Three columns (Alex), each as wide as the widest tooltip shown: every
+-- card goes under the shortest column, and the window fits the three snugly.
+local COLS, TIP_W, SCROLLBAR = 3, 250, 12
+--- The widest tooltip seen this session (never below TIP_W): the window
+-- only ever grows, so a slot filter with narrow items doesn't jump it about
+-- (Alex: "some slot selections are causing the window to resize").
+UI.tipW = TIP_W
+local function ColumnWidth(cards)
+    for _, r in ipairs(cards) do
+        FillTip(r)
+        local tw = tonumber(r.tip:GetWidth()) or 0
+        if tw > UI.tipW then UI.tipW = math.ceil(tw) end
+    end
+    return UI.tipW + 9 + ICON + 2 + 8 + 9
+end
+local function Chrome() return SIDEBAR_W + 1 + 2 * PAD + (COLS - 1) * CARD_GAP + 6 + SCROLLBAR end
+--- The window fits the columns, but never past the screen: there the columns
+-- give (returns the width they get).
+function UI.Fit(colW)
+    if not frame then return colW end
+    local sw = UIParent and tonumber(UIParent:GetWidth()) or nil
+    if sw and sw > 0 and Chrome() + COLS * colW > sw - 20 then colW = math.floor((sw - 20 - Chrome()) / COLS) end
+    frame:SetWidth(math.max(WIN_W, Chrome() + COLS * colW))
+    return colW
+end
+local function Place(r, list, colY, colW, h)
+    local c = 1
+    for k = 2, COLS do if colY[k] < colY[c] then c = k end end
+    r:SetWidth(colW)
+    r:SetHeight(h)
+    r:ClearAllPoints()
+    r:SetPoint("TOPLEFT", list, "TOPLEFT", (c - 1) * (colW + CARD_GAP), -colY[c])
+    r:Show()
+    colY[c] = colY[c] + h + CARD_GAP
 end
 
 local function DrawMine()
     local m = frame.mine
+    -- The cards first: their tooltips size the window, and the slot buttons
+    -- wrap to the width it ends up (they spilled past the edge when the
+    -- window resized after them).
+    local list, pending = W().Browse(UI.pool, UI.slot)
+    for _, id in ipairs(pending or {}) do UI.waiting[id] = true end   -- (their answers show them: the sweep)
+    table.sort(list, function(a, b)
+        if a.info.req ~= b.info.req then return a.info.req < b.info.req end
+        return a.info.name < b.info.name
+    end)
+    local cards = {}
+    for i, e in ipairs(list) do
+        local r = ItemRow(i)
+        FillCard(r, e.id, e.info)
+        cards[i] = r
+    end
+    local colW = UI.Fit(ColumnWidth(cards))
     local width = (frame:GetWidth() or WIN_W) - SIDEBAR_W - 1 - 2 * PAD
     local picked = 0
     for _ in pairs(UI.pool) do picked = picked + 1 end
@@ -434,36 +560,28 @@ local function DrawMine()
     m.scroll:SetPoint("BOTTOMRIGHT", 0, 0)
     m.scroll.Fit()
     -- rows
-    local list = W().Browse(UI.pool, UI.slot)
-    table.sort(list, function(a, b)
-        if a.info.req ~= b.info.req then return a.info.req < b.info.req end
-        return a.info.name < b.info.name
-    end)
     m.title:SetText(UI.slot or "All slots")
-    local ry = 0
+    local colY = { 0, 0, 0 }
     for i, e in ipairs(list) do
-        local r = ItemRow(i)
-        FillCard(r, e.id, e.info)
-        -- The slot only on All: under a slot filter it says nothing.
-        local parts = {}
-        if not UI.slot then parts[#parts + 1] = e.slot end
-        parts[#parts + 1] = e.boss
-        parts[#parts + 1] = e.dungeon
-        if W().Owned(e.id) then parts[#parts + 1] = "OWNED" end
-        r.sub:SetText(table.concat(parts, "  \194\183  "))
+        local r = cards[i]
+        -- No source line (Alex: the tooltip says enough); folded, what you
+        -- picked -- the one sign it's wished, with no check box.
         local rec = W().Get(e.id)
-        r.wish:SetChecked(rec ~= nil)
-        RowChips(r, e, rec)
-        local h = ROW_H_TAGGED
-        r:SetHeight(h)
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", m.scroll.list, "TOPLEFT", 0, -ry)
-        r:SetPoint("RIGHT", m.scroll.list, "RIGHT", -6, 0)
-        r:Show()
-        ry = ry + h + CARD_GAP
+        local picks = Picks(rec)                        -- open or folded: the same line, the same height
+        local parts = {}
+        r.owned = W().Owned(e.id) and true or false
+        -- wanted and not had: red, as owned is green (Alex)
+        r.wanted = not r.owned and W().Complete(rec)
+        if r.owned then parts[#parts + 1] = "|cff4fd05fOWNED|r" end
+        r.Rest()
+        if picks and not r.owned then parts[#parts + 1] = (r.wanted and "|cffe86a5f" or "|cffd8d6e0") .. picks .. "|r" end
+        r.sub:SetText(table.concat(parts, "  ·  "))
+        r.wished = rec ~= nil
+        local chips = RowChips(r, e, rec)
+        Place(r, m.scroll.list, colY, colW, LayoutCard(r, colW, chips))
     end
     for i = #list + 1, #m.rows do m.rows[i]:Hide() m.rows[i].id = nil end
-    m.scroll.list:SetHeight(math.max(10, ry))
+    m.scroll.list:SetHeight(math.max(10, math.max(colY[1], colY[2], colY[3])))
     m.empty:ClearAllPoints()
     m.empty:SetPoint("TOPLEFT", m.scroll, "TOPLEFT", 0, -6)
     m.empty:SetPoint("RIGHT", m, "RIGHT", 0, 0)
@@ -518,6 +636,18 @@ local function DrawParty()
     p.scroll.Fit()
     local ranked = W().Rank(UI.sort)
     local nh, nc, y = 0, 0, 0
+    -- every card first, to measure the columns
+    local all = {}
+    for _, d in ipairs(ranked) do
+        for _, it in ipairs(d.items) do
+            local r = PartyCard(#all + 1)
+            FillCard(r, it.id)
+            all[#all + 1] = r
+        end
+    end
+    local colW = ColumnWidth(all)
+    colW = UI.Fit(colW)
+    p.scroll.Fit()
     for di, d in ipairs(ranked) do
         if di > 1 then y = y + 14 end
         nh = nh + 1
@@ -528,7 +658,9 @@ local function DrawParty()
         l:SetPoint("RIGHT", p.scroll.list, "RIGHT", 0, 0)
         l:Show()
         y = y + 28
-        -- One card per item: who wants it, in class colour, after the boss.
+        -- One card per item, two columns under the dungeon: who wants it, in
+        -- class colour, after the boss.
+        local colY = { y, y, y }
         for _, it in ipairs(d.items) do
             nc = nc + 1
             local r = PartyCard(nc)
@@ -542,12 +674,9 @@ local function DrawParty()
                 who[#who + 1] = ClassName(w.player, w.class) .. spec .. tag
             end
             r.sub:SetText(it.boss .. "  \194\183  " .. table.concat(who, ", "))
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", p.scroll.list, "TOPLEFT", 0, -y)
-            r:SetPoint("RIGHT", p.scroll.list, "RIGHT", -6, 0)
-            r:Show()
-            y = y + ROW_H + CARD_GAP
+            Place(r, p.scroll.list, colY, colW, LayoutCard(r, colW))
         end
+        y = math.max(colY[1], colY[2], colY[3])
     end
     for i = nh + 1, #p.lines do p.lines[i]:Hide() end
     for i = nc + 1, #p.cards do p.cards[i]:Hide() p.cards[i].id = nil end
@@ -624,7 +753,15 @@ local function Queue()
     if C_Timer and C_Timer.After then C_Timer.After(0, Go) else Go() end
 end
 ns.Wishlist.OnChanged = Queue
-ns.Wishlist.OnItemInfo = Queue
+-- party traffic and roster changes redraw only the party view (every
+-- message rebuilt every card of Mine: the sweep)
+ns.Wishlist.OnPartyChanged = function() if UI.view == "party" then Queue() end end
+-- An item answer redraws only for a card still waiting on it
+ns.Wishlist.OnItemInfo = function(id)
+    if id ~= nil and not UI.waiting[id] then return end
+    if id ~= nil then UI.waiting[id] = nil end
+    Queue()
+end
 
 ns.Commands = ns.Commands or {}
 ns.Commands.wish = function() UI.Toggle() end

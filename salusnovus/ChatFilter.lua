@@ -84,7 +84,18 @@ end
 function C.RemoveWord(w)
     local o = O()
     if not o or type(o.words) ~= "table" or type(w) ~= "string" then return end
-    o.words[w] = false
+    local lw = w:lower()
+    -- The list shows old array entries and mixed-case keys lower-cased: clear
+    -- those too, or Remove does nothing and the word keeps blocking.
+    for k, v in pairs(o.words) do
+        if type(k) == "number" and type(v) == "string" and v:lower() == lw then o.words[k] = nil
+        elseif type(k) == "string" and k ~= lw and k:lower() == lw then o.words[k] = nil end
+    end
+    -- compact the array part after removals (ipairs readers stop at a hole)
+    local arr = {}
+    for i = 1, table.maxn(o.words) do if type(o.words[i]) == "string" then arr[#arr + 1] = o.words[i] end o.words[i] = nil end
+    for i, v in ipairs(arr) do o.words[i] = v end
+    o.words[lw] = false
 end
 
 --- True when `text` contains any blocked word. Plain substring, case-

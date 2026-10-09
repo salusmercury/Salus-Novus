@@ -14,10 +14,18 @@ ns.Schedule = S
 -- npcs[1] -- the NPC sharing the encounter's name, or the one the generator
 -- picked by health when none does (Infurnus is Magmatus). Everything else
 -- in the window is trash pulled or summoned into the fight and is not shown.
+-- NPCs that ARE the boss for part of the fight, by npc id: Sneed's
+-- Shredder (Deadmines) is the first ~66 s of Sneed -- its fear and Eject
+-- Sneed went unwarned (the sweep).
+S.BOSS_PHASE_NPC = { [642] = true }
 function S.IsBossSource(boss, source)
     local first = boss.npcs and boss.npcs[1]
     if not first then return true end
-    return source == first.name
+    if source == first.name then return true end
+    for _, n in ipairs(boss.npcs) do
+        if n.name == source and S.BOSS_PHASE_NPC[n.id] then return true end
+    end
+    return false
 end
 
 --- Flatten a boss's observed casts into one sorted event list.
@@ -65,16 +73,20 @@ local function LaneEvents(a)
     local out, lengths = {}, {}
     for pi, rows in pairs(byPull) do
         table.sort(rows, function(x, y) return x[1] < y[1] end)
-        local lastStart
+        local lastStart, prev
         for _, r in ipairs(rows) do
             local t, kind = r[1], r[2]
-            if kind == "success" and lastStart and t - lastStart <= PAIR_WINDOW then
+            if prev and prev[2] == kind and math.abs(prev[1] - t) < 0.05 then
+                -- the same row twice in one pull (a doubled log line): one cast,
+                -- not two warnings (the sweep)
+            elseif kind == "success" and lastStart and t - lastStart <= PAIR_WINDOW then
                 lengths[#lengths + 1] = t - lastStart
                 lastStart = nil
             else
                 out[#out + 1] = { t = t, pull = pi }
                 lastStart = (kind == "start") and t or nil
             end
+            prev = r
         end
     end
     table.sort(out, function(x, y) if x.t == y.t then return x.pull < y.pull end return x.t < y.t end)
@@ -153,12 +165,50 @@ function S.HealthAbilities(boss)
     return out
 end
 
+--- Lanes with a cast listed twice at one moment (a doubled log line in the
+-- shipped data) listed once.
+local function Deduped(l)
+    local dup = false
+    for i = 2, #l.casts do if math.abs(l.casts[i] - l.casts[i - 1]) < 0.05 then dup = true break end end
+    if not dup then return l end
+    local out = { casts = {}, spread = {}, support = {}, cast = l.cast }
+    for i, t in ipairs(l.casts) do
+        if i == 1 or math.abs(t - l.casts[i - 1]) >= 0.05 then
+            local k = #out.casts + 1
+            out.casts[k], out.spread[k], out.support[k] = t, l.spread and l.spread[i], l.support and l.support[i]
+        end
+    end
+    return out
+end
+
+--- A health-triggered ability's casts AFTER the ones its threshold explains:
+-- Shadetooth's Rend comes first at 74% and then every ~28 s (only the first
+-- was warned: the sweep). The first cluster per threshold is the marker's.
+local function TimedRest(a)
+    if a.timedRest ~= nil then return a.timedRest or nil end
+    local n = (type(a.health.pcts) == "table" and #a.health.pcts > 0) and #a.health.pcts or 1
+    -- Each pull's first n casts are the threshold's (dropped per pull, not
+    -- the first n clusters: pulls hitting the threshold more than 6 s apart
+    -- left one as a 'timed' cast -- the sweep); the rest cluster as usual.
+    local events = LaneEvents(a)
+    local seenN, keep = {}, {}
+    for _, e in ipairs(events) do
+        seenN[e.pull] = (seenN[e.pull] or 0) + 1
+        if seenN[e.pull] > n then keep[#keep + 1] = { e.t, "start", e.pull } end
+    end
+    local rest = (#keep > 0) and Deduped(S.LanesOf({ casts = keep })) or nil
+    a.timedRest = (rest and #rest.casts > 0) and rest or false
+    return a.timedRest or nil
+end
+
 function S.Lanes(boss)
     local out = {}
     for _, a in ipairs(boss.abilities or {}) do
-        if S.IsBossSource(boss, a.source) and not a.health then
-            local l = S.LanesOf(a)
-            if #l.casts > 0 then out[#out + 1] = { a = a, lanes = l, first = l.casts[1] } end
+        if S.IsBossSource(boss, a.source) then
+            local l
+            if not a.health then l = Deduped(S.LanesOf(a))
+            elseif type(a.health.pct) == "number" then l = TimedRest(a) end
+            if l and #l.casts > 0 then out[#out + 1] = { a = a, lanes = l, first = l.casts[1] } end
         end
     end
     table.sort(out, function(x, y) if x.first == y.first then return (x.a.name or "") < (y.a.name or "") end return x.first < y.first end)
