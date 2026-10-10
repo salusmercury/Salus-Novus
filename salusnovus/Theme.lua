@@ -812,6 +812,7 @@ local function BuildPicker()
     picker.hex:SetPoint("LEFT", picker.hexCap, "LEFT", 22, 0)
     picker.hex:SetMaxLetters(7)                      -- (a pasted '#RRGGBB' was cut to 5 digits: the sweep)
     local function ReadHex(self)
+        if picker.hexEscaping then return end
         local t = (self:GetText() or ""):gsub("^#", ""):upper()
         if #t ~= 6 or not t:match("^%x+$") then return end
         picker.v[1] = tonumber(t:sub(1, 2), 16) / 255
@@ -824,6 +825,13 @@ local function BuildPicker()
         Push(true)
     end
     picker.hex:HookScript("OnEditFocusLost", ReadHex)   -- Enter drops focus, which commits once
+    -- Escape abandons the typed hex: the current colour's goes back (it was applied: sweep 6)
+    picker.hex:SetScript("OnEscapePressed", function(self)
+        picker.hexEscaping = true
+        self:SetText(Hex(picker.v[1], picker.v[2], picker.v[3]))
+        self:ClearFocus()
+        picker.hexEscaping = nil
+    end)
 
     picker.okay = T.MakeButton(picker)
     picker.okay:SetSize(90, 26)

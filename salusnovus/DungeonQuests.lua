@@ -28,7 +28,14 @@ local function Enabled()
 end
 D.Enabled = Enabled
 
-local function Key(s) return (tostring(s or ""):lower():gsub("^the ", ""):gsub("[^%a]", "")) end
+local function Key(s)
+    local t = tostring(s or ""):lower():gsub("^the ", "")
+    local k = t:gsub("[^%a]", "")
+    -- a name with no ASCII letters (ruRU/koKR/zhCN) kept nothing: keep its
+    -- UTF-8 bytes instead, minus spaces/punctuation (the sweep)
+    if k == "" then k = t:gsub("[%s%p%c%d]", "") end
+    return k
+end
 D.Key = Key
 -- The quest log files a dungeon under its AREA name, which can differ from
 -- the map's ('The Stockade' for Stormwind Stockade): those got no quests
@@ -209,6 +216,15 @@ function D.Broadcast(dungeon, empty)
     pcall(ci.SendAddonMessage, PREFIX, msg, ch)
 end
 
+--- Ask the group for their lists (after a /reload ours were gone: the sweep).
+function D.Request(dungeon)
+    local ci = rawget(_G, "C_ChatInfo")
+    local ch = Channel()
+    if not (ci and ci.SendAddonMessage and ch and dungeon) then return end
+    RegisterPrefix()
+    pcall(ci.SendAddonMessage, PREFIX, "DQ?|" .. Key(dungeon), ch)
+end
+
 local function Short(name)
     local amb = rawget(_G, "Ambiguate")
     if amb then local ok, s = pcall(amb, name, "none") if ok and Str(s) then return s end end
@@ -223,7 +239,14 @@ function D.OnAddonMessage(prefix, msg, channel, sender)
     local okN, me = pcall(UnitName, "player")
     if who == "" or (okN and who == me) then return end
     if ns.Wishlist and ns.Wishlist.InMyGroup and not ns.Wishlist.InMyGroup(who) then return end
-    local key, body = msg:match("^DQ|([%a]*)|(.*)$")
+    -- a request: answer with our list for that dungeon (never another request)
+    local rk = msg:match("^DQ%?|([%a\128-\255]*)$")
+    if rk then
+        local dungeon = D.Dungeon()
+        if Enabled() and rk ~= "" and dungeon and Key(dungeon) == rk then D.Broadcast(dungeon) end
+        return
+    end
+    local key, body = msg:match("^DQ|([%a\128-\255]*)|(.*)$")
     if not key then return end
     local quests = {}
     for id, title in body:gmatch("(%d+):([^;]*)") do
@@ -400,7 +423,7 @@ ns.On("PLAYER_ENTERING_WORLD", function()
     RegisterPrefix()
     local dungeon = D.Dungeon()
     if dungeon ~= D.dismissed then D.dismissed = nil end
-    if dungeon and Enabled() then D.Broadcast(dungeon) end
+    if dungeon and Enabled() then D.Broadcast(dungeon); D.Request(dungeon) end
     Queue()
 end)
 ns.On("GROUP_ROSTER_UPDATE", function()

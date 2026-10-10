@@ -146,6 +146,14 @@ def cmd_install(product):
         if not os.path.isdir(os.path.dirname(target)):
             os.makedirs(os.path.dirname(target))
         shutil.copy2(os.path.join(SRC, f.replace("\\", os.sep)), target)
+    # Textures aren't in the TOC: copy the folder (a new icon.tga never
+    # reached the game when only the Lua was copied)
+    tex = os.path.join(SRC, "Textures")
+    if os.path.isdir(tex):
+        os.makedirs(os.path.join(dest, "Textures"), exist_ok=True)
+        for f in os.listdir(tex):
+            if os.path.isfile(os.path.join(tex, f)):
+                shutil.copy2(os.path.join(tex, f), os.path.join(dest, "Textures", f))
 
     # Only the Interface line is rewritten: the checked-in TOC carries one
     # flavor's number, and copying it unchanged is how the addon silently

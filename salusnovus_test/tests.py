@@ -12347,10 +12347,12 @@ def _():
        ["browse:Runecloth"], "searched once")
     eq(str(h.lua("return SalusNovusBuy.search:GetText()")), "Runecloth", "the name in the box")
     ok(h.lua("return SalusNovusBuy.status == nil"), "no 'Searching' text to run off the edge")
-    h.lua("W.advance(1); __shift = false; __n = #__calls; HandleModifiedItemClick('|h[Wool Cloth]|h')")
+    h.lua("W.advance(1); __shift = false; __n = #__calls; HandleModifiedItemClick('|cffffffff|Hitem:2592::|h[Wool Cloth]|h|r')")
     eq(int(h.lua("return #__calls - __n")), 0, "no Shift: nothing")
-    h.lua("__shift = true; ns.AuctionUI.Open('buy'); HandleModifiedItemClick('|h[Wool Cloth]|h')")
+    eq(str(h.lua("return SalusNovusBuy.search:GetText()")), "Runecloth", "no Shift: the box untouched")
+    h.lua("__shift = true; ns.AuctionUI.Open('buy'); HandleModifiedItemClick('|cffffffff|Hitem:2592::|h[Wool Cloth]|h|r')")
     eq(int(h.lua("return #__calls - __n")), 0, "Buy closed: nothing")
+    eq(str(h.lua("return SalusNovusBuy.search:GetText()")), "Runecloth", "Buy closed: the box untouched")
     eq(h.errors(), [], "errors")
 
 
@@ -15202,4 +15204,626 @@ def _():
     h.lua("W.fireEvent('OWNED_AUCTIONS_UPDATED')")
     ok(h.lua("return #ns.Cancel.rows > 0"), "setup: the list was read again")
     ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 11 then return false end end return true"), "a confirmed cancel stays hidden")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: ui ----
+# ---------------------------------------------------------------- sweep 6 (ui)
+
+@test("sweep6 F01: closing the card, switching boss, opening a reminder or closing the Visualizer mid-preview reverts the color; so does the Settings accent", group="sweep6")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+
+    def preview(row=1, spell=11130, show=True):
+        h.lua("ns.Abilities.Set(%d, 'color', { r = 1, g = 0, b = 0 })" % spell)
+        if show:
+            h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+        eq(int(h.lua("return SalusNovusVisualizer.descRows[%d].spellID" % row)), spell, "setup: card row")
+        h.lua("local r = SalusNovusVisualizer.descRows[%d] if not r.editor:IsShown() then r:GetScript('OnMouseUp')(r) end" % row)
+        ok(h.lua("return SalusNovusVisualizer.descRows[%d].editor:IsShown()" % row), "editor not open")
+        h.lua("__cs = SalusNovusVisualizer.descRows[%d].editor.swatch __cs:GetScript('OnClick')(__cs)" % row)
+        ok(h.lua("return SalusNovusColorPicker:IsShown()"), "card picker did not open")
+        h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+        c = h.lua("return { ns.Abilities.Color(%d) }" % spell)
+        ok(float(c[3]) > 0.99, "preview did not apply live")
+
+    def color(spell=11130):
+        c = h.lua("return { ns.Abilities.Color(%d) }" % spell)
+        return (float(c[1]), float(c[2]), float(c[3]))
+
+    def red(c):
+        return abs(c[0] - 1) < 0.01 and c[1] < 0.01 and c[2] < 0.01
+
+    # (a) click the card again to close it, no Okay
+    preview()
+    h.lua("local r = SalusNovusVisualizer.descRows[1] r:GetScript('OnMouseUp')(r)")
+    ok(not h.lua("return SalusNovusVisualizer.descRows[1].editor:IsShown()"), "card did not close")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "picker outlived its card")
+    ok(red(color()), "closing the card kept the abandoned preview: %r" % (color(),))
+    # (b) another boss in the sidebar
+    preview()
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[1])")
+    ok(red(color()), "switching boss kept the abandoned preview: %r" % (color(),))
+    # (b2) the open card's row goes with the boss (the new one has fewer cards)
+    preview(3, 22911)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[1])")
+    ok(red(color(22911)), "switching to a boss with fewer cards kept the abandoned preview: %r" % (color(22911),))
+    # (d) opening a reminder form
+    preview()
+    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil)")
+    ok(red(color()), "opening a reminder kept the abandoned preview: %r" % (color(),))
+    ok(h.lua("return ns.Visualizer.form.colorValue == nil"), "the card's revert wrote into the new reminder form")
+    h.lua("ns.Visualizer.form:Hide()")
+    # (e) a reminder form up while a card previews: the form's Cancel
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3]); ns.Visualizer.OpenForm(5, nil, 'X', nil)")
+    preview(show=False)
+    ok(h.lua("return ns.Visualizer.form:IsShown()"), "setup: form still up")
+    h.lua("ns.Visualizer.form.cancel:Click()")
+    ok(red(color()), "closing the reminder form kept the card's abandoned preview: %r" % (color(),))
+    # (c) the Visualizer closes (X / Escape: CloseSpecialWindows hides it before the picker)
+    preview()
+    h.lua("SalusNovusVisualizer:Hide(); SalusNovusColorPicker:Hide()")
+    ok(red(color()), "closing the Visualizer kept the abandoned preview: %r" % (color(),))
+    # the Settings accent picker, abandoned for the Visualizer and closed with it
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "accent swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "accent picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    ok(float(h.lua("return ns.db.theme.customColor.b")) > 0.99, "accent preview did not apply live")
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    h.lua("SalusNovusVisualizer:Hide()")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "accent picker still up")
+    cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    ok(red((float(cc[1]), float(cc[2]), float(cc[3]))), "the abandoned accent preview was saved: %r" % (list(cc.values()),))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F12: Escape in the color picker's hex box discards the typed hex; Okay keeps the original color", group="sweep6")
+def _():
+    h = fresh()
+    h.lua("""
+        __calls = {}
+        ns.Theme.OpenColorPicker({ r = 1, g = 0.5, b = 0 }, function(r, g, b) __calls[#__calls + 1] = { r, g, b } end, function() end)
+        local hex = SalusNovusColorPicker.hex
+        hex:SetFocus()
+        hex:SetText('00FF00')
+        hex:GetScript('OnEscapePressed')(hex)
+    """)
+    ok(not h.lua("return SalusNovusColorPicker.hex:HasFocus()"), "Escape left the box focused")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "Escape in the box closed the picker")
+    n = int(h.lua("return #__calls"))
+    eq(n, 0, "Escape applied the half-typed hex: onChange got %r" % (list(h.lua("return __calls[1]").values()) if n else None,))
+    eq(str(h.lua("return SalusNovusColorPicker.hex:GetText()")), "FF8000", "Escape did not put back the current color's hex")
+    h.lua("SalusNovusColorPicker.okay:Click()")
+    ok(int(h.lua("return #__calls")) == 0 or abs(float(h.lua("return __calls[#__calls][2]")) - 0.5) < 0.01,
+       "Okay committed the escaped hex: last onChange %r" % (list(h.lua("return __calls[#__calls]").values()),))
+    # Enter still commits after an Escape (the flag doesn't stick)
+    h.lua("""
+        ns.Theme.OpenColorPicker({ r = 1, g = 0.5, b = 0 }, function(r, g, b) __calls[#__calls + 1] = { r, g, b } end, function() end)
+        local hex = SalusNovusColorPicker.hex
+        hex:SetFocus(); hex:SetText('00FF00'); hex:GetScript('OnEscapePressed')(hex)
+        hex:SetFocus(); hex:SetText('0000FF'); hex:GetScript('OnEnterPressed')(hex)
+    """)
+    eq([float(x) for x in h.lua("return __calls[#__calls]").values()], [0.0, 0.0, 1.0], "Enter after an Escape no longer commits")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F14: editing only the text of a /sn remind reminder past the fight end saves; moving it later is still refused", group="sweep6")
+def _():
+    h = fresh()
+    h.lua('SlashCmdList["SALUSNOVUS"]("remind durgen time 900 Enrage soon")')
+    open_vis(h)
+    h.lua("""
+        for _, b in ipairs(ns.Data[3065].bosses) do if b.encounterID == 3496 then __b = b end end
+        ns.Visualizer.ShowBoss(__b)
+    """)
+    eq(int(h.lua("return ns.Visualizer.state.enc")), 3496, "not on Durgen")
+    ok(float(h.lua("return ns.Visualizer.FightEnd()")) < 900, "fight not shorter than 900")
+    h.lua("""
+        __r = ns.db.reminders.list[3496][1]
+        local rl = ns.Visualizer._lanes[1]
+        __m = nil
+        for _, m in ipairs(rl.marks) do if m:IsShown() and m.reminder == __r then __m = m end end
+    """)
+    ok(h.lua("return __m ~= nil"), "mark not drawn")
+    h.lua("__m:GetScript('OnClick')(__m)")
+    ok(h.lua("return ns.Visualizer.form:IsShown() and ns.Visualizer.form.editing == __r"), "edit form not opened")
+    eq(str(h.lua("return ns.Visualizer.form.at:GetText()")), "15:00", "AT not prefilled")
+    h.lua("ns.Visualizer.form.at:SetText('15:50'); ns.Visualizer.form.text:SetText('Enrage LATER'); ns.Visualizer.form.save:Click()")
+    ok(h.lua("return __r.text == 'Enrage soon' and ns.Visualizer.form:IsShown()"), "moving it later past the end was saved")
+    h.lua("ns.Visualizer.form.at:SetText('15:00'); ns.Visualizer.form.text:SetText('Enrage NOW'); ns.Visualizer.form.save:Click()")
+    note = str(h.lua("return ns.Visualizer.form.atNote:GetText()"))
+    ok(h.lua("return __r.text == 'Enrage NOW'"),
+       "text-only edit refused: text=%r note=%r" % (str(h.lua("return __r.text")), note))
+    eq(float(h.lua("return __r.arg")), 900.0, "time changed")
+    ok(not h.lua("return ns.Visualizer.form:IsShown()"), "form stayed open after Save")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F08: the quest-details popup (rewards drawn before it shows) moves the coin once an uncached best reward's price arrives", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    # QuestMapFrame.lua: QuestLogPopupDetailFrame_Show runs QuestInfo_Display
+    # (via _Update) and only then ShowUIPanel(QuestLogPopupDetailFrame).
+    h.lua("""
+    local function link(c) return "|Hitem:" .. c.name .. "|h[" .. c.name .. "]|h" end
+    GetQuestLogItemLink = function(kind, i) local c = __choices[i] return c and link(c) end
+    GetQuestLogChoiceInfo = function(i) local c = __choices[i] return c.name, 134400, c.count or 1 end
+    QuestLogPopupDetailFrame = CreateFrame("Frame", "QuestLogPopupDetailFrame", UIParent)
+    QuestLogPopupDetailFrame:Hide()
+    QuestInfoRewardsFrame:SetParent(QuestLogPopupDetailFrame)
+    QuestInfoRewardsFrame:Hide()
+    function __popup(n)
+        QuestInfoFrame.questLog = true
+        for i = 1, math.max(n, #QuestInfoRewardsFrame.RewardButtons) do
+            local b = QuestInfoRewardsFrame.RewardButtons[i]
+            if not b then
+                b = CreateFrame("Button", nil, QuestInfoRewardsFrame)
+                b.Icon = b:CreateTexture(nil, "ARTWORK")
+                local id = i
+                b.GetID = function() return id end
+                QuestInfoRewardsFrame.RewardButtons[i] = b
+            end
+            b.type = "choice"
+            b:SetShown(i <= n)
+        end
+        QuestInfoRewardsFrame:Show()
+        QuestInfo_Display()
+        QuestLogPopupDetailFrame:Show()
+    end
+    """)
+    ok(h.lua("return ns.Quests.HookRewards()"), "QuestInfo_Display not hooked")
+    h.lua("__uncached.Shield = true; __choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 } }; __popup(2)")
+    ok(h.lua("return QuestInfoRewardsFrame:IsVisible()"), "setup: popup rewards shown")
+    eq(gold(h), [1], "only the known price can be marked yet")
+    h.lua("__uncached.Shield = nil; W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true)")
+    eq(gold(h), [2], "the shield's price arrived: the coin should move to the shield (340 > 120)")
+    # a closed popup: its tiles are not waited on (the sweep 2 guard)
+    h.lua("QuestLogPopupDetailFrame:Hide(); __uncached.Shield = true; QuestInfo_Display()")
+    h.lua("__uncached.Shield = nil; W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true)")
+    eq(gold(h), [1], "a closed popup's tiles were re-walked on item info")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F10: a boss pull that closes Settings also puts away its Abandon-all confirm (no focused box, no click catcher, no abandon)", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(QUEST_LOG)
+    open_options(h)
+    h.lua("ns.Options.tabs.quests:Click()")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.quests and w.__kind == "button"
+               and w:GetParent().label:GetText():find("^All") then __btnAll = w end
+        end
+        __abandoned = 0
+        local old = AbandonQuest
+        AbandonQuest = function(...) __abandoned = __abandoned + 1 if old then return old(...) end end
+    """)
+    h.lua("__btnAll:Click()")
+    ok(h.lua("return SalusNovusConfirm:IsShown() and SalusNovusConfirm.typedBox:HasFocus()"), "setup: typed confirm up and focused")
+    ok(h.lua("return ns.Options.panel:IsShown()"), "setup: settings open")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(not h.lua("return ns.Options.panel:IsShown()"), "the pull closes Settings")
+    st = h.lua("return { SalusNovusConfirm:IsShown(), SalusNovusConfirm.typedBox:HasFocus(), SalusNovusConfirm.catcher:IsVisible() }")
+    eq([bool(st[1]), bool(st[2]), bool(st[3])], [False, False, False],
+       "confirm shown / box focused / catcher visible after the pull closed Settings")
+    eq(int(h.lua("return __abandoned")), 0, "the pull abandoned quests")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F13: the Quality of Life switch hides the quest-reward gold coin when turned off and restores it when turned back on", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    ok(h.lua("return ns.Quests.HookRewards()"), "setup: QuestInfo_Display not hooked")
+    h.lua("__choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 } }; __show(2)")
+    eq(gold(h), [2], "setup: the shield is marked")
+    open_options(h)
+    h.lua("ns.Options.moduleSwitches.qol:Click()")  # off
+    ok(h.lua("return not ns.ModuleOn('qol')"), "setup: QoL is off")
+    eq(gold(h), [], "Quality of Life off: the coin should go away at once")
+    h.lua("ns.Options.moduleSwitches.qol:Click()")  # back on
+    ok(h.lua("return ns.ModuleOn('qol')"), "setup: QoL is on again")
+    eq(gold(h), [2], "Quality of Life on again: the coin should come back")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F22: a boss pull closing Settings also closes its open color picker, reverting the preview", group="sweep6")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "accent swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065)')
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "the pull did not close Settings")
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "Settings closed on the pull but its color picker stayed open mid-screen")
+    cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    ok(abs(float(cc[1]) - 1) < 0.01 and float(cc[3]) < 0.01, "the abandoned preview was kept: %r" % (list(cc.values()),))
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: buy ----
+@test("sweep6 F03: a Buy search answered after the 4 s timeout still shows its rows (not 'Nothing found.')", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    # the AH-open auto scan runs first and finishes (as the client delivers it)
+    h.lua("W.advance(1.1); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.1)")
+    ok(not h.lua("return ns.Auction.scan.running"), "the open scan is done")
+    # the server is slow: the query goes out, nothing is in the browse results yet
+    h.lua("""
+        __slow = true
+        local get = C_AuctionHouse.GetBrowseResults
+        C_AuctionHouse.GetBrowseResults = function(...) if __slow then return {} end return get(...) end
+    """)
+    h.lua("ns.Buy.Search('cloth')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "searched")
+    h.lua("W.advance(4.1)")
+    st_after_timeout = str(h.lua("return ns.Buy.run.state"))
+    # the real answer arrives at 5 s
+    h.lua("__slow = false; W.advance(0.9); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(sorted(int(r["id"]) for r in h.lua("return ns.Buy.View()").values() if r["id"]), [2589, 2592],
+       "the late answer is shown (state after timeout was %s)" % st_after_timeout)
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F04: Search list / New / Delete / Browse leave a drill-down -- the list's lines (or its empty message) show, not the old item's levels", group="sweep6")
+def _():
+    bad = []
+    DRILL = "for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click('LeftButton') break end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)"
+    def setup():
+        h = fresh()
+        buy_open(h)
+        # Import list A through the real Import dialog
+        h.lua("SalusNovusBuy.listActions.Import:Click(); local d = SalusNovusBuy.dialog; d.name:SetText('A'); d.text:SetText('Runecloth\\ncloth'); d.ok:Click()")
+        h.lua("SalusNovusBuy.searchList:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3)")
+        h.lua(DRILL)
+        ok(h.lua("return ns.BuyUI.detail == true and SalusNovusBuy.back:IsShown()"), "drilled down into Runecloth")
+        return h
+    def state(h):
+        return (bool(h.lua("return SalusNovusBuy.back:IsShown()")), str(h.lua("return SalusNovusBuy.heads[1]:GetText()")),
+                bool(h.lua("return SalusNovusBuy.empty:IsShown()")))
+    # 1) Search list again
+    h = setup()
+    h.lua("SalusNovusBuy.searchList:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3)")
+    s = state(h)
+    if s[0] or s[1] != "Item": bad.append(("Search list", s))
+    # 2) New list 'B' through the dialog
+    h = setup()
+    h.lua("SalusNovusBuy.listActions.New:Click(); local d = SalusNovusBuy.dialog; d.name:SetText('B'); d.ok:Click()")
+    eq(str(h.lua("return ns.Buy.Current().name")), "B", "B is current")
+    s = state(h)
+    if s[0] or s[1] != "Item" or not s[2]: bad.append(("New B", s))
+    # 3) Delete
+    h = setup()
+    h.lua("SalusNovusBuy.listActions.Delete:Click()")
+    s = state(h)
+    if s[0] or s[1] != "Item": bad.append(("Delete", s))
+    # 4) Browse side button
+    h = setup()
+    h.lua("SalusNovusBuy.sideButtons[1]:Click()")
+    s = state(h)
+    if s[0] or s[1] != "Item": bad.append(("Browse", s))
+    # 5) Import list 'C' through the dialog
+    h = setup()
+    h.lua("SalusNovusBuy.listActions.Import:Click(); local d = SalusNovusBuy.dialog; d.name:SetText('C'); d.text:SetText('Backpack'); d.ok:Click()")
+    eq(str(h.lua("return ns.Buy.Current().name")), "C", "C is current")
+    s = state(h)
+    if s[0] or s[1] != "Item": bad.append(("Import C", s))
+    eq(bad, [], "each action leaves the drill-down: (action, (backShown, head1, emptyShown))")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F16: shift-clicking a spell link (ChatEdit_InsertLink) while Buy shows a searched list leaves the list alone", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("IsShiftKeyDown = function() return true end; HandleModifiedItemClick = function() end; ChatEdit_InsertLink = function() return false end")
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("ns.Buy.Import('Mats', 'Runecloth'); ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(1)")
+    ok(h.lua("return ns.Buy.mode == 'list' and SalusNovusDB.ahLists.current ~= nil"), "setup: list picked and searched")
+    h.lua("__n = #__calls; ChatEdit_InsertLink('|cff71d5ff|Hspell:133:0|h[Fireball]|h|r')")
+    eq(str(h.lua("return ns.Buy.mode .. '|' .. tostring(SalusNovusDB.ahLists.current) .. '|' .. ns.Buy.run.state .. '|' .. (SalusNovusBuy.search:GetText() or '')")),
+       "list|1|idle|", "a spell link starts no Buy search: the list stays picked, nothing searching, box untouched")
+    eq(h.errors(), [], "errors")
+
+@test("sweep6 F16 guards: a real item link starts no Buy search without Shift, nor while Buy is hidden (the item-link check must not hide the Shift / shown guards)", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("__shift = false; IsShiftKeyDown = function() return __shift end; HandleModifiedItemClick = function() end; ChatEdit_InsertLink = function() end")
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("ns.Buy.Import('Mats', 'Runecloth'); ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(1)")
+    ok(h.lua("return ns.Buy.mode == 'list' and SalusNovusDB.ahLists.current ~= nil"), "setup: list picked and searched")
+    link = "|cffffffff|Hitem:2592::|h[Wool Cloth]|h|r"
+    h.lua("__n = #__calls; HandleModifiedItemClick(%r); ChatEdit_InsertLink(%r)" % (link, link))
+    eq(str(h.lua("return ns.Buy.mode .. '|' .. tostring(SalusNovusDB.ahLists.current) .. '|' .. (SalusNovusBuy.search:GetText() or '')")),
+       "list|1|", "no Shift: the list stays picked, box untouched")
+    eq(int(h.lua("return #__calls - __n")), 0, "no Shift: nothing sent")
+    h.lua("ns.AuctionUI.Open('buy'); __shift = true; W.advance(1); __n = #__calls; HandleModifiedItemClick(%r); ChatEdit_InsertLink(%r)" % (link, link))
+    ok(not h.lua("return SalusNovusBuy:IsShown()"), "Buy hidden")
+    eq(str(h.lua("return ns.Buy.mode .. '|' .. tostring(SalusNovusDB.ahLists.current)")), "list|1", "Buy hidden: the list stays picked")
+    eq(int(h.lua("return #__calls - __n")), 0, "Buy hidden: nothing sent")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: health ----
+@test("sweep6 F02: health bar lets go of a removed plate whose token still answers and picks up the boss's new plate", group="sweep6")
+def _():
+    h = fresh()
+    h.lua('W.fireEvent("ENCOUNTER_START", 3496, "Durgen Dirgehammer", 1, 5, 3065)')
+    ok(h.lua("return ns.HealthBars.state.unit") is None, "no unit yet")
+    h.lua("__units['nameplate7'] = { name = 'Durgen Dirgehammer', hp = 800, max = 1000 }")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate7")')
+    eq(str(h.lua("return ns.HealthBars.state.unit")), "nameplate7", "boss not found on nameplate7")
+    # The real client fires REMOVED while the token still answers UnitExists/UnitName
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_REMOVED", "nameplate7")')
+    held = h.lua("return ns.HealthBars.state.unit")
+    alpha = float(h.lua("return SalusNovusHealthBars.bar:GetAlpha()"))
+    # ...then the token is cleared
+    h.lua("__units['nameplate7'] = nil")
+    # The boss's plate comes back on a different id
+    h.lua("__units['nameplate2'] = { name = 'Durgen Dirgehammer', hp = 400, max = 1000 }")
+    h.lua('W.fireEvent("NAME_PLATE_UNIT_ADDED", "nameplate2")')
+    h.lua('W.fireEvent("UNIT_HEALTH", "nameplate2")')
+    unit = h.lua("return ns.HealthBars.state.unit")
+    val = float(h.lua("return SalusNovusHealthBars.bar:GetValue()"))
+    h.lua('W.fireEvent("ENCOUNTER_END", 3496, "Durgen Dirgehammer", 1, 5, 1)')
+    ok(held is None, "re-held the removed plate's token: %r" % held)
+    ok(alpha < 0.5, "lost bar not dimmed: %r" % alpha)
+    eq(str(unit), "nameplate2", "boss not picked up on its new plate")
+    ok(abs(val - 400) < 1, "bar frozen at the old plate's health: %r" % val)
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: keybinds ----
+@test("sweep6 F05: a [mod:shift] branch after a [@mouseover,harm,nodead] clause is still the Shift layer: Shift-1 is 'via', and binding Shift-1 is a conflict", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("""__slots[1] = { 'macro', 3 }
+             __macros[3] = { 'Moon', 136002, '/cast [@mouseover,harm,nodead] Moonfire; [mod:shift] Sunfire; Wrath' }""")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    h.lua("SalusNovusKeybinds.layers[2]:Click()")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == '1' and not x.dup then c = x end end "
+    st = str(h.lua(cell + "return c.res.state"))
+    eq((st, str(h.lua(cell + "return tostring(c.res.label)"))), ("via", "Sunfire"), "Shift-1 with SHIFT-1 unbound: Sunfire via key 1's macro")
+    h.lua("__binds['SHIFT-1'] = 'MOVEFORWARD'; W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+    eq(str(h.lua(cell + "return c.res.state")), "conflict", "SHIFT-1 bound elsewhere shadows the Sunfire branch")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep6 F18: a '!'-toggle macro branch (/cast [mod:shift] !Prowl; Rake) shows Prowl's icon on Shift-E, via and own-bound", group="sweep6")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("__macros[1] = { 'Cat', 136000, '/cast [mod:shift] !Prowl; Rake' }; __icons['Prowl'] = 801; __icons['Rake'] = 802")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == '%s' then c = x end end"
+    h.lua("SalusNovusKeybinds.layers[2]:Click()")
+    via = h.lua((cell % "E") + " return { c.res.state, c.icon:IsShown() and c.icon:GetTexture() or 'hidden', c.res.label }")
+    eq(str(via[1]), "via", "Shift-E unbound: via E's macro")
+    eq((via[2], str(via[3])), (801, "Prowl"), "via: Prowl's icon and name")
+    h.lua("__binds['SHIFT-E'] = 'ACTIONBUTTON5'; W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+    own = h.lua((cell % "E") + " return { c.res.state, c.icon:IsShown() and c.icon:GetTexture() or 'hidden' }")
+    eq((str(own[1]), own[2]), ("bound", 801), "own-bound Shift-E: Prowl's icon, not Rake's/slot's")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: session ----
+@test("sweep6 F06: each Scarlet Monastery wing (all map 189) counts as its own instance toward the hourly cap", group="sweep6")
+def _():
+    h = fresh()
+    session(h)
+    # Each wing's entrance floor has its own uiMapID; all four report instance map 189
+    h.lua("C_Map = C_Map or {}; C_Map.GetBestMapForUnit = function() return __wing end")
+    for wing in (302, 303, 304, 305):
+        h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD')")
+        h.lua("W.advanceTimersOnly(300)")
+        h.lua("__inst = true; __wing = %d; __instName, __instMap = 'Scarlet Monastery', 189; W.fireEvent('PLAYER_ENTERING_WORLD')" % wing)
+    eq(int(h.lua("return #ns.Session.Recent()")), 4, "four SM wings = four instances")
+    # a /reload on another floor, and walking back into a wing already run, stay the same instance
+    h.lua("__wing = 306; W.fireEvent('PLAYER_ENTERING_WORLD', false, true)")
+    h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD'); __inst = true; __wing = 303; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 4, "reload and re-entry are not new instances")
+    h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advanceTimersOnly(300)")
+    h.lua("__inst = true; __wing = 491; __instName, __instMap = 'Razorfen Kraul', 47; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 5, "four SM wings + RFK = five instances")
+    h.lua("W.fireEvent('UI_ERROR_MESSAGE', 0, 'You have entered too many instances recently.')")
+    eq(int(h.lua("return (ns.Session.Limit())")), 5, "the error confirms a limit of 5")
+    # one-wing dungeons with several floors: a summon back in onto a deeper floor is the same instance
+    for m, top, deep in ((230, 242, 243), (429, 235, 236)):
+        h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD')")
+        h.lua("__inst = true; __wing = %d; __instName, __instMap = 'Deep', %d; W.fireEvent('PLAYER_ENTERING_WORLD')" % (top, m))
+        h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+        h.lua("__inst = true; __wing = %d; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)" % deep)
+    eq(int(h.lua("return #ns.Session.Recent()")), 7, "a summon onto a deeper floor is not a new instance")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: dq ----
+@test("sweep6 F07: after a /reload inside the dungeon, a party member's shareable quests come back on the card (the group's lists are asked for again)", "sweep6")
+def _():
+    # Two clients, each a real addon instance; their addon messages are relayed
+    # to each other as CHAT_MSG_ADDON (PARTY), whatever the protocol is.
+    PEER = """
+        UnitName = function(u)
+            if u == 'player' then return 'Brakka' end
+            if u == 'party1' then return 'Grumble' end
+            if u == 'party2' then return 'Lyss' end
+        end
+        __ql = {
+            { questID = 0, title = 'The Deadmines', isHeader = true },
+            { questID = 103, title = 'Oh Brother...', level = 20 },
+        }
+        __on = { party1 = {}, party2 = { [103] = true } }
+    """
+    def setup(h, peer=False):
+        h.lua(DQMOCK)
+        if peer:
+            h.lua(PEER)
+        h.lua("__dqInst = true")
+
+    def pump(a, an, b, bn):
+        for _ in range(10):
+            moved = False
+            for src, sname, dst in ((a, an, b), (b, bn, a)):
+                msgs = [(str(m[1]), str(m[2]), str(m[3])) for m in src.lua("local s = __sent; __sent = {}; return s").values()]
+                for p, msg, ch in msgs:
+                    moved = True
+                    dst.lua("W.fireEvent('CHAT_MSG_ADDON', %r, %r, %r, %r)" % (p, msg, ch, sname))
+            a.lua("W.advance(1)"); b.lua("W.advance(1)")
+            if not moved:
+                break
+
+    def got_rows(h):
+        if not h.lua("return SalusNovusDungeonQuests ~= nil and SalusNovusDungeonQuests:IsShown()"):
+            return []
+        return [r for r in dq_rows(h) if "can share" in r[1]]
+
+    brakka = fresh(); setup(brakka, peer=True)
+    grumble = fresh(); setup(grumble)
+    brakka.lua("W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    grumble.lua("W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    # both zoned in; Brakka's list reaches Grumble once the roster settles
+    brakka.lua("W.fireEvent('GROUP_ROSTER_UPDATE'); W.advance(1)")
+    pump(grumble, "Grumble", brakka, "Brakka")
+    before = got_rows(grumble)
+    ok(any(r[0] == "Oh Brother..." and "Brakka" in r[1] for r in before), "baseline: Brakka can share before the reload: %r" % before)
+
+    # Grumble /reloads inside: a brand-new addon instance (in-memory party lists gone)
+    grumble2 = fresh(); setup(grumble2)
+    grumble2.lua("W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    pump(grumble2, "Grumble", brakka, "Brakka")
+    after = got_rows(grumble2)
+    ok(any(r[0] == "Oh Brother..." and "Brakka" in r[1] for r in after),
+       "after the /reload the card should again say Brakka can share Oh Brother...: %r" % after)
+    eq(grumble2.errors(), [], "errors")
+    eq(brakka.errors(), [], "peer errors")
+
+
+@test("sweep6 F20: on a Russian client the dungeon quest card still lists your Deadmines quests a party member lacks", "sweep6")
+def _():
+    # The real client runs Lua in the C locale (%a = ASCII letters only); the
+    # harness inherits Python's cp1252 ctype. Put the process in the client's ctype.
+    import locale
+    old = locale.setlocale(locale.LC_CTYPE)
+    locale.setlocale(locale.LC_CTYPE, "C")
+    try:
+        h = fresh()
+        h.lua(DQMOCK)
+        # ruRU client: the quest log header and GetInstanceInfo both give the localized name
+        h.lua("__ql[1].title = string.char(208,156,208,181,209,128,209,130,208,178,209,139,208,181,32,208,186,208,190,208,191,208,184); __dqName = __ql[1].title")  # 'Мертвые копи'
+        ok(h.lua("return not string.char(208):find('%a')"), "setup: Lua now in the client's C ctype")
+        h.lua("__dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+        hexed = "local function x(s) return (tostring(s):gsub('.', function(c) if c:byte() > 127 then return ('<%02X>'):format(c:byte()) end end)) end "
+        sent = str(h.lua(hexed + "local o = {} for _, m in ipairs(__sent) do o[#o + 1] = x(m[2]) end return table.concat(o, ' / ')"))
+        key = str(h.lua(hexed + "return x(ns.DungeonQuests.Key(__dqName))"))
+        ok(h.lua("return SalusNovusDungeonQuests ~= nil and SalusNovusDungeonQuests:IsShown()"),
+           "card shown in the Deadmines on ruRU (Key=%r, sent=%r)" % (key, sent))
+        rows = dq_rows(h)
+        eq([r[2] for r in rows], [101, 102], "both dungeon quests listed")
+        # a party member's list under the same Russian key is taken in too
+        h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|' .. ns.DungeonQuests.Key(__dqName) .. '|103:Oh Brother...', 'PARTY', 'Brakka'); W.advance(1)")
+        ok(any(r[0] == "Oh Brother..." and "Brakka" in r[1] for r in dq_rows(h)), "Brakka can share on ruRU: %r" % dq_rows(h))
+        eq(h.errors(), [], "errors")
+    finally:
+        locale.setlocale(locale.LC_CTYPE, old)
+
+
+# ---- sweep 6: fonts ----
+@test("sweep6 F09: a second whole-UI on/off cycle with Arial Narrow still restores native Arial Narrow objects", group="sweep6")
+def _():
+    h = fresh()
+    h.lua("""
+        local function FO(path, size, flags)
+            local o = { __path = path, __size = size, __flags = flags }
+            function o:GetFont() return self.__path, self.__size, self.__flags end
+            function o:SetFont(p, s, f) self.__path, self.__size, self.__flags = p, s, f return true end
+            return o
+        end
+        local BS = string.char(92)
+        GameFontNormal = FO("Fonts" .. BS .. "FRIZQT__.TTF", 12, "")
+        ChatFontNormal = FO("Fonts" .. BS .. "ARIALN.TTF", 14, "")
+        NumberFontNormal = FO("Fonts" .. BS .. "ARIALN.TTF", 14, "OUTLINE")
+        ChatFrame1 = FO("Fonts" .. BS .. "ARIALN.TTF", 15, "")
+        GetFonts = function() return { "GameFontNormal", "ChatFontNormal", "NumberFontNormal" } end
+    """)
+    AN = "Fonts" + chr(92) + "ARIALN.TTF"
+    FRIZ = "Fonts" + chr(92) + "FRIZQT__.TTF"
+    # whole UI off while the stand-ins are installed, Arial Narrow picked
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    h.lua("ns.db.font.path = 'Fonts' .. string.char(92) .. 'ARIALN.TTF'; ns.ApplyAll()")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font')")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.font and w.__kind == "check" then __wholeCB = w end
+        end
+    """)
+    ok(h.lua("return __wholeCB ~= nil"), "whole-UI checkbox not found")
+    names = ("ChatFontNormal", "NumberFontNormal", "ChatFrame1")
+    for cycle in (1, 2):
+        h.lua("__wholeCB:Click()")   # tick
+        ok(h.lua("return ns.db.font.wholeUI == true"), "cycle %d: tick did not turn whole-UI on" % cycle)
+        eq(str(h.lua("return GameFontNormal.__path")), AN, "cycle %d: Arial Narrow not applied" % cycle)
+        h.lua("__wholeCB:Click()")   # untick
+        ok(h.lua("return ns.db.font.wholeUI == false"), "cycle %d: untick did not turn whole-UI off" % cycle)
+        eq(str(h.lua("return GameFontNormal.__path")), FRIZ, "cycle %d: GameFontNormal not restored" % cycle)
+        got = [str(h.lua("return %s.__path" % n)) for n in names]
+        if got != [AN] * 3:
+            h.lua("GameFontNormal = nil; ChatFontNormal = nil; NumberFontNormal = nil; ChatFrame1 = nil; GetFonts = nil")
+        eq(got, [AN] * 3,"cycle %d: native Arial Narrow objects restored to Friz" % cycle)
+    h.lua("GameFontNormal = nil; ChatFontNormal = nil; NumberFontNormal = nil; ChatFrame1 = nil; GetFonts = nil")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 6: merged-diff review ----
+
+@test("sweep6 verify: after an SM reset, every wing run before it counts again", group="sweep6")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("C_Map = C_Map or {}; C_Map.GetBestMapForUnit = function() return __wing end")
+    def enter(wing):
+        h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD')")
+        h.lua("W.advanceTimersOnly(120)")
+        h.lua("__inst = true; __wing = %d; __instName, __instMap = 'Scarlet Monastery', 189; W.fireEvent('PLAYER_ENTERING_WORLD')" % wing)
+    enter(302); enter(303)
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "two wings")
+    h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    h.lua("W.fireEvent('CHAT_MSG_SYSTEM', 'Scarlet Monastery has been reset.')")
+    enter(302)
+    eq(int(h.lua("return #ns.Session.Recent()")), 3, "graveyard after reset")
+    enter(303)
+    eq(int(h.lua("return #ns.Session.Recent()")), 4, "library after reset is also new")  # merged: got 3
     eq(h.errors(), [], "errors")

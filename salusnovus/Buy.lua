@@ -77,6 +77,7 @@ function B.Pick(i)
     local s = B.Store()
     if not s then return end
     Abort()
+    B.run.lateSeq = nil
     s.current = (i and s.lists[i]) and i or nil
     B.mode = s.current and "list" or "search"
     B.results = {}
@@ -329,10 +330,12 @@ local function WaitScan(r)
     if C_Timer and C_Timer.After then C_Timer.After(1, check) end
 end
 
-local function Landed(r)
+local function Landed(r, late)
     local rows = Rows()
+    r.lateSeq = nil
     if B.mode == "search" and r.queue[r.i].search then
         B.results = rows
+        if late then r.lateSeq = r.browseSeq end      -- its answer may still come: it lands (sweep 6)
         local okF, full = Call(AH().HasFullBrowseResults)
         B.more = okF and full == false                -- the rest comes on "More results"
         B.moreSeq = A().browseSeq                     -- ...of this browse, while it's the client's last
@@ -356,7 +359,7 @@ local function Watch(r, q)
                 if A().scan.running and not A().paused then r.afterScan = true WaitScan(r) else Next() end
                 return
             end
-            Landed(r)                                         -- what came, if anything
+            Landed(r, true)                                   -- what came, if anything
         end)
     end
 end
@@ -401,7 +404,7 @@ end
 
 local function Start(queue)
     local r = B.run
-    r.queue, r.i, r.state, r.waiting, r.throttled, r.afterScan = queue, 1, "searching", nil, nil, nil
+    r.queue, r.i, r.state, r.waiting, r.throttled, r.afterScan, r.lateSeq = queue, 1, "searching", nil, nil, nil, nil
     Changed()
     Next()
 end
@@ -427,7 +430,7 @@ function B.More()
     local r = B.run
     if not (B.mode == "search" and B.HasMore() and r.state == "idle" and A().IsOpen()) then return false end
     if not Call(AH().RequestMoreBrowseResults) then return false end
-    r.state = "more"
+    r.state, r.lateSeq = "more", nil
     r.moreAsk = (r.moreAsk or 0) + 1
     local n = r.moreAsk
     if C_Timer and C_Timer.After then
@@ -706,7 +709,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         if sel and sel.asked and A().Owns("buy") then Call(ah.CancelCommoditiesPurchase) end
         A().Release("buy")
         B.sel, B.message = nil, nil
-        r.state, r.waiting, r.throttled, r.afterScan = "idle", nil, nil, nil
+        r.state, r.waiting, r.throttled, r.afterScan, r.lateSeq = "idle", nil, nil, nil, nil
         B.more = false
         Changed()
     elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then
@@ -715,6 +718,16 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
             local okF, full = Call(ah.HasFullBrowseResults)
             B.more = okF and full == false
             r.state = "idle"
+            Changed()
+            return
+        end
+        -- a search's answer after its timeout: it lands still (it read "Nothing found." for good: sweep 6)
+        if r.state == "idle" and r.lateSeq and B.mode == "search" and not A().scan.running and r.lateSeq == A().browseSeq then
+            B.results = Rows()
+            local okF, full = Call(ah.HasFullBrowseResults)
+            B.more = okF and full == false
+            B.moreSeq = A().browseSeq
+            r.lateSeq = nil
             Changed()
             return
         end

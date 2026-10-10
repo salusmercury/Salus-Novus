@@ -257,7 +257,6 @@ local UI_FONT_OBJECTS = {
 }
 local uiOriginal = {}          -- name -> { path, size, flags } before we touched it
 local uiApplied                -- the font path the UI currently carries, or nil
-local everApplied = {}         -- every path Salus Novus has ever put on the UI
 ns._uiOriginal = uiOriginal
 
 -- Every font object the client knows, when it will tell us (the global
@@ -333,11 +332,11 @@ function ns.ApplyUIFont(on, again)
             if not uiOriginal[name] and type(obj) == "table" and obj.GetFont and obj.SetFont then
                 local ok, path, size, flags = pcall(obj.GetFont, obj)
                 if ok and type(path) == "string" and not ns.IsSecret(path) then
-                    -- An object first seen already wearing a font Salus Novus
-                    -- applied (a load-on-demand frame inheriting from
+                    -- An object first seen already wearing the font Salus Novus
+                    -- has on the UI (a load-on-demand frame inheriting from
                     -- GameFontNormal) must not remember THAT as its original,
                     -- or turning the switch off would pin it to our font.
-                    uiOriginal[name] = { everApplied[path] and StockFont() or path, size, flags }
+                    uiOriginal[name] = { (uiApplied and path == uiApplied) and StockFont() or path, size, flags }
                 end
             end
         end
@@ -365,7 +364,6 @@ function ns.ApplyUIFont(on, again)
     end
     -- after the pass: an object natively in the picked font keeps its own
     -- (chat and number fonts in Arial Narrow came back as Friz)
-    if want then everApplied[want] = true end
     uiApplied = want
     return n
 end

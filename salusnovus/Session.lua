@@ -318,14 +318,21 @@ local function InstanceNow()
     if kind ~= "party" and kind ~= "raid" then return nil end
     local ok, name, _, _, _, _, _, _, mapID = pcall(GetInstanceInfo)
     if not ok then return nil end
-    return Num(mapID) and mapID or nil, Str(name), kind
+    -- The wing: Scarlet Monastery's four share map 189, but each is its own
+    -- instance (sweep 6), one floor each, so the floor's uiMapID tells them
+    -- apart. Elsewhere a floor is just a floor (a summon can land you deep).
+    if mapID ~= 189 then return Num(mapID) and mapID or nil, Str(name), kind end
+    local okW, wing = pcall(C_Map and C_Map.GetBestMapForUnit, "player")
+    return mapID, Str(name), kind, okW and Num(wing) and wing or nil
 end
 
 --- On entering the world: a dungeon not entered in the last hour, or reset
--- since, counts as a new instance.
-function S.OnEnterWorld()
+-- since, counts as a new instance. Another wing of the same map is another
+-- instance; a login or /reload can stand on any floor, so it matches by map.
+function S.OnEnterWorld(isLogin, isReload)
     if not Enabled() then return end
-    local map, name, kind = InstanceNow()
+    local map, name, kind, wing = InstanceNow()
+    if isLogin or isReload then wing = nil end
     if not map then return end
     local l = Log()
     if not l then return end
@@ -334,14 +341,22 @@ function S.OnEnterWorld()
     local now = Epoch()
     local seen = false
     for _, e in ipairs(l.entries) do
-        if type(e) == "table" and e.map == map and e.char == who and Num(e.t) and now - e.t < HOUR then seen = true end
+        if type(e) == "table" and e.map == map and not e.pre and (e.wing == nil or wing == nil or e.wing == wing) and e.char == who and Num(e.t) and now - e.t < HOUR then seen = true end
     end
     -- The reset flag is this character's: another character's reset says
     -- nothing about the instance this one is walking back into.
     local rk = who .. ":" .. map
     if seen and not l.reset[rk] then return end
+    -- a reset makes every earlier entry of this map stale, not just the
+    -- wing walked into first: the other Scarlet Monastery wings are new too
+    -- (they still count toward the hour)
+    if l.reset[rk] then
+        for _, e in ipairs(l.entries) do
+            if type(e) == "table" and e.map == map and e.char == who then e.pre = true end
+        end
+    end
     l.reset[rk] = nil
-    l.entries[#l.entries + 1] = { t = now, map = map, name = name, char = who, raid = kind == "raid" or nil }
+    l.entries[#l.entries + 1] = { t = now, map = map, wing = wing, name = name, char = who, raid = kind == "raid" or nil }
     if S.OnChanged then S.OnChanged() end
 end
 
@@ -499,10 +514,10 @@ end
 for ev, key in pairs({ TAXIMAP_CLOSED = "taxi", TRADE_CLOSED = "trade" }) do
     ns.On(ev, function() closedAt[key] = Now(); S.SetOpen(key, false) end)
 end
-ns.On("PLAYER_ENTERING_WORLD", function()
+ns.On("PLAYER_ENTERING_WORLD", function(isLogin, isReload)
     lastXP, lastMax = ReadXP()
     lastMoney = ReadMoney()
-    S.OnEnterWorld()
+    S.OnEnterWorld(isLogin, isReload)
 end)
 ns.On("CHAT_MSG_SYSTEM", function(msg) S.OnSystem(msg) end)
 ns.On("GROUP_LEFT", function() S.OnGroupChange(true) end)

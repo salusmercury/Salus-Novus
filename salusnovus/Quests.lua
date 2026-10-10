@@ -250,9 +250,15 @@ local function MarkAll()
     Q.MarkRewards(rawget(_G, "MapQuestInfoRewardsFrame"), true)
 end
 Q.MarkAll = MarkAll
+-- the Quality of Life switch (any ApplyAll) puts the coin away or back at once (sweep 6)
+ns.RegisterApply(function() MarkAll() end, "Quest rewards")
 
-local hooked = false
+local hooked, popHooked = false, false
 function Q.HookRewards()
+    -- the quest-details popup draws its rewards before it shows: never live,
+    -- so an uncached best was never waited on. Mark again once it's up (sweep 6)
+    local pop = rawget(_G, "QuestLogPopupDetailFrame")
+    if not popHooked and pop and pop.HookScript then pop:HookScript("OnShow", MarkAll); popHooked = true end
     if hooked or type(rawget(_G, "QuestInfo_Display")) ~= "function" then return hooked end
     hooksecurefunc("QuestInfo_Display", MarkAll)
     hooked = true

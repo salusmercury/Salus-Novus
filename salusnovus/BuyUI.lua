@@ -80,9 +80,9 @@ local function Dialog()
     d.ok:SetScript("OnClick", function()
         local b = B()
         if d.mode == "new" then
-            if b.NewList(d.name:GetText()) then d:Hide() end
+            if b.NewList(d.name:GetText()) then UI.detail = false d:Hide() UI.Refresh() end   -- out of a drill-down (sweep 6)
         elseif d.mode == "import" then
-            if b.Import(d.name:GetText(), d.text:GetText()) then d:Hide() end
+            if b.Import(d.name:GetText(), d.text:GetText()) then UI.detail = false d:Hide() UI.Refresh() end
         else
             d:Hide()
         end
@@ -279,7 +279,7 @@ local function Build()
         b:SetText(def[2])
         b:SetScript("OnClick", function()
             UI.side = def[1]
-            if def[1] == "browse" and B().mode == "list" then UI.line = nil B().Pick(nil) end   -- out of the list (it held the column)
+            if def[1] == "browse" and B().mode == "list" then UI.line, UI.detail = nil, false B().Pick(nil) end   -- out of the list (it held the column)
             UI.Refresh()
         end)
         b.side = def[1]
@@ -303,7 +303,7 @@ local function Build()
     panel.listActions = {}
     local acts = { { "New", function() UI.OpenDialog("new") end }, { "Import", function() UI.OpenDialog("import") end },
                    { "Export", function() if B().Current() then UI.OpenDialog("export") end end },
-                   { "Delete", function() local _, i = B().Current() if i then B().DeleteList(i) end end } }
+                   { "Delete", function() local _, i = B().Current() if i then UI.detail = false B().DeleteList(i) end end } }
     for k, a in ipairs(acts) do
         local b = Th.MakeButton(panel.side)
         b:SetSize(76, 22)
@@ -338,7 +338,7 @@ local function Build()
     panel.searchList:SetSize(96, 24)
     panel.searchList:SetPoint("LEFT", panel.add, "RIGHT", 6, 0)
     panel.searchList:SetText("Search list")
-    panel.searchList:SetScript("OnClick", function(self) if self.enabledState then B().SearchList() end end)
+    panel.searchList:SetScript("OnClick", function(self) if self.enabledState then UI.detail = false B().SearchList() end end)
 
     -- the filters, as the AH's own: level range, quality, usable only
     panel.lvlLabel = Th.MakeText(panel, 13, Th.TEXT_DIM)
@@ -795,6 +795,8 @@ local lastName, lastAt
 local function FromLink(link)
     if not (UI.Shown() and type(link) == "string") then return end
     if IsShiftKeyDown and not IsShiftKeyDown() then return end
+    -- an item or a caged pet only (a spell, quest or achievement link browsed its name: sweep 6)
+    if not (link:find("|Hitem:", 1, true) or link:find("|Hbattlepet:", 1, true)) then return end
     local name = link:match("|h%[(.-)%]|h") or link:match("%[(.-)%]")
     if not name or name == "" then return end
     local now = (GetTime and GetTime()) or 0

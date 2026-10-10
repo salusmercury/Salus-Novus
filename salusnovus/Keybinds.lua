@@ -197,22 +197,32 @@ local function Holds(cond, held)
             end
         end
     else
-        return true                                  -- not a modifier test: taken as true
+        -- not a modifier test: taken as true, flagged as one that can fail
+        -- ([harm], [nodead]; a bare @unit only picks the target)
+        return true, not (cond:match("^@") or cond:match("^target="))
     end
     if no then return not hit end
     return hit
 end
 
 --- A clause fires when any of its [groups] holds (all of a group's comma-
--- separated conditions), or when it has none.
+-- separated conditions), or when it has none. The second return is true when
+-- it fires only through a non-modifier condition ([@mouseover,harm]) that
+-- can fail, so a later clause is what the layer usually casts.
 local function Fires(groups, held)
-    if #groups == 0 then return true end
+    if #groups == 0 then return true, false end
+    local fired = false
     for _, g in ipairs(groups) do
-        local all = true
-        for c in g:gmatch("[^,]+") do if not Holds(c, held) then all = false break end end
-        if all then return true end
+        local all, cond = true, false
+        for c in g:gmatch("[^,]+") do
+            local h, nonmod = Holds(c, held)
+            if not h then all = false break end
+            if nonmod then cond = true end
+        end
+        if all and not cond then return true, false end
+        if all then fired = true end
     end
-    return false
+    return fired, fired
 end
 
 --- A macro's /cast and /use lines by layer. Each line casts the first
@@ -232,23 +242,34 @@ function K.ParseMacro(body)
     if type(body) ~= "string" then return out, extras, seq end
     local LAYER_HELD = { { "base", nil }, { "shift", "shift" }, { "ctrl", "ctrl" }, { "alt", "alt" } }
     local tip, casts = nil, false
+    -- each layer when every non-modifier condition fails (no mouseover
+    -- target): "[@mouseover,harm] Moonfire; [mod:shift] Sunfire" is Shift
+    -- Sunfire, not Moonfire on every layer (sweep 6)
+    local plain = {}
     for line in body:gmatch("[^\r\n]+") do
         local t = line:match("^%s*#showtooltip%s+(.-)%s*$")
         if t and t ~= "" and not t:find("[%[;]") then tip = t:lower() end
         local rest = line:match("^%s*/cast%s+(.+)") or line:match("^%s*/use%s+(.+)")
         if rest then
-            local got = {}
+            local got, gotPlain = {}, {}
             for clause in rest:gmatch("[^;]+") do
                 local groups, spell = {}, clause
                 spell = spell:gsub("%[([^%]]*)%]", function(c) groups[#groups + 1] = c:lower() return "" end)
                 spell = spell:match("^%s*(.-)%s*$")
+                if spell then spell = spell:gsub("^!%s*", "") end   -- '!Prowl' toggles: the spell is Prowl
                 if spell and spell ~= "" then
                     casts = true
                     for _, l in ipairs(LAYER_HELD) do
-                        if not got[l[1]] and Fires(groups, l[2]) then
+                        local fires, cond = Fires(groups, l[2])
+                        if not got[l[1]] and fires then
                             got[l[1]] = true
                             seq[l[1]] = seq[l[1]] or {}
                             table.insert(seq[l[1]], spell)
+                        end
+                        if not gotPlain[l[1]] and fires and not cond then
+                            gotPlain[l[1]] = true
+                            plain[l[1]] = plain[l[1]] or {}
+                            table.insert(plain[l[1]], spell)
                         end
                     end
                 end
@@ -259,6 +280,17 @@ function K.ParseMacro(body)
     -- the bare key' (it showed the bare key's spell: sweep 2)
     local none = {}
     if casts then for _, m in ipairs({ "shift", "ctrl", "alt" }) do if not seq[m] then none[m] = true end end end
+    local function same(a, b)
+        a, b = a or {}, b or {}
+        if #a ~= #b then return false end
+        for i = 1, #a do if a[i] ~= b[i] then return false end end
+        return true
+    end
+    -- a layer that matches the bare key only through a condition that can
+    -- fail is a branch when, without it, it casts something else
+    for _, m in ipairs({ "shift", "ctrl", "alt" }) do
+        if seq[m] and same(seq[m], seq.base) and plain[m] and not same(plain[m], plain.base) then seq[m] = plain[m] end
+    end
     for layer, list in pairs(seq) do
         local main = list[#list]
         if tip then for _, s in ipairs(list) do if s:lower() == tip then main = s end end end
@@ -268,12 +300,6 @@ function K.ParseMacro(body)
             if s == main and not skipped then skipped = true else rest[#rest + 1] = s end
         end
         if #rest > 0 then extras[layer] = rest end
-    end
-    local function same(a, b)
-        a, b = a or {}, b or {}
-        if #a ~= #b then return false end
-        for i = 1, #a do if a[i] ~= b[i] then return false end end
-        return true
     end
     for _, m in ipairs({ "shift", "ctrl", "alt" }) do
         if out[m] ~= nil and out[m] == out.base and same(seq[m], seq.base) then out[m], extras[m], seq[m] = nil, nil, nil end

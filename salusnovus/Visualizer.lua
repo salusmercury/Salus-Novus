@@ -301,7 +301,8 @@ local function BuildForm()
     form:EnableMouse(true)
     form:Hide()
     V.form = form
-    form:HookScript("OnHide", function() if T.DropColorPicker then T.DropColorPicker() end end)
+    -- a close that isn't Okay is a Cancel: the revert runs, then it goes away
+    form:HookScript("OnHide", function() if T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end end)
 
     form.title = T.MakeText(form, 14, T.TEXT)
     form.title:SetPoint("TOPLEFT", 14, -12)
@@ -547,7 +548,12 @@ local function BuildForm()
             form.atNote:SetText("|cffff6666need a time, like 2:30|r")
             return
         end
-        if trig == "time" and t > FightEnd(f) then
+        local limit = FightEnd(f)
+        local old = form.editing and (form.editing.trigger or "time") == "time" and tonumber(form.editing.arg)
+        -- One already past the end is drawn at the end (Refresh) and editable:
+        -- it keeps its time, or moves earlier (sweep 6). +0.05: fmtExact's 0.1 s.
+        if old and old > limit then limit = old + 0.05 end
+        if trig == "time" and t > limit then
             -- Past the axis it would be saved but never drawn, so never
             -- editable again from here.
             form.atNote:SetText("|cffff6666the fight ends at " .. fmt(FightEnd(f)) .. "|r")
@@ -602,6 +608,7 @@ local function BuildForm()
 end
 
 local function OpenForm(t, spellId, abilityName, existing)
+    if T.CancelColorPicker then T.CancelColorPicker() end   -- a live picker's revert runs before this form is seeded
     if not form then BuildForm() end
     local f = Fight()
     if not f then return end
@@ -991,7 +998,7 @@ RenderDesc = function(f)
             T.SnapCheckBoxes()      -- the editor's rows hang under fractional text
         else
             if row.editor:IsShown() then row.editor.name:ClearFocus() end   -- disarm a mid-edit box
-            if row.editor:IsShown() and T.DropColorPicker then T.DropColorPicker() end   -- its card closed
+            if row.editor:IsShown() and T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end   -- its card closed (the preview reverts)
             row.editor:Hide()
         end
         row:SetHeight(base + (open and EDIT_H or 0))
@@ -1004,7 +1011,7 @@ RenderDesc = function(f)
         local row = win.descRows[i]
         if row.editor and row.editor:IsShown() then          -- its card went with the boss (the sweep)
             if row.editor.name and row.editor.name:HasFocus() == true then row.editor.name:ClearFocus() end
-            if T.DropColorPicker then T.DropColorPicker() end
+            if T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end
             row.editor:Hide()
         end
         row:Hide()
@@ -1021,6 +1028,7 @@ local function Build()
     win.shell = shell
     win:SetFrameLevel(120)
     win:SetScript("OnHide", function()
+        if T.CancelColorPicker then T.CancelColorPicker() end   -- before the form's hide drops it unreverted
         if form then form:Hide() end
         if T.DropColorPicker then T.DropColorPicker() end   -- a card's picker doesn't outlive the window (the sweep)
         if ns.ReturnToOptions then ns.ReturnToOptions() end

@@ -419,9 +419,10 @@ end
 --- A unit id is only a slot: the tank retargets, a nameplate id is reused
 -- by an add. Each boss keeps its id while it still holds it, else looks
 -- again -- never at an id another boss of this pull holds.
-local function Resolve()
+local function Resolve(gone)
     if not state.boss then return end
     local taken = {}
+    if gone then taken[gone] = true end   -- a removed plate still answers inside its own REMOVED handler
     for _, x in ipairs(state.live) do
         if x.unit and UnitIsNamed(x.unit, x.name) then taken[x.unit] = true else x.unit = nil end
     end
@@ -454,7 +455,7 @@ ev:SetScript("OnEvent", function(_, event, unit)
         for _, x in ipairs(state.live) do
             if x.unit == unit then x.unit = nil; hit = true end
         end
-        if hit then Resolve() end
+        if hit then Resolve(unit) end
     else
         Resolve()
     end

@@ -1786,6 +1786,10 @@ local function BuildPanel()
             if s.stop then s.stop() end
         end
         if pickerList then pickerList:Hide() end
+        -- its color picker goes with it, reverted like Escape/Cancel (it stayed
+        -- up mid-screen through a pull: sweep 6)
+        if T.CancelColorPicker then T.CancelColorPicker() end
+        if T.DropColorPicker then T.DropColorPicker() end
         lastPanelHide = GetTime()
     end)
     shell.subtitle:SetText("")
@@ -1937,6 +1941,10 @@ ns.Timers.Register({
         ns.returnToOptions = nil                         -- closing the visualizer mid-fight brings nothing back
         if ns.db and ns.db.unlocked then pcall(ExitUnlockMode, true) end
         for _, s in ipairs(previewStages) do s:Halt() end   -- every anchor back to the screen, now
+        -- an abandon confirm left up kept the keyboard through the pull; a
+        -- hide is a Cancel (its OnHide clears onYes), never a yes (sweep 6)
+        local c = _G.SalusNovusConfirm
+        if c and c:IsShown() then c:Hide() end
         if panel and panel:IsShown() then panel:Hide() end
     end,
 })
