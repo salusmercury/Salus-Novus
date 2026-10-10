@@ -30,6 +30,16 @@ D.Enabled = Enabled
 
 local function Key(s) return (tostring(s or ""):lower():gsub("^the ", ""):gsub("[^%a]", "")) end
 D.Key = Key
+-- The quest log files a dungeon under its AREA name, which can differ from
+-- the map's ('The Stockade' for Stormwind Stockade): those got no quests
+-- (the sweep). Map key -> other keys its quests are filed under.
+D.ALIAS = { stormwindstockade = { stockade = true }, sunkentemple = { templeofatalhakkar = true, atalhakkar = true } }
+local function SameDungeon(zone, dungeon)
+    local z, d = Key(zone), Key(dungeon)
+    if z == "" or d == "" then return false end
+    return z == d or (D.ALIAS[d] and D.ALIAS[d][z]) or false
+end
+D.SameDungeon = SameDungeon
 
 local function QL() return rawget(_G, "C_QuestLog") end
 
@@ -57,10 +67,14 @@ function D.Party()
         local unit = "party" .. i
         local okE, exists = pcall(UnitExists, unit)
         if okE and exists and not ns.IsSecret(exists) then
-            local okN, name = pcall(UnitName, unit)
+            local okN, name, realm = pcall(UnitName, unit)
             local okC, _, class = pcall(UnitClass, unit)
             name = okN and Str(name) or nil
-            if name then out[#out + 1] = { unit = unit, name = name, class = okC and Str(class) or nil } end
+            realm = okN and Str(realm) or nil
+            -- keyed as their messages are (Name-Realm from another realm), shown bare
+            -- (a cross-realm member's list was never matched: the sweep)
+            local key = name and ((realm and realm ~= "") and (name .. "-" .. realm) or name)
+            if name then out[#out + 1] = { unit = unit, name = name, key = key, class = okC and Str(class) or nil } end
         end
     end
     return out
@@ -73,7 +87,7 @@ function D.Mine(dungeon)
     local out, want = {}, Key(dungeon)
     if want == "" or not (ns.Quests and ns.Quests.List) then return out end
     for _, q in ipairs(ns.Quests.List()) do
-        if Key(q.zone) == want then out[#out + 1] = { questID = q.questID, title = Str(q.title) or ("Quest " .. q.questID) } end
+        if SameDungeon(q.zone, dungeon) then out[#out + 1] = { questID = q.questID, title = Str(q.title) or ("Quest " .. q.questID) } end
     end
     return out
 end
@@ -133,7 +147,7 @@ function D.Check(dungeon)
     end
     local key, at = Key(dungeon), {}
     local present = {}
-    for _, m in ipairs(party) do present[m.name] = m end
+    for _, m in ipairs(party) do present[m.key or m.name] = m; present[m.name] = present[m.name] or m end
     for name, rec in pairs(D.party) do
         if present[name] and rec.key == key then
             for _, q in ipairs(rec.quests) do
@@ -177,11 +191,13 @@ end
 local function Clean(s) return (tostring(s or ""):gsub("[|;:~]", "")) end
 
 --- Tell the group our quests for this dungeon (one message, 240 bytes).
-function D.Broadcast(dungeon)
+function D.Broadcast(dungeon, empty)
     local ci = rawget(_G, "C_ChatInfo")
     local ch = Channel()
-    if not (ci and ci.SendAddonMessage and ch and dungeon) then return end
+    if not (ci and ci.SendAddonMessage and ch and (dungeon or empty)) then return end
     RegisterPrefix()
+    -- empty: 'DQ||' clears our entry on their side (switched off: sweep 2)
+    if empty then pcall(ci.SendAddonMessage, PREFIX, "DQ||", ch) return end
     local msg = "DQ|" .. Key(dungeon) .. "|"
     local first = true
     for _, q in ipairs(D.Mine(dungeon)) do
@@ -331,6 +347,9 @@ function D.Refresh()
     end
     Build()
     frame.unlockLabel:SetShown(unlocked and true or false)
+    -- unlocked, the card is a drag handle: its X and Share buttons take no
+    -- clicks (a grab near the corner dismissed it: the sweep)
+    frame.close:EnableMouse(not unlocked)
     local n, y = 0, 30
     for _, q in ipairs(give) do
         n = n + 1
@@ -360,6 +379,8 @@ function D.Refresh()
     end
     for i = n + 1, #frame.rows do frame.rows[i]:Hide() end
     frame:SetHeight(math.max(44, y + 6))
+    -- (after the rows: one made in this redraw stayed clickable: sweep 2)
+    for _, r in ipairs(frame.rows) do if r.share then r.share:EnableMouse(not unlocked) end end
     frame:Show()
 end
 
@@ -401,4 +422,19 @@ ns.On("QUEST_REMOVED", function()
 end)
 ns.On("UNIT_QUEST_LOG_CHANGED", Queue)
 ns.On("CHAT_MSG_ADDON", function(...) D.OnAddonMessage(...) end)
-ns.RegisterApply(function() D.Refresh() end, "Dungeon quests")
+local wasOn
+ns.RegisterApply(function()
+    -- switched on inside a dungeon: the group gets the list now (it waited
+    -- for a roster or quest change that might never come: the sweep)
+    local on = Enabled() and true or false
+    if on and wasOn == false then
+        local dungeon = D.Dungeon()
+        if dungeon then D.Broadcast(dungeon) end
+    elseif wasOn and not on then
+        -- switched off: the group drops our list (they kept '<you> can share'
+        -- for quests dropped later: sweep 2)
+        D.Broadcast(nil, true)
+    end
+    wasOn = on
+    D.Refresh()
+end, "Dungeon quests")

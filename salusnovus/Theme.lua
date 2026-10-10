@@ -431,6 +431,10 @@ function T.MakeScrollArea(parent)
     end
     slider.thumb = thumb
     slider:Hide()
+    -- the bar hides with its scroll area (a hidden area's bar stayed up, over
+    -- the other one's: the sweep)
+    sf:HookScript("OnHide", function() slider.__wasShown = slider:IsShown() slider:Hide() end)
+    sf:HookScript("OnShow", function() if slider.__wasShown then slider:Show() end end)
     local syncing = false
     sf:SetScript("OnScrollRangeChanged", function(self, _, yrange)
         yrange = math.max(0, math.floor(yrange or 0))
@@ -578,6 +582,10 @@ end
 function T.SnapCheckBoxes()
     for _, b in ipairs(T.checkBoxes) do T.SnapBox(b) end
 end
+function T.ResnapCheckBoxes()
+    for _, b in ipairs(T.checkBoxes) do if b.Resnap then pcall(b.Resnap, b) end end
+    T.SnapCheckBoxes()
+end
 
 --- The square check box (a filled square in the accent when on): the
 -- options pages' style, and the ability cards' (Alex: "the checkbox
@@ -605,6 +613,16 @@ function T.MakeCheckBox(parent, size)
     b.border:Layout(b, edge, -edge)
     b.border:SetColor(1, 1, 1, 0.28)
     b.border:Show()
+    --- whole pixels again at the scale now (a UI-scale change left the edges
+    -- fractional until /reload: the sweep)
+    function b:Resnap()
+        local p = T.PixelUnit(self)
+        local bx = T.SnapPx(size or 18, p)
+        local e = T.SnapPx((size or 18) >= 18 and 3 or 2, p)
+        self:SetSize(bx, bx)
+        self.fill:SetSize(bx - 4 * e, bx - 4 * e)
+        self.border:Layout(self, e, -e)
+    end
     b.text = b:CreateFontString(nil, "OVERLAY")
     b.checked = false
     b.enabledState = true
@@ -792,7 +810,7 @@ local function BuildPicker()
     picker.hexCap:SetText("#")
     picker.hex = T.MakeEditBox(picker, 90)
     picker.hex:SetPoint("LEFT", picker.hexCap, "LEFT", 22, 0)
-    picker.hex:SetMaxLetters(6)
+    picker.hex:SetMaxLetters(7)                      -- (a pasted '#RRGGBB' was cut to 5 digits: the sweep)
     local function ReadHex(self)
         local t = (self:GetText() or ""):gsub("^#", ""):upper()
         if #t ~= 6 or not t:match("^%x+$") then return end
@@ -811,15 +829,27 @@ local function BuildPicker()
     picker.okay:SetSize(90, 26)
     picker.okay:SetPoint("BOTTOMRIGHT", -16, 14)
     picker.okay:SetText("Okay")
-    picker.okay:SetScript("OnClick", function() picker:Hide() end)
+    picker.okay:SetScript("OnClick", function()
+        ReadHex(picker.hex)                          -- a typed hex not yet entered counts (it was lost: sweep 2)
+        picker.onChange, picker.onCancel = nil, nil
+        picker:Hide()
+    end)
     picker.cancel = T.MakeButton(picker)
     picker.cancel:SetSize(90, 26)
     picker.cancel:SetPoint("RIGHT", picker.okay, "LEFT", -8, 0)
     picker.cancel:SetText("Cancel")
     picker.cancel:SetScript("OnClick", function()
         local cb = picker.onCancel
-        picker.onChange = nil
+        picker.onChange, picker.onCancel = nil, nil
         picker:Hide()
+        if cb then cb() end
+    end)
+    -- any other close (Escape) is a Cancel: the previewed colour was kept (the sweep)
+    picker:SetScript("OnHide", function()
+        -- an ancestor hiding (Alt+Z) isn't a close: it left a live-looking dead picker (sweep 2)
+        if picker:IsShown() then return end
+        local cb = picker.onCancel
+        picker.onChange, picker.onCancel = nil, nil
         if cb then cb() end
     end)
     picker:Hide()
@@ -835,8 +865,24 @@ function T.DropColorPicker()
     picker:Hide()
 end
 
+--- Cancel a live picker now (its revert runs), leaving it shown: a swatch
+-- re-clicked over its own picker read the preview as its previous colour.
+function T.CancelColorPicker()
+    if not picker or not picker:IsShown() or not picker.onCancel then return end
+    local cb = picker.onCancel
+    picker.onChange, picker.onCancel = nil, nil
+    pcall(cb)
+end
+
 function T.OpenColorPicker(c, onChange, onCancel)
     local p = BuildPicker()
+    -- opened over a live one: that one is cancelled first (its preview was
+    -- kept and its revert lost: sweep 2)
+    if p:IsShown() and p.onCancel then
+        local cb = p.onCancel
+        p.onChange, p.onCancel = nil, nil
+        pcall(cb)
+    end
     local r0, g0, b0 = c.r or 1, c.g or 1, c.b or 1
     p.onChange = nil     -- seeding the sliders must not fire the caller
     p.onCancel = onCancel or function() onChange(r0, g0, b0) end
@@ -1223,6 +1269,9 @@ function T.Confirm(text, yesLabel, onYes, typed)
         end)
         if UISpecialFrames and f.GetName and f:GetName() then table.insert(UISpecialFrames, f:GetName()) end
         f:SetScript("OnKeyDown", function(self, key)
+            -- in combat SetPropagateKeyboardInput is protected: every key was a
+            -- blocked action (the sweep); Escape still closes via UISpecialFrames
+            if InCombatLockdown and InCombatLockdown() then return end
             if key == "ESCAPE" then
                 pcall(self.SetPropagateKeyboardInput, self, false)
                 self:Hide()

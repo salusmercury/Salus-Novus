@@ -102,7 +102,13 @@ end
 -- insensitive, so "ASMONGOLD", "asmon's stream" and "xXasmonXx" all match.
 function C.Matches(text)
     if type(text) ~= "string" or ns.IsSecret(text) then return false end
-    local lower = text:lower()
+    -- what the player SEES: colour codes, link payloads ('|Hitem:19019...'),
+    -- textures out; a link's shown text kept (a word like 'item' swallowed
+    -- every line with an item link -- the sweep)
+    -- (and the 12.x named colours '|cnIQ4:' and atlases: sweep 2)
+    local shown = text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|cn.-:", ""):gsub("|r", ""):gsub("|H.-|h(.-)|h", "%1")
+        :gsub("|T.-|t", ""):gsub("|K.-|k", ""):gsub("|A.-|a", "")
+    local lower = shown:lower()
     for _, w in ipairs(C.List()) do
         if lower:find(w, 1, true) then return true end
     end

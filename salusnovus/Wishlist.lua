@@ -176,11 +176,19 @@ function W.ReadCatalog()
         local id = type(c) == "table" and c.InstanceID
         if Num(id) then shared[id] = (shared[id] or 0) + 1 end
     end
+    -- AtlasLoot also carries the Burning Crusade dungeons: Forever has no map
+    -- for them (no name: they listed as '?') and they start past the level
+    -- cap -- not this game's loot (Alex)
+    local capFn = rawget(_G, "GetMaxLevelForPlayerExpansion") or rawget(_G, "GetMaxPlayerLevel")
+    local okCap, cap = false, nil
+    if capFn then okCap, cap = pcall(capFn) end
+    cap = okCap and Num(cap) and cap or 60
     for _, key in ipairs(keys) do
         local c = store[key]
         if type(c) == "table" and type(c.items) == "table" and W.IsDungeon(c) then
             local r = type(c.LevelRange) == "table" and c.LevelRange or {}
             local d = { key = key, name = W.Clean(W.ContentName(c)), range = { Num(r[1]) and r[1] or 0, Num(r[2]) and r[2] or 0, Num(r[3]) and r[3] or 0 }, bosses = {}, order = #cat.dungeons }
+            local skip = d.name == "?" or d.range[2] > cap
             -- The visualizer's levels beat AtlasLoot's (Alex): same dungeon by
             -- instance ID, else by name (Dire Maul's wings carry no ID).
             -- Wings that share one of our instances (Scarlet Monastery's
@@ -188,7 +196,7 @@ function W.ReadCatalog()
             -- range: ours covers the whole building.
             local lo, hi = W.OurLevels(c.InstanceID, d.name)
             if lo and not (Num(c.InstanceID) and (shared[c.InstanceID] or 0) > 1) then d.range[2], d.range[3] = lo, hi end
-            for b, boss in ipairs(c.items) do
+            for b, boss in ipairs(skip and {} or c.items) do      -- (skipped: no bosses, not listed)
                 local dif = c.LoadDifficulty or 1
                 local okT, rows = true, nil
                 if db.GetItemTable then okT, rows = pcall(db.GetItemTable, db, MODULE, key, b, dif) end
@@ -571,6 +579,12 @@ W.RegisterPrefix()
 
 local function Channel()
     local raid, group = rawget(_G, "IsInRaid"), rawget(_G, "IsInGroup")
+    -- a group-finder group refuses PARTY/RAID sends: its own channel first
+    local inst = rawget(_G, "LE_PARTY_CATEGORY_INSTANCE")
+    if group and inst and group() then
+        local ok, i = pcall(group, inst)
+        if ok and i and not ns.IsSecret(i) then return "INSTANCE_CHAT" end
+    end
     if raid and raid() then return "RAID" end
     if group and group() then return "PARTY" end
     return nil
@@ -593,7 +607,7 @@ local function Later(fn)
 end
 
 local pendingSend = false
-function W.Broadcast()
+function W.Broadcast(retry)
     if pendingSend or not Enabled() then return end
     pendingSend = true
     Later(function()
@@ -622,12 +636,22 @@ function W.Broadcast()
         -- ~1 a second); a chunk refused sends the whole list again a little
         -- later, so nobody keeps a head without its continuations (the sweep)
         local n, i = math.min(#chunks, 10), 0
+        -- one chain at a time: a newer list stops the older one mid-send (its
+        -- late continuations landed in the new list: the sweep)
+        W.sendGen = (W.sendGen or 0) + 1
+        local gen = W.sendGen
+        -- (counted per list, not per session: the sweep; the retry is this
+        -- call's, not a flag a skipped send left on: sweep 2)
+        if not retry then W.retries = 0 end
         local function Next()
+            if W.sendGen ~= gen then return end
             i = i + 1
             if i > n then W.retries = 0 return end
             if not Send((i == 1 and head or cont) .. chunks[i], ch) then
                 W.retries = (W.retries or 0) + 1
-                if W.retries <= 3 and C_Timer and C_Timer.After then C_Timer.After(3, W.Broadcast) end
+                if W.retries <= 3 and C_Timer and C_Timer.After then
+                    C_Timer.After(3, function() W.Broadcast(true) end)
+                end
                 return
             end
             if C_Timer and C_Timer.After then C_Timer.After(0.3, Next) else Next() end
@@ -714,6 +738,8 @@ function W.OnAddonMessage(prefix, msg, channel, sender)
     end
     W.party[who] = { classFile = class ~= "" and class or nil, items = items, at = now,
                      headAt = append and prev.headAt or now }
+    -- a roll open since a /reload gets its strip once the lists are back (the sweep)
+    if ns.WishlistRoll and ns.WishlistRoll.Sweep then pcall(ns.WishlistRoll.Sweep) end
     if W.OnPartyChanged then W.OnPartyChanged() end   -- (the party view only: the sweep)
 end
 ns.On("CHAT_MSG_ADDON", function(...) W.OnAddonMessage(...) end)
@@ -823,3 +849,12 @@ function W.Rank(sortBy)
 end
 
 ns.On("GET_ITEM_INFO_RECEIVED", function(id) if W.OnItemInfo then W.OnItemInfo(id) end end)
+
+-- switched back on: our list goes out and theirs is asked for (everything
+-- that came while off was dropped: sweep 2)
+local wasOn
+ns.RegisterApply(function()
+    local on = Enabled() and true or false
+    if on and wasOn == false then W.Broadcast() W.Request() end
+    wasOn = on
+end, "Wishlist")

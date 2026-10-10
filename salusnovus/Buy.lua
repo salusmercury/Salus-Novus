@@ -336,17 +336,35 @@ local function Landed(r)
         local okF, full = Call(AH().HasFullBrowseResults)
         B.more = okF and full == false                -- the rest comes on "More results"
         B.moreSeq = A().browseSeq                     -- ...of this browse, while it's the client's last
-    else B.results[r.queue[r.i].line] = rows end
+    elseif r.queue[r.i].line then B.results[r.queue[r.i].line] = rows end   -- (a search's answer in list mode: dropped)
     r.waiting = nil
     r.i = r.i + 1
     Changed()
     Next()
 end
 
+--- No answer for BROWSE_TIMEOUT: what came lands. Armed for each page, not
+-- once per line (a line paging past 4 s was cut off: sweep 5).
+local function Watch(r, q)
+    r.watch = (r.watch or 0) + 1
+    local w = r.watch
+    if C_Timer and C_Timer.After then
+        C_Timer.After(BROWSE_TIMEOUT, function()
+            if not (r.waiting == q and r.watch == w) then return end
+            if A().browseSeq ~= r.browseSeq then              -- another browse (the scan's) replaced ours: ask again
+                r.waiting = nil
+                if A().scan.running and not A().paused then r.afterScan = true WaitScan(r) else Next() end
+                return
+            end
+            Landed(r)                                         -- what came, if anything
+        end)
+    end
+end
+
 Next = function()
     local r = B.run
     if r.state ~= "searching" or r.waiting then return end
-    if not A().IsOpen() then r.state = "idle" Changed() return end
+    if not (A().IsOpen() and A().Enabled()) then r.state = "idle" Changed() return end   -- (tabs off: the run ends -- sweep 5)
     if r.i > #r.queue then r.state = "idle" Changed() return end
     -- a browse would cut the scan short: after it -- unless it's paused
     -- (Alex: away from Snipe/Investing the scan gives way; this cuts it short)
@@ -369,8 +387,6 @@ Next = function()
     end
     local q = r.queue[r.i]
     r.pages = 1
-    r.askSeq = (r.askSeq or 0) + 1
-    local seq = r.askSeq
     A().HookBrowse()                                  -- (every browse counted)
     if not Call(ah.SendBrowseQuery, q.query or { searchString = q.text, sorts = {}, filters = {}, itemClassFilters = {} }) then
         r.i = r.i + 1
@@ -380,17 +396,7 @@ Next = function()
     r.waiting = q
     B.message = nil
     Changed()
-    if C_Timer and C_Timer.After then
-        C_Timer.After(BROWSE_TIMEOUT, function()
-            if not (r.waiting == q and r.askSeq == seq) then return end
-            if A().browseSeq ~= r.browseSeq then              -- another browse (the scan's) replaced ours: ask again
-                r.waiting = nil
-                if A().scan.running and not A().paused then r.afterScan = true WaitScan(r) else Next() end
-                return
-            end
-            Landed(r)                                         -- what came, if anything
-        end)
-    end
+    Watch(r, q)
 end
 
 local function Start(queue)
@@ -718,7 +724,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         -- the rest comes on "More results"
         if (okF and full == false) and r.pages < MAX_PAGES and not r.waiting.search then
             r.pages = r.pages + 1
-            if Call(ah.RequestMoreBrowseResults) then return end
+            if Call(ah.RequestMoreBrowseResults) then Watch(r, r.waiting) return end
         end
         Landed(r)
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then

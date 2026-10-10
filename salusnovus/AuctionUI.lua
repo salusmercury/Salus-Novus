@@ -584,7 +584,16 @@ function UI.Apply()
     if on and #UI.buttons == 0 and A().IsOpen() then Attach() end   -- switched on with the AH open
     for _, b in ipairs(UI.buttons) do b:SetShown(on) end
     if #UI.buttons > 0 then UI.BlizzardTabs(not on) end
-    if not on then UI.HideAll() Lit() end
+    if not on then
+        UI.HideAll() Lit()
+        -- a held quote is dropped: off, it cancelled Blizzard's own purchase (sweep 5)
+        local p = A().purchase
+        if p and not p.confirming then
+            if p.owner == "invest" and ns.Invest then ns.Invest.Cancel()
+            elseif p.owner == "snipe" then A().Cancel()
+            elseif p.owner == "buy" and ns.Buy then ns.Buy.Cancel() end
+        end
+    end
     UI.Refresh()                                   -- a setting changed: min profit, scan on open
 end
 ns.RegisterApply(UI.Apply, "Auction")

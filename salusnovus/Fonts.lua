@@ -295,36 +295,77 @@ local function UIFontTargets()
     return names
 end
 
+-- Loads NOW? Asked fresh each time (an addon font's first SetFont fails
+-- while the client loads it, then works).
+local function LoadsNow(path)
+    local probe = ns._fontProbe or UIParent:CreateFontString(nil, "OVERLAY")
+    ns._fontProbe = probe
+    probe:Hide()
+    local ok, applied = pcall(probe.SetFont, probe, path, 12, "")
+    return ok and applied ~= false
+end
+local uiRetried = {}
+
 function ns.ApplyUIFont(on, again)
     local want = on and ns.ActiveFont() or nil
+    -- a font the client won't load never goes on the whole UI: every object
+    -- given it drew nothing (a missing font pack, the default: sweep 2).
+    -- Asked again a second later, once per path.
+    if want and not LoadsNow(want) then
+        if not uiRetried[want] and C_Timer and C_Timer.After then
+            uiRetried[want] = true
+            local bad = want
+            C_Timer.After(1, function()
+                if ns.ActiveFont() == bad and uiApplied ~= bad then ns.ApplyUIFont(on, true) end
+            end)
+        end
+        want = nil
+    end
     if want == uiApplied and not again then return 0 end
     local n = 0
-    for _, name in ipairs(UIFontTargets()) do
-        local obj = _G[name]
-        if type(obj) == "table" and obj.GetFont and obj.SetFont then
-            if want then
+    local targets = UIFontTargets()
+    -- every original is read BEFORE any SetFont: a font that inherits from
+    -- one set earlier in the pass would read the picked font as its own
+    -- (sweep 5)
+    if want then
+        for _, name in ipairs(targets) do
+            local obj = _G[name]
+            if not uiOriginal[name] and type(obj) == "table" and obj.GetFont and obj.SetFont then
                 local ok, path, size, flags = pcall(obj.GetFont, obj)
                 if ok and type(path) == "string" and not ns.IsSecret(path) then
                     -- An object first seen already wearing a font Salus Novus
                     -- applied (a load-on-demand frame inheriting from
                     -- GameFontNormal) must not remember THAT as its original,
                     -- or turning the switch off would pin it to our font.
-                    if not uiOriginal[name] then
-                        uiOriginal[name] = { everApplied[path] and StockFont() or path, size, flags }
-                    end
-                    everApplied[want] = true
-                    local o = uiOriginal[name]
-                    local okS, applied = pcall(obj.SetFont, obj, want, o[2] or size, o[3] or flags or "")
-                    if okS and applied ~= false then n = n + 1 end
+                    uiOriginal[name] = { everApplied[path] and StockFont() or path, size, flags }
+                end
+            end
+        end
+    end
+    for _, name in ipairs(targets) do
+        local obj = _G[name]
+        if type(obj) == "table" and obj.GetFont and obj.SetFont then
+            if want then
+                local ok, path, size, flags = pcall(obj.GetFont, obj)
+                if ok and type(path) == "string" and not ns.IsSecret(path) then
+                    -- the size and flags it has NOW: a chat size picked since
+                    -- went back to the first one remembered (the sweep)
+                    local okS, applied = pcall(obj.SetFont, obj, want, size, flags or "")
+                    if okS and applied ~= false then n = n + 1
+                    else pcall(obj.SetFont, obj, uiOriginal[name][1], size, flags or "") end   -- refused: its own back
                 end
             elseif uiOriginal[name] then
                 local o = uiOriginal[name]
-                pcall(obj.SetFont, obj, o[1], o[2], o[3] or "")
+                local okC, _, curSize, curFlags = pcall(obj.GetFont, obj)
+                pcall(obj.SetFont, obj, o[1], (okC and curSize) or o[2], (okC and curFlags) or o[3] or "")
                 uiOriginal[name] = nil
                 n = n + 1
             end
         end
     end
+    -- after the pass: an object natively in the picked font keeps its own
+    -- (chat and number fonts in Arial Narrow came back as Friz)
+    if want then everApplied[want] = true end
     uiApplied = want
     return n
 end
@@ -339,7 +380,10 @@ if type(hooksecurefunc) == "function" and type(_G.FCF_SetChatWindowFontSize) == 
     end)
 end
 local function WholeUIWanted()
-    return ns.db and ns.db.font and ns.db.font.wholeUI and ns.ModuleOn("qol") and true or false
+    -- (the game's own font picked: every object keeps its own -- forcing the
+    -- stock path put Friz on chat, numbers and quest titles: the sweep)
+    return ns.db and ns.db.font and ns.db.font.wholeUI and ns.ModuleOn("qol")
+        and ns.ActiveFont() ~= StockFont() and true or false
 end
 ns.WholeUIFontWanted = WholeUIWanted
 ns.RegisterApply(function()

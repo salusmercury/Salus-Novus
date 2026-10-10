@@ -182,7 +182,20 @@ local function Holds(cond, held)
         hit = MODKEY[name] == held
     elseif name == "mod" or name == "modifier" then
         if arg == "" then hit = held ~= nil
-        else for one in arg:gmatch("%a+") do if MODKEY[one] == held then hit = true end end end
+        else
+            for one in arg:gmatch("%a+") do
+                local key = MODKEY[one]
+                -- [mod:selfcast] / [mod:focuscast]: the key the game is set to
+                -- (an unknown name read as "no modifier" and fired bare: the sweep)
+                if not key and (one == "selfcast" or one == "focuscast") then
+                    local gm = rawget(_G, "GetModifiedClick")
+                    local okM, m = pcall(gm or function() return nil end, one:upper())
+                    m = okM and type(m) == "string" and m:lower() or nil
+                    key = m and MODKEY[m] or nil
+                end
+                if key ~= nil and key == held then hit = true end
+            end
+        end
     else
         return true                                  -- not a modifier test: taken as true
     end
@@ -218,7 +231,7 @@ function K.ParseMacro(body)
     local out, extras, seq = {}, {}, {}
     if type(body) ~= "string" then return out, extras, seq end
     local LAYER_HELD = { { "base", nil }, { "shift", "shift" }, { "ctrl", "ctrl" }, { "alt", "alt" } }
-    local tip
+    local tip, casts = nil, false
     for line in body:gmatch("[^\r\n]+") do
         local t = line:match("^%s*#showtooltip%s+(.-)%s*$")
         if t and t ~= "" and not t:find("[%[;]") then tip = t:lower() end
@@ -230,6 +243,7 @@ function K.ParseMacro(body)
                 spell = spell:gsub("%[([^%]]*)%]", function(c) groups[#groups + 1] = c:lower() return "" end)
                 spell = spell:match("^%s*(.-)%s*$")
                 if spell and spell ~= "" then
+                    casts = true
                     for _, l in ipairs(LAYER_HELD) do
                         if not got[l[1]] and Fires(groups, l[2]) then
                             got[l[1]] = true
@@ -241,6 +255,10 @@ function K.ParseMacro(body)
             end
         end
     end
+    -- a layer no clause fires on casts NOTHING: told apart from 'same as
+    -- the bare key' (it showed the bare key's spell: sweep 2)
+    local none = {}
+    if casts then for _, m in ipairs({ "shift", "ctrl", "alt" }) do if not seq[m] then none[m] = true end end end
     for layer, list in pairs(seq) do
         local main = list[#list]
         if tip then for _, s in ipairs(list) do if s:lower() == tip then main = s end end end
@@ -260,7 +278,7 @@ function K.ParseMacro(body)
     for _, m in ipairs({ "shift", "ctrl", "alt" }) do
         if out[m] ~= nil and out[m] == out.base and same(seq[m], seq.base) then out[m], extras[m], seq[m] = nil, nil, nil end
     end
-    return out, extras, seq
+    return out, extras, seq, none
 end
 
 --- An icon for what a macro line names: an equipped slot ("/use 13"), a
@@ -298,42 +316,71 @@ function K.SlotInfo(slot)
     elseif kind == "macro" then
         -- On this client a macro showing a spell answers ("macro", spellID,
         -- "spell"): the id isn't the macro's index. Find it by the macro's name.
+        -- With no subtype the id IS the index: use it first, since the name finds
+        -- the first macro so named (a general one shadowed a character one: sweep 5).
         local index
-        local text = Str(Call(rawget(_G, "GetActionText"), slot))
+        if (sub == nil or sub == "") and Num(id) and id > 0 then index = id end
+        local text = not index and Str(Call(rawget(_G, "GetActionText"), slot))
         if text then
             local i = Call(rawget(_G, "GetMacroIndexByName"), text)
             if Num(i) and i > 0 then index = i end
         end
-        if not index and (sub == nil or sub == "") then index = id end
         local name, mIcon, body
         if index then name, mIcon, body = Call(rawget(_G, "GetMacroInfo"), index) end
         info.label = Str(name) or "Macro"
         info.icon = info.icon or mIcon
-        info.branches, info.extras, info.seq = K.ParseMacro(Str(body))
+        info.branches, info.extras, info.seq, info.none = K.ParseMacro(Str(body))
     else
         info.label = kind:gsub("^%l", string.upper)
     end
     return info
 end
 
+--- A key bound straight to a macro, spell or item ('MACRO Shocks', set by
+-- SetBindingMacro/Spell/Item): read like a slot's (it showed as a lowercase
+-- interface command, its macro never checked: sweep 2).
+function K.DirectInfo(cmd)
+    local kind, name = tostring(cmd or ""):match("^(%u+) (.+)$")
+    if kind == "MACRO" then
+        local i = Call(rawget(_G, "GetMacroIndexByName"), name)
+        local mName, mIcon, body
+        if Num(i) and i > 0 then mName, mIcon, body = Call(rawget(_G, "GetMacroInfo"), i) end
+        local info = { kind = "macro", label = Str(mName) or name, icon = mIcon }
+        info.branches, info.extras, info.seq, info.none = K.ParseMacro(Str(body))
+        return info
+    elseif kind == "SPELL" or kind == "ITEM" then
+        return { kind = kind:lower(), label = name, icon = K.IconOf(name) }
+    end
+    return nil
+end
+
 --- One key on one layer: { state = "free"|"bound"|"via"|"conflict", label, icon, macro, detail }.
 function K.Resolve(key, layer)
     local L = K.LAYERS[layer] or K.LAYERS[1]
     local cmd = K.Action(L.prefix .. key)
-    local own
+    local own, ownInfo
     if cmd then
         local slot, clickFrame = K.SlotOf(cmd)
-        local info = slot and K.SlotInfo(slot)
+        local info
+        if slot then info = K.SlotInfo(slot) elseif not clickFrame then info = K.DirectInfo(cmd) end
+        ownInfo = info
         if info then
             own = { state = "bound", label = info.label, icon = info.icon, macro = info.kind == "macro",
                     detail = (info.kind == "macro" and ("Macro '" .. info.label .. "'") or info.label)
-                        .. (" (action slot %d)"):format(slot) }
-            if info.branches and info.branches.base then
-                own.detail = own.detail .. ": " .. table.concat(info.seq.base, ", then ")
-                own.icon = K.IconOf(info.branches.base) or own.icon
-                own.extras = Icons(info.extras.base)
+                        .. (slot and (" (action slot %d)"):format(slot) or "") }
+            -- pressed with this layer's modifier held: its branch fires (the
+            -- no-modifier spell showed: the sweep)
+            local lay = (L.mod and info.branches and info.branches[L.mod]) and L.mod or "base"
+            if info.branches and info.branches[lay] then
+                own.detail = own.detail .. ": " .. table.concat(info.seq[lay], ", then ")
+                own.icon = K.IconOf(info.branches[lay]) or own.icon
+                own.extras = Icons(info.extras[lay])
             end
-        elseif clickFrame then
+            if L.mod and info.none and info.none[L.mod] then
+                own.detail = own.detail .. ": casts nothing with " .. L.mod .. " held"
+                own.icon, own.extras = nil, nil
+            end
+        elseif clickFrame and not slot then
             own = { state = "bound", label = clickFrame, detail = "Clicks " .. clickFrame }
         elseif slot then
             -- Bound to an empty slot: pressing it does nothing, so it's free
@@ -348,10 +395,18 @@ function K.Resolve(key, layer)
     -- The bare key's macro: its branch for this layer
     if L.mod then
         local base = K.Action(key)
-        local slot = base and K.SlotOf(base)
-        local info = slot and K.SlotInfo(slot)
+        local slot, clickB
+        if base then slot, clickB = K.SlotOf(base) end
+        local info
+        if slot then info = K.SlotInfo(slot) elseif base and not clickB then info = K.DirectInfo(base) end
         local spell = info and info.branches and info.branches[L.mod]
         if spell then
+            -- the combo bound to the bare key's own action runs the same macro
+            -- with the modifier held: that's the branch firing, not a conflict (the sweep)
+            if own and (cmd == base or (slot and K.SlotOf(cmd) == slot)) then return own end
+            -- or the same macro from another slot or a MACRO binding (sweep 5)
+            if own and ownInfo and ownInfo.kind == "macro" and info.kind == "macro" and ownInfo.label ~= "Macro"
+                and ownInfo.label == info.label and ownInfo.branches and ownInfo.branches[L.mod] == spell then return own end
             if own then
                 own.state = "conflict"
                 own.detail = own.detail .. ". Conflict: " .. key .. "'s macro '" .. info.label .. "' has a ["

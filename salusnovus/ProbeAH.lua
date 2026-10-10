@@ -401,12 +401,18 @@ function P.InvestWhy(ladder, budget, floor, share)
     -- No gap anywhere the 5% cut leaves a profit on, whatever the limits:
     -- the market itself (checked first: it's the answer even when a limit
     -- would also have stopped it)
-    if not I.Evaluate(levels, math.huge, 1, 1) then return "no price jump" end
+    -- (the whole ladder: your own level caps the relist -- it was dropped here
+    -- and the reason came out wrong: the sweep)
+    if not I.Evaluate(ladder, math.huge, 1, 1) then
+        local market = {}
+        for _, l in ipairs(levels) do market[#market + 1] = { unit = l.unit, qty = l.qty } end   -- (own dropped: sweep 2)
+        return I.Evaluate(market, math.huge, 1, 1) and "your own listing caps the relist" or "no price jump"
+    end
     local supply = 0
     for _, l in ipairs(levels) do supply = supply + l.qty end
     if levels[1].qty > math.floor(supply * share) then return "cheapest level over the share cap" end
     if levels[1].unit * levels[1].qty > budget then return "cheapest level over budget" end
-    if I.Evaluate(levels, budget, 1, share) then return "under the profit floor" end
+    if I.Evaluate(ladder, budget, 1, share) then return "under the profit floor" end
     return "jump only past the share cap or budget"
 end
 

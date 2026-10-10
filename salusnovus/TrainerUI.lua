@@ -168,6 +168,7 @@ end
 local function Reset(r)
     r.iconFrame:Hide(); r.name:Hide(); r.cost:Hide(); r.req:Hide(); r.head:Hide(); r.headRule:Hide(); r.bg:Hide()
     r.hover:Hide(); r.edge:Hide(); r.hot = false; r.entry = nil
+    r.iconBorder:SetColor(0, 0, 0, 0.9)              -- (the accent border stayed on a new entry: the sweep)
     DropTip(r)
     r:Show()
 end
@@ -312,7 +313,14 @@ function UI.Refresh()
     content.list:SetHeight(math.max(10, y))
 end
 -- a refresh (level up, spells changed) can add a category tab: re-place
-ns.Trainer.Refresh = function() UI.Refresh() if tab then PlaceTab() tab:Update() end end
+ns.Trainer.Refresh = function()
+    UI.Refresh()
+    if tab then
+        PlaceTab() tab:Update()
+        -- again next frame: a new category tab is laid out then (ours sat on it: the sweep)
+        if C_Timer and C_Timer.After then C_Timer.After(0, function() if tab then PlaceTab() end end) end
+    end
+end
 function UI.Rows() return rows end                      -- test seam
 
 -- ------------------------------------------------------------ the tab
@@ -523,7 +531,9 @@ local function BuildTab()
         hooksecurefunc(book, "SetPreviewResultSearch", function(self) if Ours() then self:HidePreviewResultSearch() end end)
     end
     if type(book.SetFullResultSearch) == "function" then
-        hooksecurefunc(book, "SetFullResultSearch", function() if Ours() then UndimTheirs(false) UI.Refresh() end end)
+        -- (a search that found nothing reselects their first tab, selected AND
+        -- disabled: dimmed again so it takes a click -- the sweep)
+        hooksecurefunc(book, "SetFullResultSearch", function() if Ours() then UndimTheirs(false) DimTheirs() UI.Refresh() end end)
     end
     PlaceTab()
     tab:Update()

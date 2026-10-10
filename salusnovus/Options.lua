@@ -503,7 +503,7 @@ local function EnterUnlockMode()
 end
 O.EnterUnlockMode = EnterUnlockMode
 
-ExitUnlockMode = function(save)
+ExitUnlockMode = function(save, quiet)
     if not save and unlockSnapshot then
         for _, a in ipairs(ns.AnchorPositions) do
             SalusNovusDB[a.key] = unlockSnapshot[a.key]
@@ -516,6 +516,9 @@ ExitUnlockMode = function(save)
     ns.ShowAlignGrid(false)
     ns.ApplyAll()
     RefreshAll()
+    -- (quiet: a pull locked it -- Settings opening mid-fight took a live
+    -- anchor into its preview: sweep 2)
+    if quiet then return end
     if panel then panel:Show() end      -- same page as before; OnShow resumes its preview
     SyncPreviews()
 end
@@ -532,6 +535,7 @@ local function MakeCheckbox(page, label, anchor, get, set, enabledWhen)
     cb.text:Hide()
     row:SetControl(cb)
     cb:HookScript("OnClick", function(self)
+        if not self.enabledState then return end   -- dimmed: Theme's click did nothing, so does the setter
         set(self:GetChecked() and true or false)
         ns.ApplyAll()
         Refresh()   -- the sweep suspends or resumes the page's preview stage
@@ -623,6 +627,7 @@ local function MakeColorSwatch(page, label, anchor, getColor, enabledWhen)
     swatch.__kind, swatch.__get = "color", getColor
     Register(page, swatch)
     swatch:SetScript("OnClick", function()
+        T.CancelColorPicker()       -- its revert first, so prev isn't the preview
         local c = getColor()
         local prevR, prevG, prevB = c.r, c.g, c.b
         local function Set(r, g, b)
@@ -1611,8 +1616,7 @@ PAGE_BODY.session = function()
         function() return tonumber(o().size) or 12 end, function(v) o().size = v end, nil, on)
     local sI = MakeSection(pg, rSize, "INSTANCES")
     MakeStepper(pg, "Instances per hour", sI, 1, 30,
-        function() return (ns.Session.Limit()) end, function(v) o().limit = v end, nil,
-        function() return on() and not select(2, ns.Session.Limit()) end)
+        function() return (ns.Session.Limit()) end, function(v) ns.Session.SetLimit(v) end, nil, on)   -- (it overrides a learned one: the sweep)
 end
 
 -- Camping (Quality of Life): the camp panel.
@@ -1623,7 +1627,11 @@ PAGE_BODY.camping = function()
     local t = MakeTitle(pg, "Camping")
     local sP = MakeSection(pg, t, "PANEL")
     local rOn = MakeCheckbox(pg, "Show the camp panel", sP,
-        function() return on() end, function(v) o().enabled = v end)
+        function() return on() end, function(v)
+            o().enabled = v
+            -- the setting beats an earlier /sn camp close (it couldn't bring it back: the sweep)
+            if ns.CampingUI then ns.CampingUI.pinned = nil end
+        end)
     MakeStepper(pg, "Background alpha", rOn, 0, 100,
         function() return tonumber(o().alpha) or 90 end, function(v) o().alpha = v end,
         function(v) return ("%d%%"):format(v) end, on)
@@ -1758,7 +1766,7 @@ end, "Options theme")
 OpenWindow = function(open, shown)
     if not open then return end
     panel:Hide()
-    ns.returnToOptions = true
+    ns.returnToOptions = shown or true      -- (which window: another one's close brought Settings back: the sweep)
     open(true)
     C_Timer.After(0, function()
         if ns.returnToOptions and not (shown and shown()) then
@@ -1887,7 +1895,12 @@ end
 -- the other window and leave Settings up: if the panel was hidden a moment
 -- ago it was the same keypress, not a click on the launcher.
 function ns.ReturnToOptions()
-    if not ns.returnToOptions then return end
+    local r = ns.returnToOptions
+    if not r then return end
+    if type(r) == "function" then
+        local okS, still = pcall(r)
+        if okS and still then return end              -- the launched window is still up: not its close
+    end
     ns.returnToOptions = nil
     -- not mid-fight: the page's preview would take a live anchor (the sweep)
     if (ns.Timers and ns.Timers.IsActive()) or (InCombatLockdown and InCombatLockdown()) then return end
@@ -1903,6 +1916,18 @@ end
 -- parented to a page stage, dead for the pull; with frames unlocked, the
 -- grid up and every anchor eating clicks. Closing the panel stops every
 -- preview and puts the anchors back.
+-- Entering combat locks frames while it's still allowed: a protected frame
+-- (the camp panel) left unlocked into a pull stayed over the screen, eating
+-- clicks (the sweep). PLAYER_REGEN_DISABLED comes before the lockdown.
+ns.On("PLAYER_REGEN_DISABLED", function()
+    if ns.db and ns.db.unlocked then pcall(ExitUnlockMode, true, true) end
+end)
+-- ...and that quiet lock left an open page's stage on "Frames are unlocked"
+-- with the preview halted: it comes back once the fight is over.
+ns.On("PLAYER_REGEN_ENABLED", function()
+    if panel and panel:IsShown() and not (ns.Timers and ns.Timers.IsActive()) then SyncPreviews() end
+end)
+
 ns.Timers.Register({
     OnEncounter = function(active)
         if not active then

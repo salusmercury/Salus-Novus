@@ -56,8 +56,12 @@ local function Icon(i)
     p.border = Th.Border(p)
     p.border:Layout(p, 1, 0)
     p.border:Show()
-    p.ring = Th.Border(p)
-    p.ring:Layout(p, 2, -2)
+    -- its own edges: T.Border is one set per parent, so the ring WAS the
+    -- quality border, and hiding it hid that (the sweep)
+    p.ringHolder = CreateFrame("Frame", nil, p)
+    p.ringHolder:SetAllPoints()
+    p.ring = Th.Border(p.ringHolder)
+    p.ring:Layout(p.ringHolder, 2, -2)
     p:SetScript("OnClick", function(self) if self.entry then Drop() S().Select(self.entry) end end)
     p:SetScript("OnEnter", function(self)
         local e = self.entry
@@ -407,7 +411,10 @@ local function DrawItem()
         panel.selLine:SetText("")
     end
     panel.post:SetText(sel.confirm and "Confirm post" or "Post")
-    panel.post:SetEnabledState(sel.fresh and ns.Num(sel.price) and sel.price > 0 and true or false)
+    -- a price being typed for this item counts (a redraw turned Post off and
+    -- the click that should post did nothing: the sweep)
+    local typing = panel.price.typed and panel.price.forSel == sel
+    panel.post:SetEnabledState(sel.fresh and ((ns.Num(sel.price) and sel.price > 0) or typing) and true or false)
 end
 
 function UI.Refresh()

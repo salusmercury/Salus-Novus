@@ -68,7 +68,7 @@ end
 
 function S.ResetXP()
     local s = S.State()
-    if s then s.xp = NewXP() end
+    if s then s.xp = NewXP(); s.zones = {} end      -- (the zone breakdown resets with it: the sweep)
     if S.OnChanged then S.OnChanged() end
 end
 
@@ -185,6 +185,7 @@ end
 -- ------------------------------------------------------------ gold
 
 local open = {}                 -- which money window is open
+local closedAt = {}             -- when the flight map / trade closed (the money lands after it)
 local lastMoney
 local lastLoot, lastQuestMoney, lastRepair = -100, -100, -100
 
@@ -197,13 +198,19 @@ function S.SetOpen(key, on) open[key] = on and true or nil end
 local function Category(delta)
     local now = Now()
     if delta < 0 and now - lastRepair <= MONEY_WINDOW then return "repair" end
+    -- a single item repaired with the repair cursor (only Repair All was hooked: the sweep)
+    if delta < 0 then
+        local irm = rawget(_G, "InRepairMode")
+        local okR, rm = pcall(irm or function() return false end)
+        if okR and rm == true then return "repair" end
+    end
     if delta > 0 and now - lastLoot <= MONEY_WINDOW then return "loot" end
     if delta > 0 and now - lastQuestMoney <= MONEY_WINDOW then return "quest" end
-    if open.trade then return "trade" end
+    if open.trade or now - (closedAt.trade or -100) <= MONEY_WINDOW then return "trade" end
     if open.auction then return "auction" end
     if open.mail then return "mail" end
     if open.trainer then return "training" end
-    if open.taxi then return "travel" end
+    if open.taxi or now - (closedAt.taxi or -100) <= MONEY_WINDOW then return "travel" end
     if open.merchant then return "vendor" end
     return "other"
 end
@@ -226,6 +233,7 @@ function S.OnMoney()
     local bucket = delta > 0 and s.gold.inc or s.gold.out
     bucket[cat] = (bucket[cat] or 0) + math.abs(delta)
     if cat == "repair" then lastRepair = -100 end
+    if cat == "travel" then closedAt.taxi = nil elseif cat == "trade" then closedAt.trade = nil end
     if S.OnChanged then S.OnChanged() end
 end
 
@@ -260,6 +268,17 @@ local function Log()
     return l
 end
 S.Log = Log
+
+--- A limit set by hand replaces a learned one (a first error counted only
+-- the entries the bar saw, and could cap the account low for good with
+-- the setting greyed out: the sweep).
+function S.SetLimit(v)
+    local o = O()
+    if o then o.limit = v end
+    local l = Log()
+    if l then l.learned = nil end
+    if S.OnChanged then S.OnChanged() end
+end
 
 --- Instances per hour: the learned limit, else the setting, else 5.
 function S.Limit()
@@ -324,6 +343,25 @@ function S.OnEnterWorld()
     l.reset[rk] = nil
     l.entries[#l.entries + 1] = { t = now, map = map, name = name, char = who, raid = kind == "raid" or nil }
     if S.OnChanged then S.OnChanged() end
+end
+
+--- Left or joined a group: the next entry into a dungeon of the last hour
+-- is another instance (no 'has been reset' line comes: sweep 2). The one
+-- you stand in now keeps its ID -- unless you left the group: its instance
+-- stays with the group, and a solo re-entry is a new one.
+function S.OnGroupChange(left)
+    local l = Log()
+    local who = CharKey()
+    if not (l and who) then return end
+    local here = InstanceNow()
+    local now = Epoch()
+    for _, e in ipairs(l.entries) do
+        if type(e) == "table" and e.char == who and Num(e.map) and (left or e.map ~= here) and Num(e.t) and now - e.t < HOUR then
+            l.reset[who .. ":" .. e.map] = true
+        end
+    end
+    -- re-invited inside before the port-out: you stay in that instance
+    if not left and here then l.reset[who .. ":" .. here] = nil end
 end
 
 local function Pattern(fmt)
@@ -454,8 +492,12 @@ for ev, key in pairs({ MERCHANT_SHOW = "merchant", TRAINER_SHOW = "trainer", MAI
     ns.On(ev, function() S.SetOpen(key, true) end)
 end
 for ev, key in pairs({ MERCHANT_CLOSED = "merchant", TRAINER_CLOSED = "trainer", MAIL_CLOSED = "mail",
-                       AUCTION_HOUSE_CLOSED = "auction", TAXIMAP_CLOSED = "taxi", TRADE_CLOSED = "trade" }) do
+                       AUCTION_HOUSE_CLOSED = "auction" }) do
     ns.On(ev, function() S.SetOpen(key, false) end)
+end
+-- the flight fee and trade gold arrive after the window closes
+for ev, key in pairs({ TAXIMAP_CLOSED = "taxi", TRADE_CLOSED = "trade" }) do
+    ns.On(ev, function() closedAt[key] = Now(); S.SetOpen(key, false) end)
 end
 ns.On("PLAYER_ENTERING_WORLD", function()
     lastXP, lastMax = ReadXP()
@@ -463,6 +505,8 @@ ns.On("PLAYER_ENTERING_WORLD", function()
     S.OnEnterWorld()
 end)
 ns.On("CHAT_MSG_SYSTEM", function(msg) S.OnSystem(msg) end)
+ns.On("GROUP_LEFT", function() S.OnGroupChange(true) end)
+ns.On("GROUP_JOINED", function() S.OnGroupChange() end)
 ns.On("UI_ERROR_MESSAGE", function(_, msg) S.OnSystem(msg) end)
 
 -- Logged-in time, whether or not the bar is shown (a hidden bar must not
@@ -478,5 +522,6 @@ end)
 
 -- A repair spends money at a merchant; say which (hooked when it exists).
 table.insert(ns.OnLoad, function()
-    if rawget(_G, "RepairAllItems") then hooksecurefunc("RepairAllItems", function() S.OnRepair() end) end
+    -- the guild bank paying (RepairAllItems(true)) spends nothing of yours: not a repair to file
+    if rawget(_G, "RepairAllItems") then hooksecurefunc("RepairAllItems", function(guild) if guild ~= true then S.OnRepair() end end) end
 end)

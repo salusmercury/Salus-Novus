@@ -283,10 +283,15 @@ function B.Layout()
         else
             seg:Hide()
             if seg.sep then seg.sep:Hide() end
+            if detail and detail.key == seg.key then detail:Hide() end   -- its segment went
         end
     end
     -- Nothing left to show (lockouts aged out, XP gone at 60): no empty box.
-    if not any and not (ns.db and ns.db.unlocked) then frame:Hide() return end
+    if not any and not (ns.db and ns.db.unlocked) then
+        if detail then detail:Hide() end                -- (it stayed open over nothing: the sweep)
+        frame:Hide()
+        return
+    end
     frame:SetWidth(math.max(60, x - GAP + PADX))
     frame:SetHeight(math.max(HEIGHT, Size() + 10))
     if ns.SyncAnchorOrigin then ns.SyncAnchorOrigin(frame, "sessionPos") end

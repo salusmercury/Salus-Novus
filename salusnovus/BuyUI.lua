@@ -229,7 +229,12 @@ local function ListButton(i)
     b.text:SetPoint("LEFT", 6, 0)
     b.text:SetPoint("RIGHT", -6, 0)
     b.text:SetJustifyH("LEFT")
-    b:SetScript("OnClick", function(self) UI.line, UI.detail = nil, false B().Pick(self.index) end)
+    b:SetScript("OnClick", function(self)
+        UI.line, UI.detail = nil, false
+        local _, cur = B().Current()
+        if B().mode == "list" and cur == self.index then UI.Refresh() return end   -- the picked one again: its results stay (sweep 5)
+        B().Pick(self.index)
+    end)
     panel.listButtons[i] = b
     return b
 end
@@ -342,7 +347,7 @@ local function Build()
     local function LevelBox(key)
         local eb = Th.MakeEditBox(panel, 40)
         eb:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
-        eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() B().Browse(panel.search:GetText()) end)
+        eb:SetScript("OnEnterPressed", function(self) self:ClearFocus() UI.detail = false B().Browse(panel.search:GetText()) end)
         eb:SetScript("OnEditFocusLost", function(self)
             local n = tonumber((self:GetText() or ""):match("^%s*(%d+)%s*$"))
             B().SetFilter(key, (n and n > 0) and n or nil)
@@ -532,7 +537,11 @@ local function Build()
     panel.remove:SetPoint("RIGHT", panel.cancel, "LEFT", -8, 0)
     panel.remove:SetText("Remove from list")
     panel.remove:SetScript("OnClick", function()
-        if UI.line then B().RemoveItem(UI.line) UI.line = nil end
+        local i = UI.line
+        if not i then return end
+        UI.line = nil                                   -- before the redraw (it stayed lit: sweep 5)
+        B().RemoveItem(i)
+        UI.Refresh()
     end)
     return panel
 end
@@ -816,6 +825,7 @@ end
 function UI.Show()
     if not Build() then return end
     Hook()
+    B().Store()                                     -- the list saved last session picked now, not mid-browse (sweep 5)
     panel:Show()
     UI.Refresh()
 end

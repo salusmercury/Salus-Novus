@@ -235,6 +235,7 @@ local function MakeSwatch(parent, get, set, snapshot)
         self.fill:SetVertexColor(c.r or 1, c.g or 0.82, c.b or 0, 1)
     end
     b:SetScript("OnClick", function(self)
+        T.CancelColorPicker()       -- its revert first, so prev isn't the preview
         local c = get() or { r = 1, g = 0.82, b = 0 }
         local pr, pg, pb = c.r or 1, c.g or 0.82, c.b or 0
         local restore = snapshot and snapshot()
@@ -714,6 +715,7 @@ local function MakeCardEditor(row)
     ed.name = T.MakeEditBox(ed, 220)
     ed.name:SetPoint("LEFT", ed.nameCap, "RIGHT", 10, 0)
     local function Commit(self)
+        if ed.escaping then return end
         local k = key()
         if not k then return end
         local t = (self:GetText() or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -726,6 +728,8 @@ local function MakeCardEditor(row)
     -- Enter drops focus (the box's own script) and the focus loss commits:
     -- hooking both committed twice per keypress.
     ed.name:HookScript("OnEditFocusLost", Commit)
+    -- Escape cancels: the typed text isn't saved, the saved name comes back
+    ed.name:SetScript("OnEscapePressed", function(self) ed.escaping = true self:ClearFocus() ed.escaping = nil Rerender() end)
 
     -- One box: unticked = the anchors' default colour; ticked = a custom
     -- colour, with the swatch beside it opening the picker (Alex).
@@ -754,6 +758,7 @@ local function MakeCardEditor(row)
     ed.swatch:SetScript("OnClick", function()
         local k = key()
         if not k then return end
+        T.CancelColorPicker()       -- its revert first, so prev isn't the preview
         local r, g, b = A.Color(k)
         if not r then r, g, b = T.Accent() end
         local prev = { r = r, g = g, b = b }
@@ -1270,7 +1275,7 @@ local function LaneMark(lane, i)
             -- A single pull is its own case and MUST be said out loud: zero
             -- spread from one sample is UNKNOWN, not CONSISTENT.
             win.hover:SetText(string.format("%s  |cff888888at|r  %s%s%s%s", self.abilityName or "", when,
-                self.cast and self.cast > 0 and string.format("  |cff888888(%ds cast)|r", self.cast) or "",
+                self.cast and self.cast > 0 and string.format("  |cff888888(%.1fs cast)|r", self.cast) or "",
                 self.spread and self.spread > 0.5 and string.format("  |cff888888(+-%.0fs across pulls)|r", self.spread) or "",
                 -- (The one-pull caution is gone from the readout -- Alex.)
                 (self.support and self.pulls and self.support < self.pulls)

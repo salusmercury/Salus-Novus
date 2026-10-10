@@ -552,6 +552,7 @@ end
 local previewLoop
 function ns.RemindersPreviewStart(stage)
     Build()
+    UnfireCounting()                                  -- (a countdown cut off comes back: the sweep)
     ClearShown()
     state.preview = stage
     frame:SetParent(stage)

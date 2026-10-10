@@ -297,7 +297,7 @@ ns.Commands.probe = function(rest)
             if t:IsShown() then
                 shown = shown + 1
                 local p, _, rp, x, y = t:GetPoint(1)
-                if p == "TOP" then vert[#vert + 1] = ("%s@%s w%s"):format(S(x), S(t:GetLeft()), S(t:GetWidth()))
+                if p == "TOP" or p == "TOPLEFT" then vert[#vert + 1] = ("%s@%s w%s"):format(S(x), S(t:GetLeft()), S(t:GetWidth()))
                 else horz[#horz + 1] = ("%s@%s h%s"):format(S(y), S(t:GetBottom()), S(t:GetHeight())) end
             end
         end

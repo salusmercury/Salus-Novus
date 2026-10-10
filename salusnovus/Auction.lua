@@ -286,7 +286,9 @@ function A.Scan()
     local ah = AH()
     if not (A.Enabled() and ah and ah.SendBrowseQuery) then return false end
     if A.scan.running or not A.IsOpen() then return false end
-    if A.paused then A.scan.pending = true Changed() return true end   -- starts when Snipe or Investing shows
+    -- starts when Snipe or Investing shows; not also 'wanted' (a stale want
+    -- froze Cancel's checks, which give way to it: the sweep)
+    if A.paused then A.scan.pending, A.scan.wantStart = true, nil Changed() return true end
     -- busy (Investing's queue keeps the client busy on this tab): starts on
     -- the client's ready event, and the queue gives way (sweep 3)
     if not Ready() then
@@ -416,7 +418,7 @@ local function Ask()
     Changed()
 end
 
-function A.Select(snipe)
+function A.Select(snipe, keepMessage)
     local ah = AH()
     if not (snipe and ah and ah.SendSearchQuery and ah.MakeItemKey) then return false end
     local old = A.sel
@@ -432,7 +434,7 @@ function A.Select(snipe)
     if not okK then return false end
     A.sel = { id = snipe.id, key = snipe.key, lvl = snipe.lvl, sfx = snipe.sfx, item = item,
               vendor = A.LiveVendor(snipe.id) or snipe.vendor, rows = nil, needAsk = true }
-    A.message = nil
+    if not keepMessage then A.message = nil end
     Ask()                                           -- now, or when the client is ready (not "busy, try again")
     Changed()
     return true
@@ -458,6 +460,7 @@ function A.Cap(sel) return sel.vendor - math.max(1, MinProfit()) end
 
 local function ReadCommodity()
     local ah, sel = AH(), A.sel
+    if sel.asked then return end           -- a quote held: Confirm/Cancel stay as quoted (the sweep)
     local ok, n = Call(ah.GetNumCommoditySearchResults, sel.id)
     sel.kind, sel.rows = "commodity", {}
     if not (ok and Num(n)) then return end
@@ -546,7 +549,8 @@ local function Refetch()
     local sel = A.sel
     if not sel then return end
     if C_Timer and C_Timer.After then
-        C_Timer.After(0.5, function() if A.sel == sel and A.IsOpen() then A.Select(sel) end end)
+        -- (keeps 'Bought' / 'Not bought': it was wiped half a second later -- the sweep)
+        C_Timer.After(0.5, function() if A.sel == sel and A.IsOpen() then A.Select(sel, true) end end)
     end
 end
 
@@ -568,7 +572,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         return
     end
     if event == "AUCTION_HOUSE_SHOW" then
-        A.sel = nil
+        A.sel, A.message = nil, nil                -- (a last visit's message read as news: the sweep)
         A.openSeq = (A.openSeq or 0) + 1
         local mine = A.openSeq
         local function Auto()
@@ -585,7 +589,9 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         A.scan.pending, A.scan.held, A.scan.wantStart = nil, nil, nil
         if A.scan.running then A.scan.running = false A.endReason = "closed" Ended(false) A.endReason = nil end   -- (listeners can tell a close from a failure)
         if A.sel and A.sel.quote and A.Owns("snipe") then Call(AH().CancelCommoditiesPurchase) end
-        A.purchase = nil
+        -- Buy's and Investing's held quotes are theirs to cancel (sweep 5); a
+        -- confirmed purchase is on its way: its claim goes, so nobody cancels it
+        if A.Owns("snipe") or (A.purchase and A.purchase.confirming) then A.purchase = nil end
         A.sel = nil
         Changed()
     elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" or event == "AUCTION_HOUSE_BROWSE_RESULTS_ADDED" then

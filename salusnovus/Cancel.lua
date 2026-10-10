@@ -28,7 +28,8 @@ local function Call(fn, ...)
     return pcall(fn, ...)
 end
 
-C.gone = {}            -- auctionIDs cancelled this session: never shown again
+C.gone = {}            -- auctionIDs cancelled this session: never shown again (true);
+                       -- a time = sent but not yet confirmed (sweep 5)
 C.rows = {}            -- { auctionID, id, key, keyStr, qty, buyout, unit, secs, band, status, cheapest }
 C.run = { state = "idle" }
 C.sel = nil
@@ -48,6 +49,17 @@ local function Sort()
     end)
 end
 
+--- Hidden as cancelled? An unconfirmed cancel only for a minute: one the
+-- server dropped or refused comes back (sweep 5).
+local function Hidden(id)
+    local g = C.gone[id]
+    if g == true then return true end
+    if type(g) ~= "number" then return false end
+    if (GetTime and GetTime() or 0) - g < 60 then return true end
+    C.gone[id] = nil
+    return false
+end
+
 --- Your active auctions, as the client holds them now.
 local function Read()
     local ah = AH()
@@ -57,7 +69,7 @@ local function Read()
         local okI, a = Call(ah.GetOwnedAuctionInfo, i)
         -- status 0 = active (1 = sold, waiting in the mail)
         if okI and type(a) == "table" and Num(a.auctionID) and type(a.itemKey) == "table" and (a.status or 0) == 0
-                and not C.gone[a.auctionID] then
+                and not Hidden(a.auctionID) then
             local qty = (Num(a.quantity) and a.quantity > 0) and a.quantity or 1
             local buyout = Num(a.buyoutAmount) and a.buyoutAmount or nil
             -- A commodity's owned buyoutAmount is already per unit (Spider
@@ -210,11 +222,15 @@ function C.Cancel(row)
     if not row then return false end
     local ah = AH()
     local okC, can = Call(ah.CanCancelAuction, row.auctionID)
-    if okC and can == false then Say("That one can't be cancelled") return false end
+    if okC and can == false then
+        row.cancelling = true            -- passed over by Cancel next (it stuck there for good: sweep 2)
+        Say("That one can't be cancelled")
+        return false
+    end
     if not Call(ah.CancelAuction, row.auctionID) then Say("Couldn't cancel that") return false end
     -- Gone from view at once (Alex), and kept out of a re-read until the
-    -- client stops listing it
-    C.gone[row.auctionID] = true
+    -- server confirms it (AUCTION_CANCELED) or a minute passes (sweep 5)
+    C.gone[row.auctionID] = GetTime and GetTime() or 0
     for i, x in ipairs(C.rows) do if x == row then table.remove(C.rows, i) break end end
     if C.sel == row then C.sel = nil end
     Say("Cancelled")
@@ -255,6 +271,7 @@ ev:SetScript("OnEvent", function(_, event, a1)
         Sort()
         StartChecks()
     elseif event == "AUCTION_CANCELED" then
+        if a1 ~= nil and C.gone[a1] then C.gone[a1] = true end   -- confirmed: hidden for the session
         for i, row in ipairs(C.rows) do
             if row.auctionID == a1 then
                 table.remove(C.rows, i)

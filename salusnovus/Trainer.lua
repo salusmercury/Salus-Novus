@@ -272,15 +272,25 @@ local function IsKnown(e, known)
     return have >= r
 end
 
+-- learning these takes the old one out of the book (Dire Bear Form
+-- replaces Bear Form: its spells showed Unavailable -- sweep 2)
+local SUPERSEDED = { ["Bear Form"] = "Dire Bear Form" }
+
 --- A prerequisite string "Flame Shock (Rank 2)" or "Flame Shock" -> known?
 local function ReqMet(req, known)
     local name, rank = req:match("^(.-)%s*%((Rank%s+%d+)%)%s*$")
+    -- a subtext that isn't a rank ("Bear Form (Shapeshift)", "Detect Traps
+    -- (Passive)") is the bare spell (those never counted as known: the sweep)
+    if not name then name = req:match("^(.-)%s*%(.-%)%s*$") end
     name = name or req
     local have = known[name]
+    if have == nil and SUPERSEDED[name] and known[SUPERSEDED[name]] ~= nil then return true end
     if have == nil then return false end
     local r = rank and T.RankNumber(rank)
     return not r or have >= r
 end
+
+T._ReqMet = ReqMet                                   -- test seam
 
 --- The catalogue sorted into { now = {...}, later = {...}, known = {...} },
 -- each entry decorated with .state, .missing (unmet prerequisites).

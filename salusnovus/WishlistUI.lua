@@ -274,7 +274,12 @@ local function ScrollToPool()
     end
     if target then
         local sf = frame.dungeonList
-        if sf.SetVerticalScroll then pcall(sf.SetVerticalScroll, sf, (target - 1) * NAV_ROW_H) end
+        local want = (target - 1) * NAV_ROW_H
+        -- no further than the list goes (blank space below the last rows: the sweep)
+        local child = sf.GetScrollChild and sf:GetScrollChild()
+        local range = (child and tonumber(child:GetHeight()) or want) - (tonumber(sf:GetHeight()) or 0)
+        want = math.max(0, math.min(want, math.max(0, range)))
+        if sf.SetVerticalScroll then pcall(sf.SetVerticalScroll, sf, want) end
     end
 end
 
@@ -304,6 +309,23 @@ local function ItemCard(parent)
     r.iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     tipN = tipN + 1
     r.tip = CreateFrame("GameTooltip", "SalusNovusWishTip" .. tipN, r, "GameTooltipTemplate")
+    -- the tooltip rebuilds itself when late item data lands (the appearance
+    -- line): the columns follow its new size once (Alex: they jiggled)
+    -- Only a real change from what the columns were laid with, and at most a
+    -- few a second per card: one that flips between two sizes can't loop
+    r.tip:HookScript("OnSizeChanged", function(self)
+        if not (r:IsVisible() and UI.Queue) then return end
+        local h = tonumber(self:GetHeight()) or 0
+        if r.laidTipH and math.abs(h - r.laidTipH) < 1 then return end
+        local now = GetTime and GetTime() or 0
+        if r.relaidAt and now - r.relaidAt < 1 then
+            r.relaidN = (r.relaidN or 0) + 1
+            if r.relaidN > 2 then return end
+        else
+            r.relaidAt, r.relaidN = now, 0
+        end
+        UI.Queue()
+    end)
     r.sub = Th.MakeText(r, 13, Th.TEXT_MUTE)
     r.sub:SetJustifyH("LEFT")
     r.sub:SetWordWrap(true)
@@ -338,15 +360,25 @@ end
 local function FillTip(r)
     local tip = r.tip
     if not (tip and r.id) then return 0 end
-    pcall(tip.SetOwner, tip, r, "ANCHOR_NONE")
-    pcall(tip.SetClampedToScreen, tip, false)      -- with its card, not pushed on screen over the others
-    pcall(tip.SetItemByID, tip, r.id)
+    -- set only when the item changes: setting it again reset a tooltip that
+    -- had filled in back to its first, shorter layout, and every redraw
+    -- shrank the card and grew it back (Alex: the columns jiggled)
+    if r.tipId ~= r.id or not tip:IsShown() then
+        pcall(tip.SetOwner, tip, r, "ANCHOR_NONE")
+        pcall(tip.SetClampedToScreen, tip, false)      -- with its card, not pushed on screen over the others
+        pcall(tip.SetItemByID, tip, r.id)
+        r.tipId = r.id
+        tip:Show()
+    end
     tip:ClearAllPoints()
     tip:SetPoint("TOPLEFT", r.iconEdge, "TOPRIGHT", 8, 1)
     pcall(tip.SetFrameStrata, tip, r:GetFrameStrata())
     pcall(tip.SetFrameLevel, tip, (r:GetFrameLevel() or 0) + 2)
-    tip:Show()
+    -- (no Show on a redraw: Show re-lays a tooltip, and wrapped lines came
+    -- out another size each time -- with the resize hook, a loop: Alex)
+    if not tip:IsShown() then tip:Show() end
     local h = tonumber(tip:GetHeight()) or 0
+    r.laidTipH = h
     -- not in the cache yet: its arrival redraws (only then -- every item
     -- answer redrew the window, and the redraw asked again: a loop)
     if h <= 0 or not W().Info(r.id) then UI.waiting[r.id] = true end
@@ -420,7 +452,7 @@ local function ItemRow(i)
             return
         end
         -- something you own isn't flagged at all (Alex): no buttons
-        if W().Owned(self.id) then UI.open[self.id] = nil return end
+        if W().Owned(self.id) then UI.open[self.id] = nil UI.Refresh() return end   -- (turns green, not silent)
         UI.open[self.id] = not UI.open[self.id] or nil
         UI.Refresh()
     end)
@@ -753,6 +785,10 @@ local function Queue()
     if C_Timer and C_Timer.After then C_Timer.After(0, Go) else Go() end
 end
 ns.Wishlist.OnChanged = Queue
+UI.Queue = Queue
+-- an item gained or lost changes a card's OWNED state (they went stale: the sweep)
+ns.On("BAG_UPDATE_DELAYED", function() if UI.view == "mine" then Queue() end end)
+ns.On("PLAYER_EQUIPMENT_CHANGED", function() if UI.view == "mine" then Queue() end end)
 -- party traffic and roster changes redraw only the party view (every
 -- message rebuilt every card of Mine: the sweep)
 ns.Wishlist.OnPartyChanged = function() if UI.view == "party" then Queue() end end

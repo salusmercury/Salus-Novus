@@ -73,8 +73,8 @@ local function KeyCell(parent)
     b.text:SetJustifyV("BOTTOM")
     b.text:SetWordWrap(true)
     if b.text.SetMaxLines then b.text:SetMaxLines(2) end
-    b:SetScript("OnEnter", function(self) UI.Detail(self) end)
-    b:SetScript("OnLeave", function() UI.Detail(UI.pinned) end)
+    b:SetScript("OnEnter", function(self) UI.hover = self UI.Detail(self) end)
+    b:SetScript("OnLeave", function() UI.hover = nil UI.Detail(UI.pinned) end)
     b:SetScript("OnClick", function(self)
         UI.pinned = (UI.pinned == self) and nil or self
         UI.Detail(UI.pinned)
@@ -260,7 +260,7 @@ function UI.Refresh()
     UI.free, UI.total = free, total
     shell:SetTitle("Keybind Visualizer")
     shell.subtitle:SetText("")
-    UI.Detail(UI.pinned)
+    UI.Detail(UI.hover or UI.pinned)                  -- (a redraw blanked the line under the mouse: the sweep)
 end
 
 function UI.Shown() return frame ~= nil and frame:IsShown() end
@@ -268,6 +268,10 @@ function UI.Shown() return frame ~= nil and frame:IsShown() end
 function UI.Open()
     Build()
     shell:Repaint()
+    -- fit the screen as it is NOW (narrow screens: the numpad and mouse hung
+    -- off the edge; the size was worked out once: the sweep)
+    local sw = UIParent and tonumber(UIParent:GetWidth()) or WIN_W
+    frame:SetScale(math.min(1, (sw * 0.96) / WIN_W))
     frame:Show()
     if frame.Raise then frame:Raise() end
     UI.Refresh()

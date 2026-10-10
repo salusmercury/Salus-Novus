@@ -219,11 +219,17 @@ function Q.MarkRewards(frame, questLog)
         if btn.snGold then btn.snGold:Hide() end
         if btn.type == "choice" and btn:IsShown() then choices[#choices + 1] = btn end
     end
+    -- a closed frame's tiles keep their shown flag: never wait on those
+    -- (every item-info event re-walked them for the session: sweep 2). The
+    -- map draws its quest details before showing them: live while it's open
+    local map = rawget(_G, "WorldMapFrame")
+    local live = not frame.IsVisible or frame:IsVisible()
+        or (frame == rawget(_G, "MapQuestInfoRewardsFrame") and map and map:IsVisible())
     if not MarkOn() or #choices < 2 then return marked end
     local best, values = 0, {}
     for _, btn in ipairs(choices) do
         local v = Q.ChoiceValue(btn:GetID(), questLog)
-        if v == nil then waiting = true end
+        if v == nil and live then waiting = true end
         values[btn] = v or 0
         if (v or 0) > best then best = v end
     end
@@ -257,3 +263,4 @@ ns.On("PLAYER_LOGIN", function() Q.HookRewards() end)
 ns.On("ADDON_LOADED", function() Q.HookRewards() end)
 -- an uncached reward's price arrives later: look again once it does
 ns.On("GET_ITEM_INFO_RECEIVED", function() if waiting then MarkAll() end end)
+ns.On("QUEST_FINISHED", function() waiting = false end)

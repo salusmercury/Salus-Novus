@@ -9819,7 +9819,7 @@ def _():
     h.lua("__card = ns.WishlistUI.Build().mine.rows[1]; __cardID = __card.id")
     ok(h.lua("return __card.wish == nil"), "no check box")
     # the item's own tooltip, in the card
-    h.lua("__card.tip.SetItemByID = function(self, id) self.__item = id self:SetHeight(180) end; ns.WishlistUI.Refresh()")
+    h.lua("__card.tip.SetItemByID = function(self, id) self.__item = id self:SetHeight(180) end; __card.tipId = nil; ns.WishlistUI.Refresh()")
     ok(h.lua("return __card.tip.__item == __cardID and __card.tip:IsShown() and __card.tip:GetParent() == __card"), "its own tooltip, set to the item")
     ok(float(h.lua("return __card:GetHeight()")) > 180, "the card grows to hold it")
     h.lua("W.advance(0.1)")
@@ -9930,7 +9930,8 @@ def _():
         ns.Wishlist.Broadcast(); ns.Wishlist.Request(); W.advance(3)
         ns.Wishlist.OnAddonMessage('SNWish', 'WL|WARRIOR|204b.13', 'PARTY', 'Brakka')
     """)
-    eq(int(h.lua("return #__sent")), 0, "nothing sent with the module off")
+    eq([str(m) for m in h.lua("return __sent").values() if not str(m).startswith("DQ|")], [], "nothing sent with the module off")
+    # (switching off, Dungeon quests clears its list on the others' side: sweep 2)
     ok(h.lua("return next(ns.Wishlist.party) == nil"), "nothing stored with the module off")
     h.lua("ns.db.modules.qol = true; ns.ApplyAll()")
     # three frameless rolls on an item four people want: stacked by height, then pooled
@@ -12374,7 +12375,7 @@ def _():
     h = fresh()
     wish(h)
     h.lua("ns.WishlistUI.Open(); W.advance(0.1)")
-    h.lua("__clamped = {}; for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do local t = r.tip t.SetClampedToScreen = function(self, on) __clamped[#__clamped + 1] = on end end; ns.WishlistUI.Refresh()")
+    h.lua("__clamped = {}; for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do local t = r.tip t.SetClampedToScreen = function(self, on) __clamped[#__clamped + 1] = on end r.tipId = nil end; ns.WishlistUI.Refresh()")
     ok(h.lua("for _, v in ipairs(__clamped) do if v ~= false then return false end end return #__clamped > 0"), "not clamped to the screen")
     ok(h.lua("for _, r in ipairs(ns.WishlistUI.Build().mine.rows) do if r:IsShown() and not r.tip:IsShown() then return false end end return true"),
        "every card shows its tooltip (the scroll clips them; no culling to blank the top ones)")
@@ -13503,7 +13504,7 @@ def _():
 def _():
     h = fresh()
     P = lambda body: [{k: ([str(x) for x in v.values()] if not isinstance(v, str) and hasattr(v, "values") else str(v)) for k, v in t.items()}
-                      for t in h.lua("return { ns.Keybinds.ParseMacro(%r) }" % body).values()]
+                      for t in h.lua("return { ns.Keybinds.ParseMacro(%r) }" % body).values()][:3]
     main, extras, seq = P("/cast Blood Fury\n/cast Lightning Bolt")
     eq(main, {"base": "Lightning Bolt"}, "the last line is the main spell (off-GCD buttons go first)")
     eq(extras, {"base": ["Blood Fury"]}, "Blood Fury is a badge")
@@ -14081,4 +14082,1124 @@ def _():
     h.lua("SlashCmdList['SALUSNOVUS']('resetpos')")
     ok(h.lua("local _, rel = SalusNovusBars:GetPoint(1) return SalusNovusBars:GetParent() == __stage and rel ~= UIParent"), "still on the stage")
     h.lua("ns.BarsPreviewStop()")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- whole-addon sweep (2026-10-09)
+
+@test("whole sweep: the chat filter matches what the player sees, not link payloads or colour codes", "chat")
+def _():
+    h = fresh()
+    h.lua('ns.ChatFilter.AddWord("item")')
+    ok(not h.lua('return ns.ChatFilter.ShouldBlock("WTB |cffa335ee|Hitem:19019::::::::60:::::|h[Thunderfury]|h|r pst", "Bob")'), "a link's payload isn't the line")
+    ok(h.lua('return ns.ChatFilter.ShouldBlock("selling item cheap", "Bob")'), "the visible word still blocks")
+    h.lua('ns.ChatFilter.AddWord("thunder")')
+    ok(h.lua('return ns.ChatFilter.ShouldBlock("WTB |cffa335ee|Hitem:19019|h[Thunderfury]|h|r", "Bob")'), "a link's shown text still counts")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: dungeon quests -- a cross-realm member's list is matched; the Stockade's quests (filed as 'The Stockade') count; unlocked, X and Share take no clicks; switched on in a dungeon, the list goes out", "dungeonquests")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    h.lua("UnitName = function(u) if u == 'player' then return 'Grumble' end if u == 'party1' then return 'Brakka', 'Stormreaver' end if u == 'party2' then return 'Lyss' end end")
+    h.lua("Ambiguate = function(n) return n end; __dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    ok(h.lua("for _, m in ipairs(ns.DungeonQuests.Party()) do if m.key == 'Brakka-Stormreaver' then return true end end return false"), "keyed name-realm")
+    h.lua("__dqName = 'Stormwind Stockade'; __ql = { { questID = 0, title = 'The Stockade', isHeader = true }, { questID = 301, title = 'What Comes Around...', level = 25 } }")
+    eq([int(q["questID"]) for q in h.lua("return ns.DungeonQuests.Mine('Stormwind Stockade')").values()], [301], "filed under the area name: still the dungeon's")
+    h.lua("__dqName = nil; __ql = { { questID = 0, title = 'The Deadmines', isHeader = true }, { questID = 101, title = 'Red Silk Bandanas', level = 17 } }; ns.ApplyAll(); W.advance(0.1)")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); W.advance(0.1)")
+    ok(h.lua("return SalusNovusDungeonQuests and not SalusNovusDungeonQuests.close:IsMouseEnabled()"), "unlocked: the X takes no click")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll()")
+    h.lua("ns.db.quests.dungeonCheck = false; ns.ApplyAll(); __sent = {}; ns.db.quests.dungeonCheck = true; ns.ApplyAll()")
+    ok(h.lua("for _, m in ipairs(__sent) do if m[2]:find('^DQ|') then return true end end return false"), "switched on in the dungeon: the list goes out")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: session -- an XP reset clears the zone breakdown; a hand-set limit replaces a learned one; the detail closes with its segment", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("local s = ns.Session.State() s.zones = { Westfall = 500 }; ns.Session.ResetXP()")
+    ok(h.lua("return next(ns.Session.State().zones) == nil"), "zones reset with the XP")
+    h.lua("ns.Session.Log().learned = 1; ns.Session.SetLimit(5)")
+    eq(int(h.lua("return (ns.Session.Limit())")), 5, "the setting wins over a learned 1")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: camping -- /sn camp twice in combat cancels out; the settings checkbox brings the panel back after a /sn camp close", "camping")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("ns.CampingUI.pinned = nil; ns.CampingUI.Toggle(); __p1 = ns.CampingUI.pinned; ns.CampingUI.Toggle(); __p2 = ns.CampingUI.pinned")
+    ok(h.lua("return __p1 ~= __p2"), "two toggles flip the pin twice (it read the unchanged panel both times)")
+    h.lua("ns.CampingUI.pinned = false")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('camping'); for _, w in ipairs(ns.Options.widgets) do if w.__outer == ns.Options.pages.camping and w.__kind == 'check' then w.__set(false) w.__set(true) end end")
+    ok(h.lua("return ns.CampingUI.pinned == nil"), "the setting clears the pin")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: trainer -- a prerequisite with a non-rank subtext ('Bear Form (Shapeshift)') counts as met", "trainer")
+def _():
+    h = fresh()
+    ok(h.lua("return ns.Trainer._ReqMet('Bear Form (Shapeshift)', { ['Bear Form'] = 0 })"), "Bear Form known: met")
+    ok(h.lua("return ns.Trainer._ReqMet('Detect Traps (Passive)', { ['Detect Traps'] = 0 })"), "a passive: met")
+    ok(not h.lua("return ns.Trainer._ReqMet('Fireball (Rank 3)', { ['Fireball'] = 2 })"), "a rank still has to be reached")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: theme -- a hidden scroll area's bar hides with it; Escape on the colour picker cancels; Sell's ring is separate from the quality border", "theme")
+def _():
+    h = fresh()
+    h.lua("__sa = ns.Theme.MakeScrollArea(UIParent); __sa:SetSize(100, 100); __sa.slider = __sa.slider; local s for _, c in ipairs({ UIParent:GetChildren() }) do end")
+    h.lua("""__sl = nil for _, c in ipairs({ UIParent:GetChildren() }) do if c.GetObjectType and c:GetObjectType() == 'Slider' and c.thumb then __sl = c end end
+             if __sl then __sl:Show() __sa:Hide() end""")
+    ok(h.lua("return __sl == nil or not __sl:IsShown()"), "the bar went with its area")
+    h.lua("ns.db.theme = ns.db.theme or {}; __v = 'old'; ns.Theme.OpenColorPicker({ r = 1, g = 1, b = 1 }, function(r) __v = (r == 1) and 'old' or 'new' end); __v = 'new'; SalusNovusColorPicker:Hide()")
+    eq(str(h.lua("return __v")), "old", "Escape (a plain hide) puts the colour back")
+    h.lua(SELLMOCK)
+    h.lua("W.advance(0.1); ns.AuctionUI.Show('sell'); ns.Sell.Refresh(); W.advance(0.1)")
+    ok(h.lua("local p = SalusNovusSell.icons[1] return p and p.ring ~= p.border"), "two sets of edges")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: keybinds -- a modifier combo bound to a macro shows that layer's branch; bound to the bare key's own action it's no conflict; [mod:selfcast] follows the game's setting; the hover line survives a redraw", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("__binds['SHIFT-Q'] = 'ACTIONBUTTON7'")
+    r = h.lua("return ns.Keybinds.Resolve('Q', 2)")
+    eq(int(r["icon"]), 704, "Shift-Q shows Purge (its [mod:shift] branch)")
+    h.lua("__binds['SHIFT-E'] = 'ACTIONBUTTON5'")
+    eq(str(h.lua("return ns.Keybinds.Resolve('E', 2).state")), "bound", "same action as E: no conflict")
+    h.lua("GetModifiedClick = function(k) if k == 'SELFCAST' then return 'ALT' end return 'NONE' end")
+    main = {k: str(v) for k, v in h.lua("return (ns.Keybinds.ParseMacro('/cast [mod:selfcast,@player] Flash Heal; Smite'))").items()}
+    eq(main, {"base": "Smite", "alt": "Flash Heal"}, "selfcast = Alt")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    h.lua("for _, c in ipairs(SalusNovusKeybinds.cells) do if c.key == '1' then c:GetScript('OnEnter')(c) end end; ns.KeybindsUI.Refresh()")
+    ok(str(h.lua("return SalusNovusKeybinds.detail:GetText()")).startswith("1:"), "the hovered key's line stays")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: settings -- only the launched window's close brings Settings back; grid settings apply while unlocked", "options")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.returnToOptions = function() return __launchedUp end; __launchedUp = true; SalusNovusOptions:Hide(); ns.ReturnToOptions()")
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "another window closed: Settings stays away")
+    h.lua("ns.Options.EnterUnlockMode(); ns.db.anchorsGlobal.grid = false; ns.ApplyAll()")
+    ok(h.lua("local g = ns.AlignGrid() return g == nil or not g:IsShown()"), "grid turned off while unlocked: gone")
+    h.lua("ns.Options.ExitUnlockMode(false)")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep: auction -- a paused scan isn't 'wanted' (Cancel's checks went on waiting); a dropped Investing purchase isn't left confirming; Snipe's outcome survives the re-look; a held quote isn't rewritten", "auction")
+def _():
+    h = fresh()
+    h.lua(SNIPEMOCK)
+    h.lua("ns.Auction.SetPaused(true); __ready = false; ns.Auction.scan.wantStart = true; ns.Auction.Scan()")
+    ok(h.lua("return not ns.Auction.scan.wantStart and ns.Auction.scan.pending"), "deferred to pending, not wanted")
+    h.lua("ns.Auction.SetPaused(false); __ready = true")
+    snipe_scan(h)
+    snipe_pick(h, 14047)
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    h.lua("__commodity[14047] = { { quantity = 5, unitPrice = 900 } }; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.Auction.sel.under and ns.Auction.sel.under.qty > 0"), "the quote's numbers held")
+    h.lua("W.fireEvent('COMMODITY_PRICE_UNAVAILABLE'); W.advance(0.6)")
+    ok(str(h.lua("return ns.Auction.message")) == "That price is gone", "the outcome is still readable after the re-look")
+    h2 = fresh()
+    h2.lua(INVESTMOCK)
+    h2.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000); ns.Invest.Confirm(); W.fireEvent('COMMODITY_PRICE_UNAVAILABLE')")
+    ok(h2.lua("return not ns.Invest.sel.confirming and ns.Invest.Select({ id = 2592 })"), "not locked: another row can be picked")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("whole sweep: wishlist -- retries count per list; a newer list stops an older chain mid-send; Mine redraws when you gain an item", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        SalusNovusDB.wishlist = { ['Grumble-Forever'] = {} }
+        for i = 1, 120 do SalusNovusDB.wishlist['Grumble-Forever'][tostring(1000000 + i)] = { spec = { Elemental = true }, tag = 'up' } end
+        ns.Wishlist.retries = 9
+        ns.Wishlist.Broadcast(); W.advance(1.1)
+    """)
+    ok(h.lua("return ns.Wishlist.retries == 0"), "a fresh list starts its own count")
+    h.lua("__sent = {}; W.advance(0.3); ns.Wishlist.Broadcast(); W.advance(1.1); for i = 1, 20 do W.advance(0.3) end")
+    sent = [str(x[2])[:3] for x in h.lua("return __sent").values()]
+    last_head = max(i for i, m in enumerate(sent) if m == "WL|")
+    ok(all(m == "WLC" for m in sent[last_head + 1:]) and "WL|" not in sent[last_head + 1:], "after the new head only its own continuations: %r" % sent)
+    first_chain_after = [m for m in sent[:last_head]]
+    eq(sent.count("WL|"), 1, "the older chain stopped before a second head (one head in this window)")
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1); __n = 0; local R = ns.WishlistUI.Refresh; ns.WishlistUI.Refresh = function(...) __n = __n + 1 return R(...) end")
+    h.lua("W.fireEvent('BAG_UPDATE_DELAYED'); W.advance(0.1)")
+    ok(h.lua("return __n >= 1"), "a bag change redraws Mine")
+    eq(h.errors(), [], "errors")
+
+
+
+# ---------------------------------------------------------------- whole-addon sweep 2 (2026-10-09)
+
+@test("whole sweep 2: a pull while unlocked locks the frames without opening Settings over the fight", "options")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars'); ns.Options.EnterUnlockMode()")
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "unlocking hid Settings")
+    h.lua("W.fireEvent('PLAYER_REGEN_DISABLED')")
+    ok(not h.lua("return ns.db.unlocked"), "locked")
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "Settings stays away mid-fight")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: whole-UI font -- a font the client won't load never goes on the Blizzard objects; one that loads a second later does", "fonts")
+def _():
+    h = fresh()
+    h.lua("""
+        __loads = false
+        local function FO(path, size, flags)
+            local o = { __path = path, __size = size, __flags = flags }
+            function o:GetFont() return self.__path, self.__size, self.__flags end
+            function o:SetFont(p, s, f)
+                if p:find('Missing', 1, true) and not __loads then return false end
+                self.__path, self.__size, self.__flags = p, s, f return true
+            end
+            function o:Hide() end
+            o[0] = true
+            function o:GetObjectType() return "Font" end
+            return o
+        end
+        GameFontNormal = FO("Fonts\\\\FRIZQT__.TTF", 12, "")
+        GetFonts = function() return { "GameFontNormal" } end
+        ns._fontProbe = FO("Fonts\\\\FRIZQT__.TTF", 12, "")
+        ns.db.font.path = "Interface\\\\AddOns\\\\Missing\\\\Gone.ttf"; ns.InvalidateFontCache()
+        ns.db.font.wholeUI = true; ns.ApplyUIFont(true, true)
+    """)
+    eq(str(h.lua("return GameFontNormal.__path")), "Fonts\\FRIZQT__.TTF", "the object kept its own font")
+    h.lua("__loads = true; W.advance(1.1)")
+    ok("Missing" in str(h.lua("return GameFontNormal.__path")), "loaded a second later: applied")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: dungeon quests -- a row made while unlocked takes no clicks; switching the check off clears your list on the others' side", "dungeonquests")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    h.lua("__dqInst = true; __on = { party1 = {}, party2 = {} }; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(0.1)")
+    h.lua("ns.db.unlocked = true; ns.ApplyAll(); W.advance(0.1)")
+    h.lua("table.insert(__ql, 3, { questID = 103, title = 'The Defias', level = 19 }); W.fireEvent('QUEST_ACCEPTED'); W.advance(0.6)")
+    eq(int(h.lua("local n = 0 for _, r in ipairs(SalusNovusDungeonQuests.rows) do if r:IsShown() then n = n + 1 end end return n")), 3, "the third row")
+    eq(int(h.lua("local n = 0 for _, r in ipairs(SalusNovusDungeonQuests.rows) do if r:IsShown() and rawget(r.share, '__mouse') ~= false then n = n + 1 end end return n")), 0,
+       "every Share is a drag handle while unlocked")
+    h.lua("ns.db.unlocked = false; ns.ApplyAll(); __sent = {}; ns.db.quests.dungeonCheck = false; ns.ApplyAll()")
+    eq([str(m[2]) for m in h.lua("return __sent").values()], ["DQ||"], "an empty list goes out")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: a closed quest frame's rewards are never waited on", "quests")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    h.lua("ns.Quests.HookRewards(); __uncached.Shield = true; __choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 } }; __show(2)")
+    h.lua("QuestInfoRewardsFrame:Hide(); W.fireEvent('QUEST_FINISHED'); __n = 0; local G = GetQuestItemLink; GetQuestItemLink = function(...) __n = __n + 1 return G(...) end")
+    h.lua("for i = 1, 20 do W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true) end")
+    eq(int(h.lua("return __n")), 0, "no re-walks after the frame closed")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: session -- after a group change, re-entering a dungeon of the last hour counts as a new instance", "session")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); __inst = false; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "one entry")
+    h.lua("W.fireEvent('GROUP_LEFT'); __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "the new group's instance counts")
+    h.lua("W.fireEvent('GROUP_JOINED'); W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "the instance you stand in keeps its ID")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: trainer -- Dire Bear Form meets a Bear Form prerequisite", "trainer")
+def _():
+    h = fresh()
+    ok(h.lua("return ns.Trainer._ReqMet('Bear Form (Shapeshift)', { ['Dire Bear Form'] = 0 })"), "replaced form: met")
+    ok(not h.lua("return ns.Trainer._ReqMet('Bear Form (Shapeshift)', { ['Cat Form'] = 0 })"), "neither: not met")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: the chat filter skips named colour codes and atlases", "chat")
+def _():
+    h = fresh()
+    h.lua('ns.ChatFilter.AddWord("iq")')
+    ok(not h.lua('return ns.ChatFilter.Matches("|cnIQ4:|Hitem:19019|h[Thunderfury]|h|r anyone?")'), "'|cnIQ4:' isn't text")
+    h.lua('ns.ChatFilter.AddWord("raidicon")')
+    ok(not h.lua('return ns.ChatFilter.Matches("|A:raidicon-star:14:14|a pull")'), "an atlas isn't text")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: keybinds -- a modifier no clause fires on casts nothing; keys bound straight to a macro/spell read like slots", "keybinds")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("__slots[9] = { 'macro', 3 }; __macros[3] = { 'NoAlt', 1, '/cast [nomod] Frost Shock; [mod:shift] Purge' }; __binds.R = 'ACTIONBUTTON9'; __binds['ALT-R'] = 'ACTIONBUTTON9'")
+    r = h.lua("return ns.Keybinds.Resolve('R', 4)")
+    ok("casts nothing with alt held" in str(r["detail"]), "Alt-R: nothing (%s)" % r["detail"])
+    ok(r["icon"] is None, "no spell icon")
+    h.lua("GetMacroIndexByName = function(n) return n == 'Shocks' and 1 or 0 end; __binds.T = 'MACRO Shocks'; __binds.Y = 'SPELL Frost Shock'")
+    r = h.lua("return ns.Keybinds.Resolve('T', 1)")
+    eq((str(r["label"]), bool(r["macro"]), int(r["icon"])), ("Shocks", True, 703), "MACRO: the macro, its bare-key spell")
+    eq(str(h.lua("return ns.Keybinds.Resolve('T', 2).state")), "via", "Shift-T answered by its [mod:shift] branch")
+    h.lua("__binds['SHIFT-T'] = 'TOGGLEWORLDMAP'")
+    eq(str(h.lua("return ns.Keybinds.Resolve('T', 2).state")), "conflict", "a Shift-T binding is a conflict")
+    r = h.lua("return ns.Keybinds.Resolve('Y', 1)")
+    eq((str(r["label"]), int(r["icon"])), ("Frost Shock", 703), "SPELL: its name as written, its icon")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: colour picker -- Okay keeps a typed hex; opening over a live one reverts it; an ancestor hiding isn't a Cancel", "theme")
+def _():
+    h = fresh()
+    h.lua("__v = nil; ns.Theme.OpenColorPicker({ r = 1, g = 1, b = 1 }, function(r, g, b) __v = { r, g, b } end)")
+    h.lua("SalusNovusColorPicker.hex:SetText('FF0000'); SalusNovusColorPicker.okay:Click()")
+    eq([round(float(x), 2) for x in h.lua("return __v").values()], [1.0, 0.0, 0.0], "the typed colour was kept")
+    h.lua("__a = 'orig'; ns.Theme.OpenColorPicker({ r = 1, g = 1, b = 1 }, function(r) __a = (r == 1) and 'orig' or 'preview' end); __a = 'preview'")
+    h.lua("__b = 'orig'; ns.Theme.OpenColorPicker({ r = 0, g = 0, b = 0 }, function(r) __b = r end)")
+    eq(str(h.lua("return __a")), "orig", "the first swatch got its revert")
+    h.lua("__b = 'live'; SalusNovusColorPicker:GetScript('OnHide')(SalusNovusColorPicker)")
+    eq(str(h.lua("return __b")), "live", "still shown: no Cancel")
+    ok(h.lua("return SalusNovusColorPicker.onChange ~= nil"), "still live")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: Cancel next undercut passes over one that can't be cancelled", "auction")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("__commodity[2592] = { { quantity = 5, unitPrice = 10 }, { quantity = 10, unitPrice = 20, numOwnerItems = 10, containsOwnerItem = true } }")
+    h.lua("C_AuctionHouse.CanCancelAuction = function(id) return id ~= 11 end")
+    cancel_load(h)
+    h.lua("SalusNovusCancel.next:Click(); SalusNovusCancel.next:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:14", "the second click reached the other undercut")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: Investing -- closing the AH clears its message; the run's end keeps only the 'Bought' text", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.message = 'Buying...'; ns.Invest.keepMessage = 'x'; W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    ok(h.lua("return ns.Invest.message == nil and ns.Invest.keepMessage == nil"), "cleared on close")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: wishlist -- switching Quality of Life back on sends your list and asks for theirs; a retry is the call's own", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.db.modules.qol = false; ns.ApplyAll(); __sent = {}; ns.db.modules.qol = true; ns.ApplyAll(); W.advance(2)")
+    sent = [str(m[2]) for m in h.lua("return __sent").values()]
+    ok(any(m.startswith("WL|") for m in sent) and "REQ" in sent, "list out, request out: %r" % sent)
+    h.lua("ns.Wishlist.retries = 2; ns.Wishlist.Broadcast(); W.advance(1.1)")
+    eq(int(h.lua("return ns.Wishlist.retries")), 0, "a fresh list starts its own count")
+    eq(h.errors(), [], "errors")
+
+
+@test("whole sweep 2: /sn probe ah invest -- your units inside a shared level still read as your listing capping the relist", "auction")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    why = str(h.lua("""local ladder = { { unit = 100, qty = 10 }, { unit = 101, qty = 50, own = 20 }, { unit = 1000, qty = 500 } }
+        return ns.Probe.InvestWhy(ladder, 1e9, 1, 1)"""))
+    eq(why, "your own listing caps the relist", "the reason")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist cards (Alex: the columns jiggled): a redraw doesn't set a card's tooltip again for the same item (that reset it to its shorter first layout); the tooltip resizing itself re-lays the columns once", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("ns.WishlistUI.Open(); W.advance(0.1); __card = ns.WishlistUI.Build().mine.rows[1]")
+    h.lua("__sets = 0; local S = __card.tip.SetItemByID; __card.tip.SetItemByID = function(...) __sets = __sets + 1 return S(...) end")
+    h.lua("ns.WishlistUI.Refresh(); W.fireEvent('BAG_UPDATE_DELAYED'); W.advance(0.1)")
+    eq(int(h.lua("return __sets")), 0, "same item: left as it is")
+    h.lua("__n = 0; local R = ns.WishlistUI.Refresh; ns.WishlistUI.Refresh = function(...) __n = __n + 1 return R(...) end")
+    h.lua("local f = __card.tip:GetScript('OnSizeChanged') if f then f(__card.tip, 300, 200) end; W.advance(0.1)")
+    eq(int(h.lua("return __n")), 0, "the size it was laid with: nothing to do")
+    h.lua("__card.tip:SetHeight(__card.tip:GetHeight() + 40); local f = __card.tip:GetScript('OnSizeChanged') f(__card.tip) W.advance(0.1)")
+    eq(int(h.lua("return __n")), 1, "grown: one re-layout")
+    # (Alex: two cards jittered) a tooltip flipping between two sizes on every redraw stops
+    h.lua('''__shows = 0; local S = __card.tip.Show; __card.tip.Show = function(self, ...) __shows = __shows + 1 return S(self, ...) end
+        local f = __card.tip:GetScript('OnSizeChanged')
+        for i = 1, 30 do __card.tip:SetHeight(__card.tip:GetHeight() + ((i % 2 == 0) and 40 or -40)) f(__card.tip) W.advance(0.02) end''')
+    ok(int(h.lua("return __n")) <= 5, "the flipping settles (%d re-layouts)" % int(h.lua("return __n")))
+    eq(int(h.lua("return __shows")), 0, "a redraw doesn't Show (re-lay) a shown tooltip")
+    eq(h.errors(), [], "errors")
+
+
+@test("wishlist (Alex: '?' dungeons): AtlasLoot's Burning Crusade dungeons -- no map on Forever, past the level cap -- are left out", "wishlist")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("""
+        __al.HellfireRamparts = { MapID = 9999, LevelRange = { 59, 60, 67 }, LoadDifficulty = 1, items = { { name = "Omor", [1] = { { 1, 501 } } } } }
+        __al.OldHillsbrad = { name = "CoT: Old Hillsbrad Foothills", LevelRange = { 66, 66, 70 }, LoadDifficulty = 1, items = { { name = "Epoch Hunter", [1] = { { 1, 502 } } } } }
+        table.insert(__alKeys, "HellfireRamparts"); table.insert(__alKeys, "OldHillsbrad")
+        ns.Wishlist.ReadCatalog()
+    """)
+    names = [str(d["name"]) for d in h.lua("return ns.Wishlist.catalog.dungeons").values()]
+    ok("?" not in names and not any("Hillsbrad" in n for n in names), "left out: %r" % names)
+    ok("Ragefire Chasm" in names and "Uldaman" in names, "the real ones stay: %r" % names)
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: buy ----
+@test("sweep5 F01: a list saved last session doesn't switch on late and hijack a browse (Lists click mid-search, or a result row click)", group="sweep5")
+def _():
+    from runner import Harness
+    SAVED = "SalusNovusDB = { ahLists = { lists = { { name = 'A', items = { { name = 'Runecloth', exact = true } } } }, current = 1 } }"
+    # (a) search typed, Lists clicked before the answer lands
+    h = Harness()
+    ok(not h.load_errors, "load errors: %r" % h.load_errors)
+    h.login(SAVED)
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("SalusNovusBuy.search:SetText('cloth'); SalusNovusBuy.go:GetScript('OnClick')(SalusNovusBuy.go, 'LeftButton')")
+    h.lua("local b = SalusNovusBuy.sideButtons[2]; b:GetScript('OnClick')(b, 'LeftButton')")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5)")
+    eq(h.errors(), [], "(a) no Lua error when the browse answer lands")
+    eq(str(h.lua("return ns.Buy.run.state")), "idle", "(a) the run finishes (not stuck searching)")
+    # (b) browse lands, then a result row is clicked
+    h2 = Harness()
+    ok(not h2.load_errors, "load errors: %r" % h2.load_errors)
+    h2.login(SAVED)
+    h2.lua(BUYMOCK)
+    h2.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h2.lua("SalusNovusBuy.search:SetText('cloth'); SalusNovusBuy.go:GetScript('OnClick')(SalusNovusBuy.go, 'LeftButton'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    before = buy_view(h2)
+    ok(len(before) == 2 and all(r[1] for r in before), "(b) setup: the browse shows its two items: %r" % before)
+    side = str(h2.lua("return ns.BuyUI.side"))
+    h2.lua("local r = SalusNovusBuy.rows[1]; r:GetScript('OnClick')(r, 'LeftButton')")
+    eq(str(h2.lua("return ns.Buy.mode")), "search", "(b) a result click keeps the browse in search mode")
+    eq(str(h2.lua("return ns.BuyUI.side")), side, "(b) a result click doesn't move the left column")
+    after = buy_view(h2)
+    ok(any(r[1] == 2589 for r in after) and not any(r[2] for r in after), "(b) the browse rows stay on screen, no 'none' lines: %r" % after)
+    eq(h2.errors(), [], "(b) errors")
+
+
+@test("sweep5 F07: a list line whose pages each come within the timeout but together take over 4 s lands with all its pages", group="sweep5")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua('ns.db.auction.autoScan = false; W.advance(1.5)')
+    h.lua("ns.Buy.Import('Mats', 'Runecloth' .. string.char(10) .. 'Backpack')")
+    # Runecloth pages: the bag comes first; Runecloth itself only on page 3
+    h.lua("""
+      local ah = C_AuctionHouse
+      local sb = ah.SendBrowseQuery
+      ah.SendBrowseQuery = function(q) sb(q) if q.searchString == 'Runecloth' then __browse = { __bysearch['Runecloth'][2] } __full = false end end
+      ah.RequestMoreBrowseResults = function() __calls[#__calls+1] = 'more' return true end
+      ns.Buy.SearchList()
+    """)
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "line 1 sent")
+    h.lua("W.advance(0.5); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")   # page 1 at 0.5 s -> asks page 2
+    h.lua("W.advance(1.9); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")     # page 2 at 2.4 s (1.9 s after its ask) -> asks page 3
+    h.lua("W.advance(1.9)")                                                        # 4.3 s since the line's browse, 1.9 s since page 3's ask
+    calls = [str(x) for x in h.lua("return __calls").values()]
+    ok("browse:Backpack" not in calls, "line 1 still waiting on page 3 (asked 1.9 s ago), not cut off: calls=%r view=%r" % (calls[-4:], buy_view(h)))
+    h.lua("__browse = { __bysearch['Runecloth'][2], __bysearch['Runecloth'][1] }; __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    h.lua("W.advance(0.3); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")   # Backpack's answer
+    eq(buy_view(h), [("Runecloth", 14047, False), ("Backpack", 4500, False)], "each line its own rows")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F15: Enter in a level box during a drill-down browses AND leaves the drill-down", group="sweep5")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("SalusNovusBuy.search:SetText('Runecloth'); SalusNovusBuy.go:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.id == 14047 then r:Click() break end end; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    ok(h.lua("return ns.BuyUI.detail == true and SalusNovusBuy.back:IsShown()"), "drilled down")
+    h.lua("__n = #__calls; local b = SalusNovusBuy.minLevel b:SetFocus() b:GetScript('OnEditFocusGained')(b) b:Type('10') b:GetScript('OnEnterPressed')(b)")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "Enter browsed")
+    eq(int(h.lua("return ns.Buy.filters.minLevel or 0")), 10, "level filter set")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    ok(h.lua("return ns.BuyUI.detail == false"), "Enter in a level box leaves the drill-down (UI.detail still true)")
+    ok(h.lua("return not SalusNovusBuy.back:IsShown()"), "Back hidden after the new browse")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F16: clicking the already-picked list keeps its 'Search list' results and a running search", group="sweep5")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth\\nBackpack'); ns.BuyUI.Refresh()")
+    h.lua("SalusNovusBuy.searchList:Click()")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    ok(h.lua("return ns.Buy.results[1] ~= nil and ns.Buy.run.state == 'searching'"), "line 1 in, still searching")
+    ok(h.lua("return SalusNovusBuy.listButtons[1]:IsShown() and SalusNovusBuy.listButtons[1].on:IsShown()"), "list A highlighted")
+    h.lua("SalusNovusBuy.listButtons[1]:Click()")
+    ok(h.lua("return ns.Buy.results[1] ~= nil"), "re-clicking the picked list keeps line 1's results")
+    ok(h.lua("return ns.Buy.run.state == 'searching'"), "re-clicking the picked list doesn't stop the search")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F20: after 'Remove from list' nothing stays picked and Remove hides", group="sweep5")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Import('A', 'Runecloth\\ncloth\\nBackpack')")
+    h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r.view and r.view.line == 2 then r:Click() break end end")
+    ok(h.lua("return ns.BuyUI.line == 2 and SalusNovusBuy.remove:IsShown()"), "line 2 picked: Remove shown")
+    h.lua("SalusNovusBuy.remove:Click()")
+    eq(int(h.lua("return #ns.Buy.Current().items")), 2, "line removed")
+    ok(h.lua("return ns.BuyUI.line == nil"), "nothing picked")
+    ok(h.lua("return not SalusNovusBuy.remove:IsShown()"), "Remove hidden after removing")
+    lit = h.lua("local o = {} for _, r in ipairs(SalusNovusBuy.rows) do if r:IsShown() and r.on and r.on:IsShown() then o[#o + 1] = r.view and r.view.line or -1 end end return o")
+    eq([int(x) for x in lit.values()], [], "no row highlighted")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F33: turning the auction tabs off mid 'Search list' stops the run -- the player's own Browse search on Blizzard's tab isn't overwritten", group="sweep5")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("W.advance(0.1)")
+    h.lua("ns.Buy.Import('Mats', 'Runecloth\\ncloth\\nBlack Lotus'); ns.Buy.SetExact(2, false); ns.Buy.SearchList()")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "line 1 asked")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "line 2 asked")
+    # the player unticks 'Enable Salus Novus auction tabs' with the AH open
+    h.lua("ns.db.auction.enabled = false; ns.ApplyAll()")
+    ok(h.lua("return AuctionHouseFrame.Tabs[1]:IsShown()"), "Blizzard's tabs are back")
+    # ...and searches on Blizzard's Browse tab (the client's own SendBrowseQuery)
+    h.lua("__n = #__calls; C_AuctionHouse.SendBrowseQuery({ searchString = 'Copper Ore', sorts = {}, filters = {}, itemClassFilters = {} })")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("W.advance(5); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(5)")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do if __calls[i]:find('^browse') then o[#o + 1] = __calls[i] end end return o").values()]
+    eq(after, ["browse:Copper Ore"], "only the player's own browse after the tabs went off")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: purchase ----
+# ---------------------------------------------------------------- sweep 5: purchase claims
+
+@test("sweep5 F05: closing the AH with a Buy-tab or Investing commodity quote held cancels the pending purchase", "sweep5")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Select({ id = 14047, key = { itemID = 14047, itemLevel = 0, itemSuffix = 0 } }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    eq(str(h.lua("return __calls[#__calls]")), "start:14047:10", "buy: purchase started")
+    ok(h.lua("return ns.Auction.Owns('buy')"), "buy owns the purchase")
+    h.lua("__n = #__calls; AuctionHouseFrame:Hide(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    eq(int(h.lua("local c = 0 for i = __n + 1, #__calls do if __calls[i] == 'cancel' then c = c + 1 end end return c")), 1,
+       "buy: closing the AH cancels the held commodity quote, once")
+    ok(h.lua("return ns.Auction.purchase == nil"), "buy: nothing claimed after the close")
+    h2 = fresh()
+    h2.lua(INVESTMOCK)
+    h2.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h2.lua("ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    ok(h2.lua("return ns.Auction.Owns('invest') and ns.Invest.sel.quote ~= nil"), "invest owns a quoted purchase")
+    h2.lua("__n = #__calls; AuctionHouseFrame:Hide(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    eq(int(h2.lua("local c = 0 for i = __n + 1, #__calls do if __calls[i] == 'cancel' then c = c + 1 end end return c")), 1,
+       "invest: closing the AH cancels the held commodity quote, once")
+    ok(h2.lua("return ns.Auction.purchase == nil"), "invest: nothing claimed after the close")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("sweep5 F05: closing the AH after Confirm (Buy tab or Investing) sends no cancel for the purchase on its way", "sweep5")
+def _():
+    for mock, pick, total, mod in ((BUYMOCK, "ns.Buy.Select({ id = 14047, key = { itemID = 14047, itemLevel = 0, itemSuffix = 0 } })", 3000, "Buy"),
+                                   (INVESTMOCK, "ns.Invest.Select({ id = 14047 })", 12000, "Invest")):
+        h = fresh()
+        h.lua(mock)
+        h.lua(pick + "; W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+        h.lua("ns.%s.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, %d)" % (mod, total))
+        h.lua("ns.%s.Confirm()" % mod)
+        ok(h.lua("return ns.Auction.purchase ~= nil and ns.Auction.purchase.confirming == true"), mod + ": confirming")
+        h.lua("__n = #__calls; AuctionHouseFrame:Hide(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+        after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+        eq(after, [], mod + ": closing after Confirm sends nothing")
+        ok(h.lua("return ns.Auction.purchase == nil"), mod + ": nothing claimed after the close")
+        eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F06: turning the auction tabs off with an Investing or Snipe quote held releases the claim; Blizzard's own Buy-tab purchase is left alone", "sweep5")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.Invest.Select({ id = 14047 }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Invest.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 12000)")
+    ok(h.lua("return ns.Invest.sel.quote ~= nil and ns.Auction.Owns('invest')"), "setup: Investing holds a quote and the claim")
+    # /sn > Auction: untick 'Enable Salus Novus auction tabs' (the checkbox's setter, then ApplyAll)
+    h.lua("__n = #__calls; ns.db.auction.enabled = false; ns.ApplyAll()")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    eq(after, ["cancel"], "turning the tabs off cancels Investing's own held quote, once")
+    ok(h.lua("return not ns.Auction.Owns('invest') and ns.Invest.sel.quote == nil"), "the tabs off: Investing's claim was released")
+    # the player buys on Blizzard's own Buy tab: the client quotes Blizzard's purchase
+    h.lua("__n = #__calls; W.fireEvent('COMMODITY_PRICE_UPDATED', 9, 900)")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    eq(after, [], "the addon makes no auction calls on Blizzard's purchase quote")
+    # Snipe: the same
+    h2 = fresh()
+    h2.lua(INVESTMOCK)
+    snipe_scan(h2)
+    h2.lua("local s; for _, x in ipairs(ns.Auction.Snipes()) do if x.id == 14047 then s = x end end ns.Auction.Select(s); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047); ns.Auction.Buy()")
+    ok(h2.lua("return ns.Auction.sel.asked ~= nil and ns.Auction.Owns('snipe')"), "setup: Snipe asked, owns it")
+    h2.lua("ns.db.auction.enabled = false; ns.ApplyAll()")
+    ok(h2.lua("return ns.Auction.purchase == nil"), "the tabs off: Snipe's claim was released")
+    h2.lua("__n = #__calls; W.fireEvent('COMMODITY_PRICE_UPDATED', 9, 900)")
+    after = [str(x) for x in h2.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    eq(after, [], "Snipe makes no auction calls on Blizzard's purchase quote")
+    eq(h.errors() + h2.errors(), [], "errors")
+
+
+@test("sweep5 F08: a run that ends after a mid-run buy redraws the panel (bar hidden, Scan re-enabled, 'Bought' kept)", "sweep5")
+def _():
+    h = fresh()
+    h.lua(INVESTMOCK)
+    h.lua("ns.AuctionUI.Open('invest')")
+    h.lua("SalusNovusInvest.scan:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    ok(h.lua("return SalusNovusInvest.bar:IsShown() and SalusNovusInvest.scan.enabledState == false"), "searching: bar up, Scan greyed")
+    # answer the first two (2589 nothing, 2592 a row); 14047 is still to come
+    h.lua("for i = 1, 2 do W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end")
+    eq(int(h.lua("return ns.Invest.results[1].id")), 2592, "2592 listed")
+    ok(h.lua("return ns.Invest.run.state == 'searching'"), "still searching")
+    # click the row, its lookup answers, Buy, quote, Confirm, success
+    h.lua("SalusNovusInvest.rows[1]:Click(); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    h.lua("SalusNovusInvest.buy:Click(); W.fireEvent('COMMODITY_PRICE_UPDATED', 20, 1000)")
+    eq(int(h.lua("return ns.Invest.run.waiting or 0")), 14047, "the queue's last search (14047) is still out")
+    ok(h.lua("return ns.Invest.sel.quote ~= nil"), "quote armed")
+    h.lua("SalusNovusInvest.buy:Click(); W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED'); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    ok("Bought: relist at" in str(h.lua("return ns.Invest.message")), "Bought message: %r" % str(h.lua("return ns.Invest.message")))
+    # let the queue finish
+    h.lua("for i = 1, 3 do if ns.Invest.run.waiting then W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', ns.Invest.run.waiting) end W.advance(0.5) end")
+    eq(str(h.lua("return ns.Invest.run.state")), "idle", "the run finished")
+    ok("Bought: relist at" in str(h.lua("return SalusNovusInvest.message:GetText()")), "the Bought message stays")
+    ok(h.lua("return not SalusNovusInvest.bar:IsShown()"), "progress bar hidden after the run ends (status: %r)" % str(h.lua("return SalusNovusInvest.status:GetText()")))
+    ok(h.lua("return SalusNovusInvest.scan.enabledState == true"), "Scan re-enabled after the run ends")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: cancel ----
+@test("sweep5 F04: a cancel the server never confirms (no AUCTION_CANCELED) does not hide the still-listed auction from a later Refresh; a confirmed one stays hidden", "sweep5")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    cancel_load(h)
+    eq(str(h.lua("return ns.Cancel.rows[1].status")), "undercut", "setup: 11 is undercut")
+    h.lua("SalusNovusCancel.next:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:11", "Cancel next sent CancelAuction(11)")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 11 then return false end end return true"), "gone at once")
+    # the server drops it (throttled / can't afford): no AUCTION_CANCELED, the auction stays listed
+    h.lua("W.fireEvent('AUCTION_HOUSE_THROTTLED_MESSAGE_DROPPED')")
+    h.lua("W.advance(61)")
+    h.lua("ns.AuctionUI.Open('cancel')")                 # back to the Cancel tab (the AH's own scan took the view meanwhile)
+    eq(str(h.lua("return __calls[#__calls]")), "owned", "reopening asked for your auctions")
+    h.lua("W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    ids = sorted(int(r["auctionID"]) for r in h.lua("return ns.Cancel.rows").values())
+    ok(11 in ids, "the uncancelled auction 11 is still listed by the client but hidden from the Cancel tab: %r" % ids)
+    ok("1 undercut" in str(h.lua("return SalusNovusCancel.status:GetText()")), "count still shows it undercut: %r" % str(h.lua("return SalusNovusCancel.status:GetText()")))
+    # now a cancel the server confirms: hidden for good, even if the client still lists it a minute later
+    h.lua("SalusNovusCancel.next:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:11", "Cancel next sent CancelAuction(11) again")
+    h.lua("W.fireEvent('AUCTION_CANCELED', 11)")
+    h.lua("W.advance(61)")
+    h.lua("ns.AuctionUI.Open('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 11 then return false end end return true"), "a confirmed cancel stays hidden")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: theme ----
+@test("sweep5 F02: Escape in the ability name box discards the typed text; Enter, click-away and clearing still save", group="sweep5")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Abilities.Set(11130, 'rename', 'Big Hit')")
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("local r = SalusNovusVisualizer.descRows[1] r:GetScript('OnMouseUp')(r)")
+    ed = "SalusNovusVisualizer.descRows[1].editor"
+    ok(h.lua("return %s:IsShown()" % ed), "editor not shown")
+    eq(str(h.lua("return %s.name:GetText()" % ed)), "Big Hit", "name box not prefilled with the rename")
+    def rename():
+        return str(h.lua("return tostring(ns.Abilities.Rename(11130))"))
+    # click into the box, type, press Escape (as the client delivers it)
+    h.lua("%s.name:SetFocus()" % ed)
+    ok(h.lua("return %s.name:HasFocus() == true" % ed), "box did not take focus")
+    h.lua("%s.name:SetText('Oops typo')" % ed)
+    h.lua("local eb = %s.name eb:GetScript('OnEscapePressed')(eb)" % ed)
+    ok(not h.lua("return %s.name:HasFocus() == true" % ed), "Escape did not drop focus")
+    eq(rename(), "Big Hit", "Escape saved the half-typed text as a rename")
+    eq(str(h.lua("return %s.name:GetText()" % ed)), "Big Hit", "Escape did not put the saved name back in the box")
+    # Enter saves
+    h.lua("%s.name:SetFocus() %s.name:SetText('Smash')" % (ed, ed))
+    h.lua("local eb = %s.name eb:GetScript('OnEnterPressed')(eb)" % ed)
+    eq(rename(), "Smash", "Enter did not save")
+    # focus moving away saves
+    h.lua("%s.name:SetFocus() %s.name:SetText('Crush')" % (ed, ed))
+    h.lua("%s.name:ClearFocus()" % ed)
+    eq(rename(), "Crush", "click-away did not save")
+    # clearing + Enter removes the rename
+    h.lua("%s.name:SetFocus() %s.name:SetText('')" % (ed, ed))
+    h.lua("local eb = %s.name eb:GetScript('OnEnterPressed')(eb)" % ed)
+    eq(rename(), "nil", "an empty name did not clear the rename")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F03: re-clicking a swatch with its picker open keeps the pre-edit colour for Cancel", group="sweep5")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "accent swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    c = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    ok(float(c[1]) < 0.01 and float(c[3]) > 0.99, "preview did not apply live: %r" % (list(c.values()),))
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "picker not reopened")
+    h.lua("ns.Theme.ColorPicker().cancel:Click()")
+    c = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    r, g, b = float(c[1]), float(c[2]), float(c[3])
+    ok(abs(r - 1) < 0.01 and g < 0.01 and b < 0.01, "Cancel restored the abandoned preview instead of red: %r" % ((r, g, b),))
+    h.lua("SalusNovusOptions:Hide()")
+    # the ability card's swatch: same re-click
+    open_vis(h)
+    h.lua("ns.Abilities.Set(11130, 'color', { r = 1, g = 0, b = 0 })")
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("local r = SalusNovusVisualizer.descRows[1] r:GetScript('OnMouseUp')(r)")
+    h.lua("__cs = SalusNovusVisualizer.descRows[1].editor.swatch __cs:GetScript('OnClick')(__cs)")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "card picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    c = h.lua("return { ns.Abilities.Color(11130) }")
+    ok(float(c[3]) > 0.99, "card preview did not apply live: %r" % (list(c.values()),))
+    h.lua("__cs:GetScript('OnClick')(__cs)")
+    h.lua("ns.Theme.ColorPicker().cancel:Click()")
+    c = h.lua("return { ns.Abilities.Color(11130) }")
+    r, g, b = float(c[1]), float(c[2]), float(c[3])
+    ok(abs(r - 1) < 0.01 and g < 0.01 and b < 0.01, "card Cancel restored the abandoned preview instead of red: %r" % ((r, g, b),))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F17: a pull locking unlocked frames resumes the open Settings page's preview after combat", group="sweep5")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    h.lua("ns.Options.unlockButton:Click()")          # Unlock Frames: panel hides, Save/Cancel bar up
+    ok(h.lua("return ns.db.unlocked == true and SalusNovusUnlockBar:IsShown()"), "unlock did not engage")
+    h.lua('SlashCmdList["SALUSNOVUS"]("")')           # /sn again while unlocked
+    ok(h.lua("return SalusNovusOptions:IsShown()"), "panel did not reopen")
+    def stage():
+        return h.lua("""
+            for _, s in ipairs(ns.Options.previewStages) do
+                if s.outer == ns.Options.pages['bars'] then
+                    return s.running and true or false, s.note:IsShown() and s.note:GetText() or ""
+                end
+            end
+        """)
+    run0, note0 = stage()
+    ok("unlocked" in str(note0), "setup: expected the unlocked note, got %r" % (note0,))
+    # pull a non-boss mob, then leave combat
+    h.lua("W.fireEvent('PLAYER_REGEN_DISABLED'); W.inCombat = true; W.advance(0.5)")
+    ok(h.lua("return ns.db.unlocked == false and not SalusNovusUnlockBar:IsShown()"), "pull did not lock frames")
+    h.lua("W.inCombat = false; W.fireEvent('PLAYER_REGEN_ENABLED'); W.advance(1)")
+    ok(h.lua("return SalusNovusOptions:IsShown()"), "panel should still be open")
+    run1, note1 = stage()
+    ok("unlocked" not in str(note1), "stale note after frames locked: %r" % (note1,))
+    ok(run1, "preview never resumed after the pull locked frames (note %r)" % (note1,))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F18: a dimmed (module off) Options check box does nothing on click -- the camp panel box keeps a /sn camp close", group="sweep5")
+def _():
+    h = fresh()
+    camp(h)
+    h.lua("__have[279981] = 5; ns.ApplyAll(); W.advance(0.6)")
+    h.lua("SlashCmdList['SALUSNOVUS']('camp')")
+    ok(h.lua("return ns.CampingUI.pinned == false and not SalusNovusCamping:IsShown()"), "setup: /sn camp closed and pinned the panel")
+    open_options(h)
+    h.lua("ns.Options.SelectPage('camping')")
+    # Quality of Life off through its real sidebar switch
+    h.lua("local sw = ns.Options.moduleSwitches.qol; sw:GetScript('OnClick')(sw, 'LeftButton')")
+    ok(h.lua("return not ns.ModuleOn('qol')"), "setup: QoL is off")
+    h.lua("""__cb = nil
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.camping and w.__kind == 'check' then __cb = w break end
+        end""")
+    ok(h.lua("return __cb ~= nil and __cb.enabledState == false"), "setup: the camp box is dimmed")
+    # the player clicks the dimmed box (the Button itself is still enabled, so the client delivers OnClick)
+    h.lua("__cb:GetScript('OnClick')(__cb, 'LeftButton')")
+    ok(h.lua("return ns.CampingUI.pinned == false"), "a dimmed box ran its setter: the /sn camp pin went from false to " + str(h.lua("return tostring(ns.CampingUI.pinned)")))
+    # QoL back on
+    h.lua("local sw = ns.Options.moduleSwitches.qol; sw:GetScript('OnClick')(sw, 'LeftButton')")
+    h.lua("W.advance(0.6)")
+    ok(h.lua("return not SalusNovusCamping:IsShown()"), "the camp close held after QoL came back on")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F19: mark hover shows a fractional cast time like the lane label (1.5s, not 1s; 0.6s, not 0s)", group="sweep5")
+def _():
+    h = fresh()
+    open_vis(h)
+    for start, done, want in ((12.0, 13.5, "1.5s cast"), (20.0, 20.6, "0.6s cast")):
+        h.lua("""
+            ns.Data[3065].bosses[5] = { encounterID = 9, name = "Baron", pulls = 1, avgLength = 60, npcs = { { id = 1, name = "Baron" } },
+                abilities = { { spellID = 5, name = "Veil", source = "Baron", pulls = 1,
+                    casts = { { %r, "start", 1 }, { %r, "success", 1 } } } } }
+            ns.Visualizer.ShowBoss(ns.Data[3065].bosses[5])
+            local m = ns.Visualizer._lanes[2].marks[1] m:GetScript('OnEnter')(m)
+        """ % (start, done))
+        label = str(h.lua("return ns.Visualizer._lanes[2].desc:GetText()"))
+        txt = str(h.lua("return SalusNovusVisualizer.hover:GetText()"))
+        ok(want in label, "setup: lane label should read %r: %r" % (want, label))
+        ok(want in txt, "hover readout should match the lane label %r: %r" % (want, txt))
+    h.lua("ns.Data[3065].bosses[5] = nil")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: keybinds ----
+@test("sweep5 F13: an empty addon-bar button bound with CLICK reads free/Empty like an empty Blizzard slot, painted green and counted free", "sweep5")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("__binds.Z = 'CLICK EllesmereBar1Button3:LeftButton'; EllesmereBar1Button3.action = 40")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    ok(h.lua("return SalusNovusKeybinds and SalusNovusKeybinds:IsShown()"), "window open")
+    free_with = int(h.lua("return ns.KeybindsUI.free"))
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == '%s' then c = x end end"
+    st = h.lua((cell % "Z") + " return c.res.state, c.res.label")
+    eq((str(st[0]), str(st[1])), ("free", "Empty"), "Z clicks an addon button on an empty slot: free/Empty")
+    ok(h.lua((cell % "Z") + " local r = c.border.all[1] local cr, cg = r:GetVertexColor() return cg > 0.7 and cr < 0.5"), "painted green like a free key")
+    # control: the same key on an empty Blizzard slot
+    h.lua("__binds.Z = 'ACTIONBUTTON9'; W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+    free_blizz = int(h.lua("return ns.KeybindsUI.free"))
+    eq(free_with, free_blizz, "free count matches the empty Blizzard slot case")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F26: Shift-E bound to the same macro E runs (another slot, or MACRO binding) is no conflict", "sweep5")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    # same 'Shocks' macro dragged onto a second slot (30), Shift-E bound to it
+    h.lua("__slots[30] = { 'macro', 1 }; __binds['SHIFT-E'] = 'MULTIACTIONBAR1BUTTON6'; MultiBarBottomLeftButton6 = CreateFrame('Button', 'MultiBarBottomLeftButton6', UIParent); MultiBarBottomLeftButton6.action = 30")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    r = h.lua("return ns.Keybinds.Resolve('E', 2)")
+    ok(str(r["state"]) != "conflict", "Shift-E on slot 30 runs the same macro: Earth Shock fires, not a conflict (%s: %s)" % (r["state"], r["detail"]))
+    # or bound straight to the macro
+    h.lua("GetMacroIndexByName = function(n) return n == 'Shocks' and 1 or 0 end; __binds['SHIFT-E'] = 'MACRO Shocks'")
+    r = h.lua("return ns.Keybinds.Resolve('E', 2)")
+    ok(str(r["state"]) != "conflict", "Shift-E bound with MACRO Shocks: not a conflict (%s: %s)" % (r["state"], r["detail"]))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F27: a character macro sharing a general macro's name is read by the slot's own macro index when the client gives one", "sweep5")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    # general macro 1 'Burst' and character macro 121 'Burst'; only the character one has [mod:shift].
+    # The character macro is on slot 5 (bound to E). It shows no spell with no modifier held, so the
+    # client answers ('macro', 121, '') -- the real index. GetMacroIndexByName returns the FIRST match (general).
+    h.lua("""__macros[1] = { 'Burst', 136000, '/cast Frost Shock' }
+             __macros[121] = { 'Burst', 136002, '/cast [mod:shift] Earth Shock' }
+             __slots[5] = { 'macro', 121 }
+             GetActionInfo = function(s) local x = __slots[s] if x then return x[1], x[2], (x[1] == 'macro' and '' or nil) end end
+             GetActionText = function(s) local x = __slots[s] if x and x[1] == 'macro' then return __macros[x[2]][1] end end
+             GetMacroIndexByName = function(n) for i = 1, 150 do if __macros[i] and __macros[i][1] == n then return i end end return 0 end""")
+    r = h.lua("return ns.Keybinds.Resolve('E', 2)")
+    eq((str(r["state"]), str(r["label"])), ("via", "Earth Shock"), "Shift-E: the character macro's [mod:shift] Earth Shock")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: session ----
+@test("sweep5 F28: the flight fee and trade gold land after the window-closed event and are still filed as Flights / Trade", "sweep5")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("__money = 10000; W.fireEvent('PLAYER_MONEY')")
+    # flight: map closes client-side on picking a node, the coinage update arrives a moment later
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('TAXIMAP_OPENED'); W.fireEvent('TAXIMAP_CLOSED'); W.advanceTimersOnly(0.2); __money = 9950; W.fireEvent('PLAYER_MONEY')")
+    # trade: TRADE_CLOSED precedes the money update
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('TRADE_SHOW'); W.fireEvent('TRADE_CLOSED'); W.advanceTimersOnly(0.2); __money = 10950; W.fireEvent('PLAYER_MONEY')")
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('TRADE_SHOW'); W.fireEvent('TRADE_CLOSED'); W.advanceTimersOnly(0.2); __money = 10750; W.fireEvent('PLAYER_MONEY')")
+    # one close tags only the next change, and only for a moment
+    h.lua("W.advanceTimersOnly(0.2); __money = 10700; W.fireEvent('PLAYER_MONEY')")
+    h.lua("W.fireEvent('TAXIMAP_OPENED'); W.fireEvent('TAXIMAP_CLOSED'); W.advanceTimersOnly(3); __money = 10600; W.fireEvent('PLAYER_MONEY')")
+    g = h.lua("return ns.Session.State().gold")
+    inc = {str(k): int(v) for k, v in g["inc"].items()}
+    out = {str(k): int(v) for k, v in g["out"].items()}
+    eq(out, {"travel": 50, "trade": 200, "other": 150}, "flight fee under Flights, trade spend under Trade, later changes Other")
+    eq(inc, {"trade": 1000}, "trade gold under Trade")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F30: leaving the group inside a dungeon makes the solo re-entry a new instance", "sweep5")
+def _():
+    h = fresh()
+    session(h)
+    # In a party: enter the Deadmines (one entry), stay inside.
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "one entry")
+    # Inside, leave the group; the client ports you out.
+    h.lua("W.fireEvent('GROUP_LEFT'); __inst = false; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    # Re-enter solo within the hour: the group's instance is not yours, this is a new one.
+    h.lua("W.advance(60); __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "the solo re-entry counts as a new instance")
+    # Leave inside, re-invited before the port-out: same instance, no new entry.
+    h.lua("W.fireEvent('GROUP_LEFT'); W.fireEvent('GROUP_JOINED'); __inst = false; W.fireEvent('PLAYER_ENTERING_WORLD'); __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD')")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "a quick re-invite keeps the instance")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: misc ----
+@test("sweep5 F11: world-map quest details opened from the quest list mark the best-selling reward choice", "sweep5")
+def _():
+    h = fresh()
+    h.lua(REWARDMOCK)
+    # Blizzard's world-map quest log (QuestMapFrame.lua/.xml, live): DetailsFrame is
+    # hidden while the quest list shows; QuestMapFrame_ShowQuestDetails runs
+    # QuestInfo_Display(QUEST_TEMPLATE_MAP_REWARDS, detailsFrame.RewardsFrameContainer.RewardsFrame)
+    # (which SetParents + shows MapQuestInfoRewardsFrame) BEFORE detailsFrame:Show().
+    h.lua("""
+    WorldMapFrame = CreateFrame("Frame", "WorldMapFrame", UIParent)
+    QuestMapFrame = CreateFrame("Frame", "QuestMapFrame", WorldMapFrame)
+    QuestMapFrame.QuestsFrame = CreateFrame("Frame", nil, QuestMapFrame)
+    local d = CreateFrame("Frame", nil, QuestMapFrame)
+    d:Hide()
+    QuestMapFrame.DetailsFrame = d
+    d.RewardsFrameContainer = CreateFrame("Frame", nil, d)
+    d.RewardsFrameContainer.RewardsFrame = CreateFrame("Frame", nil, d.RewardsFrameContainer)
+    MapQuestInfoRewardsFrame = CreateFrame("Frame", "MapQuestInfoRewardsFrame")
+    MapQuestInfoRewardsFrame:Hide()
+    MapQuestInfoRewardsFrame.RewardButtons = {}
+    local function link(c) return "|Hitem:" .. c.name .. "|h[" .. c.name .. "]|h" end
+    __walks = 0
+    GetQuestLogItemLink = function(kind, i) __walks = __walks + 1 local c = __choices[i] return c and link(c) end
+    GetQuestLogChoiceInfo = function(i) local c = __choices[i] return c.name, 134400, c.count or 1 end
+    __choices = { { name = 'Sword', price = 120 }, { name = 'Shield', price = 340 } }
+    QuestInfo_Display = function(template, parentFrame, acceptButton, material, mapView)
+        QuestInfoFrame.questLog = true
+        if mapView then
+            local r = MapQuestInfoRewardsFrame
+            for i = 1, #__choices do
+                local b = r.RewardButtons[i]
+                if not b then
+                    b = CreateFrame("Button", nil, r)
+                    local id = i
+                    b.GetID = function() return id end
+                    r.RewardButtons[i] = b
+                end
+                b.type = "choice"
+                b:Show()
+            end
+            r:SetParent(parentFrame)
+            r:Show()
+        end
+    end
+    function QuestMapFrame_ShowQuestDetails(questID)
+        local d = QuestMapFrame.DetailsFrame
+        d.questID = questID
+        QuestInfo_Display({}, d, nil, nil, false)
+        QuestInfo_Display({}, d.RewardsFrameContainer.RewardsFrame, nil, nil, true)
+        QuestMapFrame.QuestsFrame:Hide()
+        d:Show()
+    end
+    function __mapGold()
+        local o = {}
+        for i, b in ipairs(MapQuestInfoRewardsFrame.RewardButtons) do
+            if b.snGold and b.snGold:IsShown() then o[#o + 1] = i end
+        end
+        return o
+    end
+    """)
+    ok(h.lua("return ns.Quests.HookRewards()"), "QuestInfo_Display not hooked")
+    # the player opens the map and clicks the quest in the list
+    h.lua("WorldMapFrame:Show(); QuestMapFrame:Show(); QuestMapFrame_ShowQuestDetails(123)")
+    ok(h.lua("return MapQuestInfoRewardsFrame:IsVisible()"), "setup: details now visible")
+    eq([int(x) for x in h.lua("return __mapGold()").values()], [2], "the shield (340) beats the sword (120): coin on choice 2 in the map's quest details")
+    # an uncached price, opened from the list with the map open, is waited on
+    h.lua("QuestMapFrame.DetailsFrame:Hide(); __uncached.Shield = true; QuestMapFrame_ShowQuestDetails(123)")
+    eq([int(x) for x in h.lua("return __mapGold()").values()], [1], "only the known price can be marked yet")
+    h.lua("__uncached.Shield = nil; W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true)")
+    eq([int(x) for x in h.lua("return __mapGold()").values()], [2], "the price arrived: the coin moves to the shield")
+    # the map closed with a price still uncached: no endless re-walks (sweep 2)
+    h.lua("__uncached.Shield = true; QuestMapFrame_ShowQuestDetails(123); WorldMapFrame:Hide(); __walks = 0")
+    h.lua("for i = 1, 20 do W.fireEvent('GET_ITEM_INFO_RECEIVED', 1, true) end")
+    ok(int(h.lua("return __walks")) <= 2, "no re-walks after the map closed (%d)" % int(h.lua("return __walks")))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F12: whole-UI Arial Narrow then off restores every object that natively wore Arial Narrow", group="sweep5")
+def _():
+    h = fresh()
+    h.lua("""
+        local function FO(path, size, flags)
+            local o = { __path = path, __size = size, __flags = flags }
+            function o:GetFont() return self.__path, self.__size, self.__flags end
+            function o:SetFont(p, s, f) self.__path, self.__size, self.__flags = p, s, f return true end
+            return o
+        end
+        GameFontNormal = FO("Fonts\\\\FRIZQT__.TTF", 12, "")
+        ChatFontNormal = FO("Fonts\\\\ARIALN.TTF", 14, "")
+        NumberFontNormal = FO("Fonts\\\\ARIALN.TTF", 14, "OUTLINE")
+        ChatFrame1 = FO("Fonts\\\\ARIALN.TTF", 15, "")
+        GetFonts = function() return { "GameFontNormal", "ChatFontNormal", "NumberFontNormal" } end
+    """)
+    # whole UI off while the stand-ins are installed, then pick Arial Narrow with it on
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    h.lua("ns.db.font.path = 'Fonts\\\\ARIALN.TTF'; ns.db.font.wholeUI = true; ns.ApplyAll()")
+    eq(str(h.lua("return GameFontNormal.__path")), "Fonts\\ARIALN.TTF", "Arial Narrow not applied")
+    # untick the whole-UI switch
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    eq(str(h.lua("return GameFontNormal.__path")), "Fonts\\FRIZQT__.TTF", "GameFontNormal not restored")
+    got = [str(h.lua("return %s.__path" % n)) for n in ("ChatFontNormal", "NumberFontNormal", "ChatFrame1")]
+    h.lua("GameFontNormal = nil; ChatFontNormal = nil; NumberFontNormal = nil; ChatFrame1 = nil; GetFonts = nil")
+    eq(got, ["Fonts\\ARIALN.TTF"] * 3, "native Arial Narrow objects restored to Friz instead of their own font")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 F14: wishlist in a group-finder (instance-only) group sends the list and REQ on INSTANCE_CHAT", "sweep5")
+def _():
+    h = fresh()
+    wish(h)
+    # the client: an instance-only group (no home party). IsInGroup() with no
+    # category is true for either; PARTY/RAID addon sends are refused there.
+    h.lua("""
+        LE_PARTY_CATEGORY_HOME = 1; LE_PARTY_CATEGORY_INSTANCE = 2
+        W.inGroup = true; W.inRaid = false
+        IsInGroup = function(cat) if cat == 1 then return false end return true end
+        IsInRaid = function(cat) return false end
+        __sent = {}
+        C_ChatInfo.SendAddonMessage = function(p, msg, ch)
+            if ch ~= 'INSTANCE_CHAT' then return 5 end
+            __sent[#__sent + 1] = { p, msg, ch } return 0
+        end
+        W.fireEvent('GROUP_ROSTER_UPDATE'); W.advance(1.1)
+        __wish(204)
+        for i = 1, 20 do W.advance(0.5) end
+    """)
+    sent = [(str(x[2]), str(x[3])) for x in h.lua("return __sent").values()]
+    msgs = [m for m, _ in sent]
+    ok("REQ" in msgs, "REQ reached the instance group: sent=%r fails=%s" % (sent, h.lua("return ns.Wishlist.sendFail")))
+    ok(any(m.startswith("WL|") for m in msgs), "the list reached the instance group: sent=%r fails=%s" % (sent, h.lua("return ns.Wishlist.sendFail")))
+    # a home party (instance category false) still sends on PARTY
+    h.lua("""
+        IsInGroup = function(cat) if cat == 2 then return false end return true end
+        __sent = {}
+        C_ChatInfo.SendAddonMessage = function(p, msg, ch) __sent[#__sent + 1] = { p, msg, ch } return 0 end
+        ns.Wishlist.Request(); W.advance(1.1)
+    """)
+    eq([str(x[3]) for x in h.lua("return __sent").values()], ["PARTY"], "a home party still uses PARTY")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 5: merged-diff review ----
+
+
+@test("sweep5 review: AuctionUI592: turning the auction tabs off with a Buy-tab quote held cancels it and releases the claim; Blizzard's own purchase isn't taken as Buy's", group="sweep5")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.AuctionUI.buttons[1]:Click()")
+    h.lua("ns.Buy.Select({ id = 14047, key = { itemID = 14047, itemLevel = 0, itemSuffix = 0 } }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    ok(h.lua("return ns.Auction.Owns('buy') and ns.Buy.sel.quote ~= nil"), "setup: Buy holds a quote")
+    h.lua("__n = #__calls; ns.db.auction.enabled = false; ns.ApplyAll()")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    eq(after, ["cancel"], "tabs off cancels Buy's held quote once")
+    ok(h.lua("return ns.Auction.purchase == nil"), "claim released")
+    h.lua("__n = #__calls; W.fireEvent('COMMODITY_PRICE_UPDATED', 9, 900); W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED'); W.advance(3)")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    eq(after, [], "no auction calls on Blizzard's purchase")
+    ok(h.lua("return ns.Buy.message ~= 'Bought 10'"), "Blizzard's purchase not credited to Buy")
+    eq(h.errors(), [], "errors")
+# merged: fails at "tabs off cancels Buy's held quote once" (got [], owner still 'buy'); with those two asserts skipped,
+# it fails at "no auction calls" (got ['search:14047','search:14047'], message 'Bought 10').
+
+
+@test("sweep5 review: whole-UI off restores a font object that inherits from a parent fonted earlier in the same first pass", "sweep5")
+def _():
+    h = fresh()
+    h.lua("""
+        local function FO(path, size, flags, parent)
+            local o = { __own = path, __size = size, __flags = flags, __parent = parent }
+            -- the client's Font inheritance: no font of its own -> follows the parent live
+            function o:GetFont()
+                local p = self.__own or (self.__parent and (self.__parent:GetFont()))
+                return p, self.__size, self.__flags
+            end
+            function o:SetFont(p, s, f) self.__own, self.__size, self.__flags = p, s, f return true end
+            o[0] = true
+            function o:GetObjectType() return "Font" end
+            return o
+        end
+        SystemFont_Shadow_Med1 = FO("Fonts\\\\FRIZQT__.TTF", 12, "")
+        GameFontNormal = FO(nil, 12, "", SystemFont_Shadow_Med1)
+        GetFonts = function() return { "SystemFont_Shadow_Med1", "GameFontNormal" } end
+        ns.db.font.wholeUI = false; ns.ApplyAll()
+    """)
+    h.lua("ns.db.font.path = 'Fonts\\\\MORPHEUS.TTF'; ns.db.font.wholeUI = true; ns.ApplyAll()")
+    eq(str(h.lua("return (GameFontNormal:GetFont())")), "Fonts\\MORPHEUS.TTF", "not applied")
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    p1 = str(h.lua("return (SystemFont_Shadow_Med1:GetFont())"))
+    p2 = str(h.lua("return (GameFontNormal:GetFont())"))
+    h.lua("SystemFont_Shadow_Med1 = nil; GameFontNormal = nil; GetFonts = nil")
+    eq(p1, "Fonts\\FRIZQT__.TTF", "parent not restored")
+    eq(p2, "Fonts\\FRIZQT__.TTF", "inheriting child pinned to the picked font after whole-UI off")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep5 review: tabs off with a Buy quote held, Blizzard's confirmed purchase is not cancelled on close", group="sweep5")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("ns.Buy.Select({ id = 14047, key = { itemID = 14047, itemLevel = 0, itemSuffix = 0 } }); W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("ns.Buy.Buy(); W.fireEvent('COMMODITY_PRICE_UPDATED', 300, 3000)")
+    eq(str(h.lua("return ns.Auction.purchase and ns.Auction.purchase.owner")), "buy", "quote held by Buy")
+    h.lua("ns.db.auction.enabled = false; ns.ApplyAll()")
+    held = h.lua("return ns.Auction.purchase and ns.Auction.purchase.owner")
+    h.lua("__n = #__calls")
+    # Blizzard's own Buy tab: start, quote, Buy Now
+    h.lua("C_AuctionHouse.StartCommoditiesPurchase(14047, 10); W.fireEvent('COMMODITY_PRICE_UPDATED', 9, 900); C_AuctionHouse.ConfirmCommoditiesPurchase(14047, 10)")
+    h.lua("AuctionHouseFrame:Hide(); W.fireEvent('AUCTION_HOUSE_CLOSED')")
+    after = [str(x) for x in h.lua("local o = {} for i = __n + 1, #__calls do o[#o + 1] = __calls[i] end return o").values()]
+    print("held after off:", held, "calls:", after, h.errors())
+    ok(not any(c.startswith("cancel") for c in after), "no CancelCommoditiesPurchase for Blizzard's confirmed purchase: %r" % after)
+
+
+@test("sweep5 F04: a cancel the server confirmed stays hidden from a re-read more than a minute later, while the client still lists it", "sweep5")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    cancel_load(h)
+    h.lua("SalusNovusCancel.next:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "cancelauc:11", "Cancel next sent CancelAuction(11)")
+    h.lua("W.fireEvent('AUCTION_CANCELED', 11)")
+    # let the check run finish, so the next open really reads the list again
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    h.lua("W.advance(61)")
+    h.lua("__n = #__calls; ns.AuctionUI.Open('cancel')")
+    ok(h.lua("for i = __n + 1, #__calls do if __calls[i] == 'owned' then return true end end return false"), "reopening asked for your auctions")
+    h.lua("W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    ok(h.lua("return #ns.Cancel.rows > 0"), "setup: the list was read again")
+    ok(h.lua("for _, r in ipairs(ns.Cancel.rows) do if r.auctionID == 11 then return false end end return true"), "a confirmed cancel stays hidden")
     eq(h.errors(), [], "errors")

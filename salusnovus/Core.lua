@@ -345,6 +345,10 @@ function ns.RegisterMovable(frame, saveKey, origin, restore)
         label = type(label) == "string" and label:gsub("%s*\194\183.*$", "") or nil
         ns.UnlockOverlay(frame, UNLOCK_NAMES[saveKey] or label)
     end
+    -- the size at Build (every module registers right after sizing it): the
+    -- default's origin is worked out from this, not a later content size (the sweep)
+    frame.__nominalW = frame.__nominalW or frame:GetWidth()
+    frame.__nominalH = frame.__nominalH or frame:GetHeight()
     frame.__origin = origin       -- function -> the growth-origin point
     frame.__restore = restore     -- function -> the module's RestorePosition (re-layout after a scale change)
     frame:SetMovable(true)
@@ -716,6 +720,11 @@ function ns.ApplyLocks()
     end
 end
 ns.RegisterApply(ns.ApplyLocks, "Frame locks")
+-- the grid redrawn from its settings while unlocked (a change waited for the
+-- next unlock, and frames snapped to the old grid: the sweep)
+ns.RegisterApply(function()
+    if ns.db and ns.db.unlocked and ns.ShowAlignGrid then ns.ShowAlignGrid(true) end
+end, "Align grid")
 
 -- --------------------------------------------------------------- lookups
 
@@ -856,6 +865,8 @@ local function Relayout()
             if f.__restore and f:GetParent() == UIParent then pcall(f.__restore) end
         end
         if ns.db then ns.ApplyAll() end
+        if ns.Theme and ns.Theme.ResnapCheckBoxes then ns.Theme.ResnapCheckBoxes() end
+        if ns.db and ns.db.unlocked and ns.ShowAlignGrid then ns.ShowAlignGrid(true) end   -- (drawn for the old size: the sweep)
     end)
 end
 ns.On("UI_SCALE_CHANGED", Relayout)

@@ -396,7 +396,11 @@ end
 function U.Toggle()
     -- The pin is what Refresh reads, so a close holds against the next
     -- aura or bag event, and one made in combat lands when combat ends.
-    U.pinned = not (frame and frame:IsShown())
+    -- flip what's WANTED: in combat the screen lags the pin, and two toggles
+    -- read the same unchanged panel and both closed it (the sweep)
+    local cur = U.pinned
+    if cur == nil then cur = (frame and frame:IsShown()) and true or false end
+    U.pinned = not cur
     U.Refresh()
 end
 

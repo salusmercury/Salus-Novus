@@ -238,7 +238,11 @@ Next = function()
         r.state, r.waiting = "idle", nil
         Trace("done")
         -- what never answered is said, not read as "nothing worth buying" (sweep 3)
-        Say((r.gaveUp or 0) > 0 and ("%d never answered; scan again to check them"):format(r.gaveUp) or nil)
+        if (r.gaveUp or 0) > 0 then Say(("%d never answered; scan again to check them"):format(r.gaveUp))
+        -- ('Bought: relist at X' stays: the sweep -- that text only, not
+        -- whatever came after it: sweep 2)
+        elseif not (I.keepMessage and I.message == I.keepMessage) then Say(nil)
+        else Changed() end                               -- (the bar and greyed Scan stayed up: sweep 5)
         return
     end
     local ah = AH()
@@ -297,6 +301,7 @@ end
 --- Scan, then look every qualifying commodity up.
 function I.Scan()
     if I.run.state ~= "idle" then return false end
+    I.keepMessage = nil
     if not (A().Enabled() and A().IsOpen()) then return false end
     I.run.held = nil
     if A().scan.running then
@@ -423,6 +428,7 @@ function I.Select(row)
     if r.state == "searching" and r.waiting then Trace("unask", r.waiting) r.waiting = nil end   -- asked again once this is done
     I.sel = { id = row.id, best = row.best, fresh = false, needAsk = true }   -- not fresh: the queue holds
     I.message = nil
+    if not row.keepMessage then I.keepMessage = nil end
     AskSel()
     Changed()
     return true
@@ -488,6 +494,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         if sel and sel.asked and A().Owns("invest") then Call(AH().CancelCommoditiesPurchase) end
         A().Release("invest")
         I.sel = nil
+        I.message, I.keepMessage = nil, nil            -- ('Buying...' greeted the next visit: sweep 2)
         if r.state ~= "idle" then r.state, r.cut = "idle", "closed" Trace("closed") end
         -- nothing left waiting: the next run starts clean (the hunt: it stalled)
         r.waiting, r.throttled, r.sleeping = nil, nil, false
@@ -544,7 +551,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         -- its relist price is stale too -- no deal on old numbers (sweep 3)
         if Num(total) and total ~= sel.best.cost then
             Call(AH().CancelCommoditiesPurchase)
-            sel.asked, sel.quote = nil, nil
+            sel.asked, sel.quote, sel.confirming = nil, nil, nil   -- (left set, it locked Investing: the sweep)
             A().Release("invest")
             Relook(sel, "The price moved; looking again")
             return
@@ -556,14 +563,14 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
             Say(nil)
         else
             Call(AH().CancelCommoditiesPurchase)
-            sel.asked, sel.quote = nil, nil
+            sel.asked, sel.quote, sel.confirming = nil, nil, nil
             A().Release("invest")
             Say("The price moved; no longer worth it")
             Resume()
         end
     elseif event == "COMMODITY_PRICE_UNAVAILABLE" then
         if not (sel and sel.asked and A().Owns("invest")) then return end
-        sel.asked, sel.quote = nil, nil
+        sel.asked, sel.quote, sel.confirming = nil, nil, nil
         A().Release("invest")
         Say("That price is gone")
         Resume()
@@ -575,6 +582,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2)
         local relist = sel.best.relist
         I.Select({ id = sel.id, best = sel.best })          -- fresh ladder for what's left
         Say("Bought: relist at " .. (ns.AuctionUI and ns.AuctionUI.Money(relist) or tostring(relist)) .. " each")
+        I.keepMessage = I.message
     elseif event == "COMMODITY_PURCHASE_FAILED" then
         if not (sel and sel.asked and A().Owns("invest")) then return end
         A().Release("invest")
