@@ -331,8 +331,9 @@ end
 -- instance; a login or /reload can stand on any floor, so it matches by map.
 function S.OnEnterWorld(isLogin, isReload)
     if not Enabled() then return end
-    local map, name, kind, wing = InstanceNow()
-    if isLogin or isReload then wing = nil end
+    local map, name, kind, here = InstanceNow()
+    local wing = here
+    if isLogin or isReload then wing = nil end      -- matches by map; the entry keeps the floor
     if not map then return end
     local l = Log()
     if not l then return end
@@ -346,7 +347,9 @@ function S.OnEnterWorld(isLogin, isReload)
     -- The reset flag is this character's: another character's reset says
     -- nothing about the instance this one is walking back into.
     local rk = who .. ":" .. map
-    if seen and not l.reset[rk] then return end
+    -- a login or /reload in an instance already logged is never a re-entry,
+    -- even with the flag set (left the group, reloaded before the port-out)
+    if seen and (isLogin or isReload or not l.reset[rk]) then return end
     -- a reset makes every earlier entry of this map stale, not just the
     -- wing walked into first: the other Scarlet Monastery wings are new too
     -- (they still count toward the hour)
@@ -356,7 +359,7 @@ function S.OnEnterWorld(isLogin, isReload)
         end
     end
     l.reset[rk] = nil
-    l.entries[#l.entries + 1] = { t = now, map = map, wing = wing, name = name, char = who, raid = kind == "raid" or nil }
+    l.entries[#l.entries + 1] = { t = now, map = map, wing = here, name = name, char = who, raid = kind == "raid" or nil }
     if S.OnChanged then S.OnChanged() end
 end
 

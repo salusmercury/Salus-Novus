@@ -15827,3 +15827,194 @@ def _():
     enter(303)
     eq(int(h.lua("return #ns.Session.Recent()")), 4, "library after reset is also new")  # merged: got 3
     eq(h.errors(), [], "errors")
+
+
+# ---- sweep 7: buy ----
+@test("sweep7 F02: a browse past 300 rows: the page More results loads is drawn, or More goes away at the cap", "sweep7")
+def _():
+    h = fresh()
+    h.lua(BROWSEMOCK.replace("local scanBrowse2 = scanBrowse", "local scanBrowse2 = function() end"))
+    h.lua("ns.AuctionUI.Open('buy'); ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("""
+        local t = {}
+        for i = 1, 300 do t[i] = { itemKey = { itemID = 100000 + i, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 5, minPrice = 1000 + i } end
+        __bysearch.cloth = t
+        ns.Buy.sort = { key = 'price', reverse = false }
+        __fullAfter = false
+    """)
+    h.lua("ns.Buy.Browse('cloth')")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    shown = lambda: int(h.lua("local c = 0 for _, r in ipairs(SalusNovusBuy.rows) do if r:IsShown() then c = c + 1 end end return c"))
+    eq(int(h.lua("return #ns.Buy.View()")), 300, "first page: 300 items")
+    eq(shown(), 300, "all 300 drawn")
+    ok(h.lua("return SalusNovusBuy.moreRow:IsShown()"), "not full: More results shown")
+    # the player clicks More results; the client adds the next 100 items
+    h.lua("""
+        local t = {}
+        for i = 1, 400 do t[i] = { itemKey = { itemID = 100000 + i, itemLevel = 0, itemSuffix = 0 }, totalQuantity = 5, minPrice = 1000 + i } end
+        __browse = t
+    """)
+    h.lua("SalusNovusBuy.moreRow:Click()")
+    eq(str(h.lua("return __calls[#__calls]")), "more", "asked for the next page")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_ADDED')")
+    eq(int(h.lua("return #ns.Buy.View()")), 400, "the page landed in the results")
+    drawn = shown()
+    more = bool(h.lua("return SalusNovusBuy.moreRow:IsShown()"))
+    lastDrawn = bool(h.lua("for _, r in ipairs(SalusNovusBuy.rows) do if r:IsShown() and r.view and r.view.id == 100400 then return true end end return false"))
+    ok(lastDrawn or not more,
+       "after More results: drawn rows %d of 400, item 100400 drawn=%s, More results still shown=%s (the new page is invisible yet More keeps asking)" % (drawn, lastDrawn, more))
+    ok(h.lua("return SalusNovusBuy.capNote ~= nil and SalusNovusBuy.capNote:IsShown()"), "past the cap: the list says it was cut short")
+    # one more click can't happen; a page-sized browse under the cap still offers More
+    h.lua("ns.Buy.Browse('cloth')")
+    h.lua("W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    eq(int(h.lua("return #ns.Buy.View()")), 300, "fresh browse: 300 items")
+    ok(h.lua("return SalusNovusBuy.moreRow:IsShown()"), "exactly 300: More results still shown")
+    ok(not h.lua("return SalusNovusBuy.capNote:IsShown()"), "exactly 300: no cut-short note")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 7: cancel ----
+@test("sweep7 F06: an item search answered after the 2 s timeout is still read: the undercut row shows undercut and Cancel next reaches it", "sweep7")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    h.lua("__items = { { auctionID = 12, buyoutAmount = 900, quantity = 1, containsOwnerItem = true }, { auctionID = 30, buyoutAmount = 500, quantity = 1 } }")
+    h.lua("ns.AuctionUI.Open('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    eq(str(h.lua("return __calls[#__calls]")), "search:14047", "first search")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    eq(str(h.lua("return __calls[#__calls]")), "search:4500", "the backpack is searched")
+    h.lua("W.advance(2.1)")   # the client is slow: the 2 s timer fires first
+    eq(str(h.lua("return __calls[#__calls]")), "search:2592", "timed out: on to the next item")
+    # the late answer for the backpack arrives now
+    h.lua("W.fireEvent('ITEM_SEARCH_RESULTS_UPDATED', { itemID = 4500, itemLevel = 20, itemSuffix = 0 })")
+    eq(str(h.lua("return __calls[#__calls]")), "search:2592", "the late answer doesn't move the queue on")
+    ok(h.lua("return ns.Cancel.run.waiting and ns.Cancel.run.waiting.id == 2592"), "still waiting on the item in flight")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    st = {int(r["auctionID"]): str(r["status"]) for r in h.lua("return ns.Cancel.rows").values()}
+    eq(st.get(12), "undercut", "late answer (5s under your 9s) should mark the backpack undercut")
+    eq(st.get(14), "alone", "the item in flight is still read")
+    h.lua("ns.Cancel.CancelNext(); ns.Cancel.CancelNext()")
+    ok(h.lua("for _, c in ipairs(__calls) do if c == 'cancelauc:12' then return true end end return false"), "Cancel next undercut should reach the backpack")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 7: session ----
+# ---- sweep 7: session ----
+@test("sweep7 F11: a /reload inside the dungeon after leaving the group is not a new instance", "sweep7")
+def _():
+    h = fresh()
+    session(h)
+    # In a party: enter the Deadmines (one entry).
+    h.lua("__inst = true; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "one entry")
+    # Still inside, leave the group, then /reload before being ported out.
+    h.lua("W.advance(30); W.fireEvent('GROUP_LEFT')")
+    h.lua("W.advance(10); W.fireEvent('PLAYER_ENTERING_WORLD', false, true)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "a reload in the same instance is not a re-entry")
+    # Ported out, then re-enter solo: that one is a new instance.
+    h.lua("__inst = false; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    h.lua("W.advance(60); __inst = true; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "the solo re-entry after the port-out counts")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep7 F32: a login on one SM wing does not make a later, different wing look already entered", group="sweep7")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("C_Map = C_Map or {}; C_Map.GetBestMapForUnit = function() return __wing end")
+    # 10:00 log in standing in the Graveyard (no SM entry in the last hour)
+    h.lua("__inst = true; __wing = 302; __instName, __instMap = 'Scarlet Monastery', 189; W.fireEvent('PLAYER_ENTERING_WORLD', true, false)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 1, "login in SM logs one entry")
+    # 10:10 port out, walk into the Library (another wing = another instance)
+    h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    h.lua("W.advanceTimersOnly(600)")
+    h.lua("__inst = true; __wing = 303; __instName, __instMap = 'Scarlet Monastery', 189; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "Graveyard (login) + Library = two instances")
+    # a /reload in the Library, and walking back into the Graveyard, stay the same instances
+    h.lua("W.fireEvent('PLAYER_ENTERING_WORLD', false, true)")
+    h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD'); __inst = true; __wing = 302; W.fireEvent('PLAYER_ENTERING_WORLD', false, false)")
+    eq(int(h.lua("return #ns.Session.Recent()")), 2, "reload and walking back in are not new instances")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 7: visualizer ----
+@test("sweep7 F14: reopening the Visualizer on a Dire Maul boss expands that wing in the sidebar", group="sweep7")
+def _():
+    h = fresh()
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "window did not open")
+    # player clicks the Dire Maul: East row, then its first boss
+    h.lua("""
+        for i = 1, 60 do local r = ns.Visualizer._instRows[i]
+            if r and r:IsShown() and r.label:GetText() == "Dire Maul: East" then r:Click() break end end
+        for i = 1, 60 do local r = ns.Visualizer._bossRows[i]
+            if r and r:IsShown() and r.enc == ns.Data[42901].bosses[1].encounterID then r:Click() break end end
+    """)
+    eq(int(h.lua("return ns.Visualizer.state.enc")), int(h.lua("return ns.Data[42901].bosses[1].encounterID")), "boss click did not select")
+    # close and reopen with /sn show
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    ok(not h.lua("return SalusNovusVisualizer:IsShown()"), "window did not close")
+    h.lua('SlashCmdList["SALUSNOVUS"]("show")')
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "window did not reopen")
+    wing = str(h.lua("""
+        for i = 1, 60 do local r = ns.Visualizer._instRows[i]
+            if r and r:IsShown() and r.label:GetText() == "Dire Maul: East" then return r.count:GetText() end end
+        return "missing" """))
+    shown = h.lua("""
+        for i = 1, 60 do local r = ns.Visualizer._bossRows[i]
+            if r and r:IsShown() and r.enc == ns.Visualizer.state.enc then return true end end
+        return false """)
+    eq(wing, "-", "Dire Maul: East wing not expanded on reopen (state.openInst=%s)" % h.lua("return tostring(ns.Visualizer.state.openInst)"))
+    ok(shown, "open Dire Maul boss not listed in the sidebar on reopen")
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 7: fonts ----
+@test("sweep7 F25: the whole-UI font retry does not apply the font after the switch was unticked", group="sweep7")
+def _():
+    h = fresh()
+    h.lua("""
+        local function FO(path, size, flags)
+            local o = { __path = path, __size = size, __flags = flags }
+            function o:GetFont() return self.__path, self.__size, self.__flags end
+            function o:SetFont(p, s, f) self.__path, self.__size, self.__flags = p, s, f return true end
+            return o
+        end
+        local BS = string.char(92)
+        GameFontNormal = FO("Fonts" .. BS .. "FRIZQT__.TTF", 12, "")
+        GetFonts = function() return { "GameFontNormal" } end
+    """)
+    FRIZ = "Fonts" + chr(92) + "FRIZQT__.TTF"
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    # an addon font pack's font: the client's first SetFont returns false while it loads
+    h.lua("""
+        __PROTO = 'Interface' .. string.char(92) .. 'AddOns' .. string.char(92) .. 'Pack' .. string.char(92) .. 'Prototype.ttf'
+        ns._fontProbe = UIParent:CreateFontString(nil, "OVERLAY")
+        local origP = ns._fontProbe.SetFont
+        __loading = true
+        ns._fontProbe.SetFont = function(self, path, size, flags)
+            if path == __PROTO and __loading then return false end
+            return origP(self, path, size, flags)
+        end
+        ns.db.font.path = __PROTO; ns.InvalidateFontCache(); ns.ApplyAll()
+    """)
+    open_options(h)
+    h.lua("ns.Options.SelectPage('font')")
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__outer == ns.Options.pages.font and w.__kind == "check" then __wholeCB = w end
+        end
+    """)
+    ok(h.lua("return __wholeCB ~= nil"), "whole-UI checkbox not found")
+    h.lua("__wholeCB:Click()")   # tick: font still loading, retry scheduled
+    ok(h.lua("return ns.db.font.wholeUI == true"), "tick did not turn whole-UI on")
+    eq(str(h.lua("return GameFontNormal.__path")), FRIZ, "precondition: nothing applied while loading")
+    h.lua("__loading = false")   # the client finishes loading the font
+    h.lua("__wholeCB:Click()")   # untick within the second
+    ok(h.lua("return ns.db.font.wholeUI == false"), "untick did not turn whole-UI off")
+    h.lua("W.advance(1.2)")
+    got = str(h.lua("return GameFontNormal.__path"))
+    h.lua("GameFontNormal = nil; GetFonts = nil")
+    eq(got, FRIZ, "whole-UI switch is off but the retry put the addon font on the game UI")
+    eq(h.errors(), [], "errors")

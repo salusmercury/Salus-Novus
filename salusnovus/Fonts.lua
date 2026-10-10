@@ -315,7 +315,11 @@ function ns.ApplyUIFont(on, again)
             uiRetried[want] = true
             local bad = want
             C_Timer.After(1, function()
-                if ns.ActiveFont() == bad and uiApplied ~= bad then ns.ApplyUIFont(on, true) end
+                -- the switch as it is NOW: unticked within the second wins
+                if ns.ActiveFont() == bad and uiApplied ~= bad
+                    and (not ns.WholeUIFontWanted or ns.WholeUIFontWanted()) then
+                    ns.ApplyUIFont(on, true)
+                end
             end)
         end
         want = nil

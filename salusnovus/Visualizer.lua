@@ -1686,7 +1686,11 @@ function V.Toggle(forceShow, encounterID)
     if not state.enc then state.enc = Remembered() or DefaultEncounter() end
     local _, inst = ns.BossByEncounter(state.enc or -1)
     if inst then
-        state.openInst = inst.mapID
+        -- The ns.Data key, not inst.mapID: the Dire Maul wings are keyed
+        -- 42901-42903 but all carry mapID 429, and the sidebar matches keys.
+        for key, i in pairs(ns.Data or {}) do
+            if i == inst then state.openInst = key break end
+        end
         state.mode = (inst.type == "raid") and "raids" or "dungeons"
     end
     shell:Repaint()

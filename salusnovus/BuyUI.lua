@@ -476,6 +476,9 @@ local function Build()
     panel.moreRow:SetText("More results")
     panel.moreRow:SetScript("OnClick", function() B().More() end)
     panel.moreRow:Hide()
+    panel.capNote = Th.MakeText(panel.scroll.child, 13, Th.TEXT_MUTE)  -- past MAX_ROWS rows aren't drawn: say so (sweep 7)
+    panel.capNote:SetText("First " .. MAX_ROWS .. " shown: narrow the search.")
+    panel.capNote:Hide()
 
     -- bottom
     local foot = CreateFrame("Frame", nil, panel)
@@ -721,6 +724,7 @@ function UI.Refresh()
         end
     end
     local n = math.min(#view, MAX_ROWS)
+    local capped = #view > MAX_ROWS                -- the rest isn't drawn, so no More results past it
     local listMode = b.mode == "list"
     for i = 1, n do
         local v = view[i]
@@ -765,14 +769,19 @@ function UI.Refresh()
         r:Show()
     end
     for i = n + 1, #panel.rows do panel.rows[i]:Hide() panel.rows[i].view = nil end
-    local more = not listMode and not detail and b.HasMore() and n > 0
+    local more = not listMode and not detail and not capped and b.HasMore() and n > 0
     panel.moreRow:SetShown(more and true or false)
     if more then
         panel.moreRow:ClearAllPoints()
         panel.moreRow:SetPoint("TOPLEFT", panel.scroll.child, "TOPLEFT", 6, -(n * ROW_H) - 6)
         panel.moreRow:SetEnabledState(b.run.state == "idle")
     end
-    panel.scroll.child:SetHeight(math.max(10, n * ROW_H + (more and 36 or 0)))
+    panel.capNote:SetShown(capped)
+    if capped then
+        panel.capNote:ClearAllPoints()
+        panel.capNote:SetPoint("TOPLEFT", panel.scroll.child, "TOPLEFT", 6, -(n * ROW_H) - 8)
+    end
+    panel.scroll.child:SetHeight(math.max(10, n * ROW_H + ((more or capped) and 36 or 0)))
     panel.empty:SetShown(n == 0)
     panel.empty:SetText((detail and b.sel) and (b.sel.fresh and "None for sale." or "Looking it up...")
         or listMode and "This list is empty: type a name above and Add to list."

@@ -93,9 +93,10 @@ end
 local function Commodity(id) return ns.Auction.IsCommodity(id) end
 
 --- Mark every row of one item from the cheapest listing that isn't yours.
-local function Mark(keyStr, others)
+-- `late`: an answer after the timeout marks only the rows still "?" (sweep 7)
+local function Mark(keyStr, others, late)
     for _, row in ipairs(C.rows) do
-        if row.keyStr == keyStr then
+        if row.keyStr == keyStr and (not late or row.status == "unknown") then
             row.cheapest = others
             if not row.unit then row.status = "unknown"          -- bid only: no buyout to compare (the sweep)
             elseif not others then row.status = "alone"
@@ -149,6 +150,8 @@ Next = function()
         C_Timer.After(SEARCH_TIMEOUT, function()
             if r.waiting == q and r.askSeq == seq then                     -- no answer: "?", not "..." for ever
                 for _, row in ipairs(C.rows) do if row.keyStr == q.keyStr and row.status == "checking" then row.status = "unknown" end end
+                r.late = r.late or {}
+                r.late[q.keyStr] = q                                       -- its answer may still come: it lands (sweep 7)
                 Done(r)
             end
         end)
@@ -167,7 +170,7 @@ local function StartChecks()
         end
     end
     local r = C.run
-    r.queue, r.i, r.state, r.waiting, r.throttled = queue, 1, "checking", nil, nil
+    r.queue, r.i, r.state, r.waiting, r.throttled, r.late = queue, 1, "checking", nil, nil, nil
     Changed()
     Next()
 end
@@ -249,6 +252,15 @@ end
 
 -- ------------------------------------------------------------ events
 
+--- A timed-out check this answer is for: by key, or a commodity's by id
+-- (the same match as the in-flight one). The queue has moved on: no Done.
+local function LateFor(r, keyStr, id)
+    if not r.late then return nil end
+    if keyStr and r.late[keyStr] then return r.late[keyStr] end
+    for _, q in pairs(r.late) do if q.commodity and q.id == id then return q end end
+    return nil
+end
+
 local ev = CreateFrame("Frame")
 for _, e in ipairs({ "OWNED_AUCTIONS_UPDATED", "AUCTION_CANCELED", "COMMODITY_SEARCH_RESULTS_UPDATED",
                      "ITEM_SEARCH_RESULTS_UPDATED", "AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "AUCTION_HOUSE_CLOSED" }) do
@@ -260,7 +272,7 @@ ev:SetScript("OnEvent", function(_, event, a1)
     local ah = AH()
     if event == "AUCTION_HOUSE_CLOSED" then
         C.sel, C.message = nil, nil
-        r.state, r.waiting, r.throttled = "idle", nil, nil
+        r.state, r.waiting, r.throttled, r.late = "idle", nil, nil, nil
         Changed()
     elseif event == "OWNED_AUCTIONS_UPDATED" then
         if r.state ~= "loading" then return end           -- only the list we asked for
@@ -283,8 +295,11 @@ ev:SetScript("OnEvent", function(_, event, a1)
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
         if r.throttled then r.throttled = nil Next() end
     elseif event == "COMMODITY_SEARCH_RESULTS_UPDATED" then
-        local q = r.waiting
-        if not (r.state == "checking" and q and Num(a1) and a1 == q.id) then return end      -- either kind of search
+        local q, late = r.waiting, nil
+        if not (r.state == "checking" and q and Num(a1) and a1 == q.id) then      -- either kind of search
+            q, late = Num(a1) and LateFor(r, nil, a1), true
+            if not q then return end
+        end
         local cheapest
         local ok, n = Call(ah.GetNumCommoditySearchResults, q.id)
         for i = 1, (ok and Num(n)) and n or 0 do
@@ -294,12 +309,15 @@ ev:SetScript("OnEvent", function(_, event, a1)
                 if theirs > 0 and (not cheapest or x.unitPrice < cheapest) then cheapest = x.unitPrice end
             end
         end
-        Mark(q.keyStr, cheapest)
-        Done(r)
+        Mark(q.keyStr, cheapest, late)
+        if late then r.late[q.keyStr] = nil Sort() Changed() else Done(r) end
     elseif event == "ITEM_SEARCH_RESULTS_UPDATED" then
-        local q = r.waiting
+        local q, late = r.waiting, nil
         if not (r.state == "checking" and q and type(a1) == "table"
-                and (KeyStr(a1) == q.keyStr or (q.commodity and a1.itemID == q.id))) then return end   -- (the plain key only when that's what was asked: sweep 3)
+                and (KeyStr(a1) == q.keyStr or (q.commodity and a1.itemID == q.id))) then   -- (the plain key only when that's what was asked: sweep 3)
+            q, late = type(a1) == "table" and LateFor(r, KeyStr(a1), a1.itemID), true
+            if not q then return end
+        end
         -- read under the key the server ANSWERED with (a guess searched the
         -- plain key; the owned key read nothing: 'Only yours' -- the sweep)
         local cheapest
@@ -311,7 +329,7 @@ ev:SetScript("OnEvent", function(_, event, a1)
                 if not cheapest or u < cheapest then cheapest = u end
             end
         end
-        Mark(q.keyStr, cheapest)
-        Done(r)
+        Mark(q.keyStr, cheapest, late)
+        if late then r.late[q.keyStr] = nil Sort() Changed() else Done(r) end
     end
 end)
