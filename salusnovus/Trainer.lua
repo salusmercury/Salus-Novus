@@ -189,6 +189,17 @@ function T.BorrowIds(cap)
     return cap
 end
 
+--- False when a shipped catalogue exists for the capture's class and no
+-- captured name is in it: a pet trainer, weapon master or riding trainer.
+function T.SharesClassSpells(cap)
+    local shipped = ns.Trainers and cap and cap.class and ns.Trainers[cap.class]
+    if type(shipped) ~= "table" or type(shipped.entries) ~= "table" or #shipped.entries == 0 then return true end
+    local names = {}
+    for _, e in ipairs(shipped.entries) do names[tostring(e.name)] = true end
+    for _, e in ipairs(cap.entries or {}) do if names[tostring(e.name)] then return true end end
+    return false
+end
+
 function T.Capture(say)
     if say == nil then say = true end
     local cap, why = T.ReadTrainer()

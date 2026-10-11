@@ -401,7 +401,7 @@ local function LayoutCard(r, width, chips)
     -- a column narrowed to fit the screen: the tooltip shrinks with it (it
     -- spilled over the next card: the sweep)
     if r.tip then
-        local tw, avail = tonumber(r.tip:GetWidth()) or 0, width - 77
+        local tw, avail = tonumber(r.tip:GetWidth()) or 0, width - 68
         local sc = (tw > 0 and tw > avail and avail > 0) and avail / tw or 1
         pcall(r.tip.SetScale, r.tip, sc)
         tipH = tipH * sc

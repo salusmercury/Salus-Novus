@@ -13838,7 +13838,7 @@ def _():
     xs = [float(x) for x in h.lua("""local o = {} for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then
         for _, m in ipairs(l.marks or {}) do if m:IsShown() then local _, _, _, x = m:GetPoint(1) o[#o + 1] = x end end end end return o""").values()]
     ok(len(xs) == 3 and len(set(xs)) == 3, "three marks, three spots (the late one at the end): %r" % xs)
-    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); __seen = nil; ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() __seen = true end); ns.Visualizer.form:Hide()")
+    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); __seen = nil; ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() __seen = true end, nil, 'visualizer'); ns.Visualizer.form:Hide()")
     ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "the picker went with the form")
     h.lua('W.fireEvent("ENCOUNTER_START", 3494, "Plunder", 1, 5, 3065); W.advance(0.1)')
     ok(not h.lua("return SalusNovusVisualizer:IsShown()"), "a pull puts it away")
@@ -13958,9 +13958,9 @@ def _():
     xs = [float(x) for x in h.lua("""local o = {} for _, l in ipairs(ns.Visualizer._lanes) do if l:IsShown() and l.name:GetText() == 'Your reminders' then
         for _, m in ipairs(l.marks or {}) do if m:IsShown() then local _, _, _, x = m:GetPoint(1) o[#o + 1] = x end end end end return o""").values()]
     ok(len(xs) == 2 and all(0 <= x <= tw for x in xs) and xs[0] != xs[1], "both inside the %r px track: %r" % (tw, xs))
-    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end); ns.Visualizer.OpenForm(6, nil, 'Y', nil)")
+    h.lua("ns.Visualizer.OpenForm(5, nil, 'X', nil); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end, nil, 'visualizer'); ns.Visualizer.OpenForm(6, nil, 'Y', nil)")
     ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "reopening the form drops the picker")
-    h.lua("ns.Visualizer.form:Hide(); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end); SalusNovusVisualizer:Hide()")
+    h.lua("ns.Visualizer.form:Hide(); ns.Theme.OpenColorPicker({ r = 1, g = 0, b = 0 }, function() end, nil, 'visualizer'); SalusNovusVisualizer:Hide()")
     ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "closing the window drops the picker")
     eq(h.errors(), [], "errors")
 
@@ -15286,6 +15286,8 @@ def _():
     ok(float(h.lua("return ns.db.theme.customColor.b")) > 0.99, "accent preview did not apply live")
     h.lua('SlashCmdList["SALUSNOVUS"]("show")')
     h.lua("SalusNovusVisualizer:Hide()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "closing the Visualizer closed Settings' accent picker (sweep 9)")
+    h.lua('SlashCmdList["SALUSNOVUS"]("")')
     ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "accent picker still up")
     cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
     ok(red((float(cc[1]), float(cc[2]), float(cc[3]))), "the abandoned accent preview was saved: %r" % (list(cc.values()),))
@@ -16251,4 +16253,563 @@ def _():
     ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "Settings' own accent picker outlived Settings")
     cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
     ok(float(cc[1]) > 0.99 and float(cc[3]) < 0.01, "closing Settings kept its abandoned accent preview: %r" % (list(cc.values()),))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F04: closing the Boss Visualizer leaves Settings' accent color picker open with its preview", group="sweep9")
+def _():
+    h = fresh()
+    open_vis(h)
+    open_options(h)
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "setup: Settings hid the Visualizer")
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "setup: accent swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "setup: accent picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    ok(float(h.lua("return ns.db.theme.customColor.b")) > 0.99, "setup: accent preview did not apply live")
+    # close the Visualizer with its X
+    h.lua("SalusNovusVisualizer.shell.close:Click()")
+    ok(not h.lua("return SalusNovusVisualizer:IsShown()"), "setup: Visualizer X did not close it")
+    ok(h.lua("return SalusNovusOptions:IsShown()"), "setup: Settings closed with the Visualizer")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "closing the Visualizer closed Settings' accent color picker")
+    cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    ok(float(cc[3]) > 0.99 and float(cc[1]) < 0.01, "closing the Visualizer reverted Settings' accent preview: %r" % (list(cc.values()),))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F06: unticked reminder form swatch shows and seeds the Reminders page color, not hard-coded gold", group="sweep9")
+def _():
+    h = fresh()
+    # Reminders page "Default color:" set to red
+    h.lua("ns.db.reminders.color = { r = 1, g = 0, b = 0 }")
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("""
+        local axis = SalusNovusVisualizer.axis
+        local x = axis:GetLeft() + axis:GetWidth() * 0.25
+        GetCursorPosition = function() return x * axis:GetEffectiveScale(), 0 end
+        local lane = ns.Visualizer._lanes[2]
+        lane.track:GetScript("OnClick")(lane.track)
+    """)
+    ok(h.lua("return ns.Visualizer.form:IsShown()"), "form not opened")
+    ok(not h.lua("return ns.Visualizer.form.useColor:GetChecked()"), "custom color ticked on a new form")
+    sw = h.lua("local r,g,b = ns.Visualizer.form.swatch.fill:GetVertexColor() return string.format('%.2f,%.2f,%.2f', r, g, b)")
+    eq(str(sw), "1.00,0.00,0.00", "unticked swatch not painted with the Reminders page color")
+    # click it: picker should seed at the page color; nudge, Okay, Save
+    h.lua("""
+        ns.Visualizer.form.swatch:Click()
+        local p = ns.Theme.ColorPicker()
+        p.sliders[3]:SetValue(p.sliders[3]:GetValue() + 0.0001)
+        p.okay:Click()
+        ns.Visualizer.form.text:SetText('F06'); ns.Visualizer.form.save:Click()
+    """)
+    saved = h.lua("""
+        for _, r in ipairs(ns.Reminders.For(3494)) do
+            if r.text == 'F06' then
+                local c = r.color or {}
+                return string.format('%.2f,%.2f,%.2f', c.r or -1, c.g or -1, c.b or -1)
+            end
+        end
+        return 'none'
+    """)
+    eq(str(saved), "1.00,0.00,0.00", "small tweak saved a gold-based color")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F14: picking another boss in the sidebar opens it scrolled to the top (cards and lanes)", group="sweep9")
+def _():
+    h = fresh()
+    open_vis(h)
+    # The mock has no ScrollFrame scrolling: give the two real scroll areas the
+    # client's minimal behaviour (an offset that SetVerticalScroll stores and
+    # GetVerticalScroll answers), and deliver OnScrollRangeChanged the way the
+    # client does when the child is taller than the viewport.
+    h.lua("""
+        for _, sf in ipairs({ SalusNovusVisualizer.descScroll, SalusNovusVisualizer.lanes }) do
+            sf.__off = 0
+            sf.SetVerticalScroll = function(self, v)
+                self.__off = v
+                local s = self:GetScript('OnVerticalScroll'); if s then s(self, v) end
+            end
+            sf.GetVerticalScroll = function(self) return self.__off end
+            sf:GetScript('OnScrollRangeChanged')(sf, 0, 600)
+            local wheel = sf:GetScript('OnMouseWheel')
+            for i = 1, 20 do wheel(sf, -1) end     -- scroll to the bottom
+        end
+    """)
+    eq(float(h.lua("return SalusNovusVisualizer.descScroll:GetVerticalScroll()")), 600.0, "setup: cards not scrolled")
+    eq(float(h.lua("return SalusNovusVisualizer.lanes:GetVerticalScroll()")), 600.0, "setup: lanes not scrolled")
+    enc0 = int(h.lua("return ns.Visualizer.state.enc"))
+    # click a different boss row in the sidebar
+    h.lua("""
+        for _, br in ipairs(ns.Visualizer._bossRows) do
+            if br:IsShown() and br.enc ~= ns.Visualizer.state.enc then
+                br:GetScript('OnClick')(br, 'LeftButton') break
+            end
+        end
+        -- the new boss is also long: the client re-reports the range
+        for _, sf in ipairs({ SalusNovusVisualizer.descScroll, SalusNovusVisualizer.lanes }) do
+            sf:GetScript('OnScrollRangeChanged')(sf, 0, 600)
+        end
+    """)
+    eq(h.errors(), [], "errors")
+    ok(int(h.lua("return ns.Visualizer.state.enc")) != enc0, "setup: boss did not change")
+    eq(float(h.lua("return SalusNovusVisualizer.descScroll:GetVerticalScroll()")), 0.0, "new boss's ability cards kept the old scroll")
+    eq(float(h.lua("return SalusNovusVisualizer.lanes:GetVerticalScroll()")), 0.0, "new boss's lanes kept the old scroll")
+
+    # the same through V.Toggle with another boss's encounter id; the same boss keeps it
+    h.lua("""
+        for _, sf in ipairs({ SalusNovusVisualizer.descScroll, SalusNovusVisualizer.lanes }) do
+            local wheel = sf:GetScript('OnMouseWheel')
+            for i = 1, 20 do wheel(sf, -1) end
+        end
+        ns.Visualizer.Toggle(true, ns.Visualizer.state.enc)
+    """)
+    eq(float(h.lua("return SalusNovusVisualizer.descScroll:GetVerticalScroll()")), 600.0, "reopening the same boss lost the scroll")
+    h.lua("ns.Visualizer.Toggle(true, %d)" % enc0)
+    eq(int(h.lua("return ns.Visualizer.state.enc")), enc0, "setup: Toggle did not switch boss")
+    eq(float(h.lua("return SalusNovusVisualizer.descScroll:GetVerticalScroll()")), 0.0, "Toggle to another boss kept the old card scroll")
+    eq(float(h.lua("return SalusNovusVisualizer.lanes:GetVerticalScroll()")), 0.0, "Toggle to another boss kept the old lanes scroll")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F04 rev: opening a Visualizer form or card swatch still reverts Settings' live picker first (no leaked preview)", group="sweep9")
+def _():
+    h = fresh()
+    h.lua("ns.db.reminders.color = { r = 1, g = 0, b = 0 }")
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    open_options(h)
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "setup: Settings hid the Visualizer")
+    h.lua("ns.Options.SelectPage('reminders')")
+    h.lua("""
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.reminders.color then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "setup: Reminders color swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "setup: Reminders picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    ok(float(h.lua("return ns.db.reminders.color.b")) > 0.99, "setup: Reminders preview did not apply live")
+    # a lane click opens a reminder form: Settings' preview is reverted first
+    h.lua("""
+        local axis = SalusNovusVisualizer.axis
+        local x = axis:GetLeft() + axis:GetWidth() * 0.25
+        GetCursorPosition = function() return x * axis:GetEffectiveScale(), 0 end
+        local lane = ns.Visualizer._lanes[2]
+        lane.track:GetScript("OnClick")(lane.track)
+    """)
+    ok(h.lua("return ns.Visualizer.form:IsShown()"), "setup: form not opened")
+    c = h.lua("local c = ns.db.reminders.color return { c.r, c.g, c.b }")
+    ok(float(c[1]) > 0.99 and float(c[3]) < 0.01, "opening the form left Settings' abandoned preview live: %r" % (list(c.values()),))
+    sw = h.lua("local r,g,b = ns.Visualizer.form.swatch.fill:GetVertexColor() return string.format('%.2f,%.2f,%.2f', r, g, b)")
+    eq(str(sw), "1.00,0.00,0.00", "form swatch painted Settings' abandoned preview")
+    h.lua("""
+        ns.Visualizer.form.swatch:Click()
+        local p = ns.Theme.ColorPicker()
+        p.sliders[3]:SetValue(p.sliders[3]:GetValue() + 0.0001)
+        p.okay:Click()
+        ns.Visualizer.form.text:SetText('REV'); ns.Visualizer.form.save:Click()
+    """)
+    saved = h.lua("""
+        for _, r in ipairs(ns.Reminders.For(3494)) do
+            if r.text == 'REV' then
+                local c = r.color or {}
+                return string.format('%.2f,%.2f,%.2f', c.r or -1, c.g or -1, c.b or -1)
+            end
+        end
+        return 'none'
+    """)
+    eq(str(saved), "1.00,0.00,0.00", "reminder saved Settings' abandoned preview")
+    # the card swatch: Settings' accent preview is reverted before T.Accent() seeds it
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __aw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __aw ~= nil"), "setup: accent swatch not found")
+    h.lua("__aw:Click()")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    ok(float(h.lua("return ns.db.theme.customColor.b")) > 0.99, "setup: accent preview did not apply live")
+    ok(h.lua("return ns.Abilities.Color(11130) == nil"), "setup: card already has a color")
+    h.lua("local r = SalusNovusVisualizer.descRows[1] if not r.editor:IsShown() then r:GetScript('OnMouseUp')(r) end")
+    ok(h.lua("return SalusNovusVisualizer.descRows[1].editor:IsShown()"), "setup: editor not open")
+    h.lua("__cs = SalusNovusVisualizer.descRows[1].editor.swatch __cs:GetScript('OnClick')(__cs)")
+    seed = h.lua("local p = ns.Theme.ColorPicker() return { p.sliders[1]:GetValue(), p.sliders[3]:GetValue() }")
+    ok(float(seed[1]) > 254 and float(seed[2]) < 1, "card picker seeded from Settings' abandoned accent preview: %r" % (list(seed.values()),))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F02: '1,000' or '2.5' typed in the Sell gold box never posts at 1g/2g; the box is restored and the next Post works", "sweep9")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell')")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    before = int(h.lua("return ns.Sell.sel.price"))
+    for txt in ["1,000", "2.5"]:
+        h.lua("__n = #__calls; local eb = SalusNovusSell.price.parts[1]; eb:SetFocus(); eb:Type(%r)" % txt)
+        h.lua("SalusNovusSell.post:Click()")
+        posts = [str(c) for c in h.lua("local t = {} for i = __n + 1, #__calls do if __calls[i]:find('^post') then t[#t+1] = __calls[i] end end return t").values()]
+        eq(posts, [], "'%s' in the gold box posts nothing" % txt)
+        eq(int(h.lua("return ns.Sell.sel.price")), before, "'%s' leaves the price alone" % txt)
+        eq(str(h.lua("return SalusNovusSell.price.parts[1]:GetText()")), str(before // 10000), "'%s' restored in the box" % txt)
+    h.lua("__n = #__calls; SalusNovusSell.post:Click()")
+    eq(str(h.lua("return __calls[#__calls - 1]")), "postc:1:2:40:%d" % before, "a later Post posts the shown price")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F02: '1,000' typed in the Sell quantity box never posts 1", "sweep9")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell')")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    q = int(h.lua("return ns.Sell.sel.qty"))
+    h.lua("__n = #__calls; local q = SalusNovusSell.qty; q:SetFocus(); q:Type('1,000')")
+    h.lua("SalusNovusSell.post:Click()")
+    posts = [str(c) for c in h.lua("local t = {} for i = __n + 1, #__calls do if __calls[i]:find('^post') then t[#t+1] = __calls[i] end end return t").values()]
+    eq(posts, [], "'1,000' quantity posts nothing")
+    eq(int(h.lua("return ns.Sell.sel.qty")), q, "quantity unchanged")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F01: a 'Search list' line answered after the 4 s timeout still lands on its own line (not 'none')", group="sweep9")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    # the AH-open auto scan runs first and finishes (as the client delivers it)
+    h.lua("W.advance(1.1); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.1)")
+    ok(not h.lua("return ns.Auction.scan.running"), "the open scan is done")
+    # slow server: line 1's answer isn't in yet, and the throttle stays busy until it is
+    h.lua("""
+        __slow = true
+        local get = C_AuctionHouse.GetBrowseResults
+        C_AuctionHouse.GetBrowseResults = function(...) if __slow then return {} end return get(...) end
+        local send = C_AuctionHouse.SendBrowseQuery
+        C_AuctionHouse.SendBrowseQuery = function(q) __ready = false return send(q) end
+    """)
+    h.lua("ns.Buy.Import('Mats', 'Runecloth\\ncloth'); ns.Buy.SetExact(2, false); ns.Buy.SearchList()")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "line 1 sent")
+    h.lua("W.advance(4.1)")   # the timeout passes
+    # line 1's real answer arrives, then the throttle frees up
+    h.lua("__slow = false; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED')")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "line 2 sent")
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.1)")
+    eq(buy_view(h), [("Runecloth", 14047, False), ("cloth", 2589, False), ("cloth", 2592, False)],
+       "line 1 shows Runecloth (its late answer), line 2 its cloth")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F07: leaving a list with Browse doesn't say 'Nothing found.' for a search that found results", group="sweep9")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("SalusNovusBuy.listActions.Import:Click(); local d = SalusNovusBuy.dialog; d.name:SetText('A'); d.text:SetText('Backpack'); d.ok:Click()")
+    # back to Browse, search 'Runecloth' through the box: rows appear
+    h.lua("SalusNovusBuy.sideButtons[1]:Click()")
+    h.lua("SalusNovusBuy.search:SetText('Runecloth'); SalusNovusBuy.go:Click(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3)")
+    ok(h.lua("return SalusNovusBuy.rows[1]:IsShown() and not SalusNovusBuy.empty:IsShown()"), "the search found rows")
+    # Lists, pick list A
+    h.lua("SalusNovusBuy.sideButtons[2]:Click(); SalusNovusBuy.listButtons[1]:Click(); W.advance(0.1)")
+    ok(h.lua("return ns.Buy.mode == 'list'"), "in list A")
+    # Browse again
+    h.lua("SalusNovusBuy.sideButtons[1]:Click(); W.advance(0.1)")
+    shown = bool(h.lua("return SalusNovusBuy.empty:IsShown()"))
+    text = str(h.lua("return SalusNovusBuy.empty:GetText()"))
+    ok(not (shown and text == "Nothing found."), "Browse after a list says %r (query=%r, state=%r)" % (text, str(h.lua("return tostring(ns.Buy.query)")), str(h.lua("return ns.Buy.run.state"))))
+    eq(text, "Search by name, or pick a category.", "the browse prompt")
+    # the box still reads 'Runecloth': Unfilter browses it again, not the whole AH
+    eq(str(h.lua("return SalusNovusBuy.search:GetText()")), "Runecloth", "the box kept its text")
+    h.lua("SalusNovusBuy.unfilter:Click(); W.advance(0.1)")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "Unfilter browses the search text")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F07: deleting a list doesn't say 'Nothing found.', and Unfilter still browses the last search", group="sweep9")
+def _():
+    h = fresh()
+    buy_open(h)
+    h.lua("ns.Buy.Search('Runecloth'); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.3)")
+    h.lua("ns.Buy.Import('A', 'Backpack'); ns.Buy.Pick(1); W.advance(0.1)")
+    ok(h.lua("return ns.Buy.mode == 'list'"), "in list A")
+    h.lua("ns.Buy.DeleteList(1); W.advance(0.1)")
+    shown = bool(h.lua("return SalusNovusBuy.empty:IsShown()"))
+    text = str(h.lua("return SalusNovusBuy.empty:GetText()"))
+    ok(not (shown and text == "Nothing found."), "after a delete the panel says %r" % text)
+    h.lua("ns.Buy.Unfilter(); W.advance(0.1)")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:Runecloth", "Unfilter browses the last search")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F15: a purchase confirmed just before closing the AH is filed under Auction house", "sweep9")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("__money = 100000; W.fireEvent('PLAYER_MONEY')")
+    # confirm a commodity purchase, close the AH at once; the server's answer and the coinage update land after the close
+    h.lua("W.advanceTimersOnly(5); W.fireEvent('AUCTION_HOUSE_SHOW')")
+    h.lua("W.fireEvent('AUCTION_HOUSE_CLOSED'); W.advanceTimersOnly(0.2); W.fireEvent('COMMODITY_PURCHASE_SUCCEEDED'); __money = 91000; W.fireEvent('PLAYER_MONEY')")
+    g = h.lua("return ns.Session.State().gold")
+    out = {str(k): int(v) for k, v in g["out"].items()}
+    eq(out, {"auction": 9000}, "the AH purchase cost under Auction house")
+    # the grace is spent: a second change right after is not the AH's
+    h.lua("__money = 90000; W.fireEvent('PLAYER_MONEY')")
+    out = {str(k): int(v) for k, v in h.lua("return ns.Session.State().gold")["out"].items()}
+    eq(out, {"auction": 9000, "other": 1000}, "a second change is not filed as AH")
+    # a mail payment right after closing the AH stays Mail
+    h.lua("W.fireEvent('AUCTION_HOUSE_SHOW'); W.fireEvent('AUCTION_HOUSE_CLOSED'); W.fireEvent('MAIL_SHOW'); __money = 89000; W.fireEvent('PLAYER_MONEY'); W.fireEvent('MAIL_CLOSED')")
+    out = {str(k): int(v) for k, v in h.lua("return ns.Session.State().gold")["out"].items()}
+    eq(out.get("mail"), 1000, "mail next to the AH stays Mail")
+    # long after the close, money is not the AH's
+    h.lua("W.fireEvent('AUCTION_HOUSE_SHOW'); W.fireEvent('AUCTION_HOUSE_CLOSED'); W.advanceTimersOnly(3); __money = 88000; W.fireEvent('PLAYER_MONEY')")
+    out = {str(k): int(v) for k, v in h.lua("return ns.Session.State().gold")["out"].items()}
+    eq(out.get("other"), 2000, "money long after the close is Other")
+    eq(out.get("auction"), 9000, "auction unchanged")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F09: AFK/DND auto-replies and Battle.net broadcasts with a blocked word are dropped", "sweep9")
+def _():
+    h = fresh()
+    fails = []
+    for ev, msg, who in (("CHAT_MSG_AFK", "streaming asmon all day", "Bob"),
+                         ("CHAT_MSG_DND", "watching asmon, do not disturb", "Bob"),
+                         ("CHAT_MSG_AFK", "brb", "Asmonfan"),
+                         ("CHAT_MSG_BN_INLINE_TOAST_BROADCAST", "go watch asmon live", "Bob")):
+        got = h.lua('return (W.chat(%r, %r, %r))' % (ev, msg, who))
+        if got is not True:
+            fails.append("%s (%r from %s) reached the chat frame" % (ev, msg, who))
+    eq(fails, [], "lines with a blocked word got through")
+    got = h.lua('return (W.chat("CHAT_MSG_AFK", "brb", "Bob"))')
+    ok(got is not True, "a clean AFK reply was dropped")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F11: a whisper tab (ChatFrame11, temporary window) follows the whole-UI font off and font changes", group="sweep9")
+def _():
+    # The client's chat code, present before Salus Novus loads (as in the
+    # client): the frame list, and the size setter that re-sets a chat
+    # frame's own font (the hook in Fonts.lua attaches to it at load).
+    import io, os, tempfile
+    import runner
+    pre = os.path.join(tempfile.mkdtemp(), "sweep9_fcf.lua")
+    with io.open(pre, "w", encoding="utf-8") as fh:
+        fh.write("""
+            CHAT_FRAMES = { "ChatFrame1" }
+            function FCF_SetChatWindowFontSize(self, chatFrame, fontSize)
+                local file, _, flags = chatFrame:GetFont()
+                chatFrame:SetFont(file, fontSize, flags)
+            end
+        """)
+    old_toc = runner.toc_files
+    runner.FIXTURES["sweep9_fcf.lua"] = pre
+    runner.toc_files = lambda: ["sweep9_fcf.lua"] + old_toc()
+    try:
+        h = Harness()
+    finally:
+        runner.toc_files = old_toc
+        del runner.FIXTURES["sweep9_fcf.lua"]
+    ok(not h.load_errors, "load errors: %r" % h.load_errors)
+    h.login()
+    h.lua("""
+        local function FO(name, path, size, flags, otype)
+            local o = { __path = path, __size = size, __flags = flags }
+            function o:GetFont() return self.__path, self.__size, self.__flags end
+            function o:SetFont(p, s, f) self.__path, self.__size, self.__flags = p, s, f return true end
+            function o:GetName() return name end
+            o[0] = true
+            function o:GetObjectType() return otype end
+            return o
+        end
+        _G.__FO = FO
+        GameFontNormal = FO("GameFontNormal", "Fonts\\\\FRIZQT__.TTF", 12, "", "Font")
+        ChatFontNormal = FO("ChatFontNormal", "Fonts\\\\ARIALN.TTF", 14, "", "Font")
+        ChatFrame1 = FO("ChatFrame1", "Fonts\\\\ARIALN.TTF", 14, "", "ScrollingMessageFrame")
+        GetFonts = function() return { "GameFontNormal", "ChatFontNormal" } end
+    """)
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    h.lua("ns.db.font.wholeUI = true; ns.ApplyAll()")
+    active = str(h.lua("return ns.ActiveFont()"))
+    eq(str(h.lua("return ChatFrame1.__path")), active, "setup: ChatFrame1 not fonted")
+    # whispered with 'New Whispers = New Tab': FCF_OpenTemporaryWindow builds
+    # ChatFrame11 (inheriting ChatFontNormal, now ours), lists it in
+    # CHAT_FRAMES and sets its font size, which sets the font on the frame.
+    h.lua("""
+        ChatFrame11 = __FO("ChatFrame11", ChatFontNormal.__path, 14, "", "ScrollingMessageFrame")
+        table.insert(CHAT_FRAMES, "ChatFrame11")
+        FCF_SetChatWindowFontSize(nil, ChatFrame11, 16)
+    """)
+    eq(str(h.lua("return ChatFrame11.__path")), active, "setup: whisper tab not in our font")
+    # untick the whole-UI box straight away: back to the stock chat font
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    off_first = [str(h.lua("return %s.__path" % n)) for n in ("ChatFrame1", "ChatFrame11")]
+    size_kept = int(h.lua("return ChatFrame11.__size"))
+    # on again, then pick another font: every chat window follows
+    h.lua("ns.db.font.wholeUI = true; ns.ApplyAll()")
+    h.lua("ns.db.font.path = 'Fonts\\\\MORPHEUS.TTF'; ns.ApplyAll()")
+    after_change = [str(h.lua("return %s.__path" % n)) for n in ("ChatFrame1", "ChatFrame11")]
+    h.lua("ns.db.font.wholeUI = false; ns.ApplyAll()")
+    after_off = [str(h.lua("return %s.__path" % n)) for n in ("ChatFrame1", "ChatFrame11")]
+    h.lua("GameFontNormal = nil; ChatFontNormal = nil; ChatFrame1 = nil; ChatFrame11 = nil; GetFonts = nil; __FO = nil; CHAT_FRAMES = nil")
+    eq(off_first, ["Fonts\\ARIALN.TTF"] * 2, "whisper tab ChatFrame11 kept the custom font after the whole-UI switch went off")
+    eq(size_kept, 16, "whisper tab lost its chat size")
+    eq(after_change, ["Fonts\\MORPHEUS.TTF"] * 2, "whisper tab ChatFrame11 did not follow the font change")
+    eq(after_off, ["Fonts\\ARIALN.TTF"] * 2, "whisper tab ChatFrame11 did not go back to the stock chat font")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F13: with room to spare, the widest wishlist tooltip is not shrunk", "sweep9")
+def _():
+    h = fresh()
+    wish(h)
+    h.lua("UIParent:SetWidth(3000); ns.WishlistUI.Open(); W.advance(0.1)")
+    # the client sizes each tooltip to its item: one wide (300), the rest 250
+    h.lua("""for i, r in ipairs(ns.WishlistUI.Build().mine.rows) do
+        local w = (i == 1) and 300 or 250
+        r.tip.SetItemByID = function(self, id) self.__item = id self:SetWidth(w) self:SetHeight(180) end
+        r.tipId = nil
+    end
+    ns.WishlistUI.Refresh()""")
+    tipW = float(h.lua("return ns.WishlistUI.tipW"))
+    colW = float(h.lua("return ns.WishlistUI.Build().mine.rows[1]:GetWidth()"))
+    sc = float(h.lua("return ns.WishlistUI.Build().mine.rows[1].tip:GetScale()"))
+    eq(colW, tipW + 68, "columns not narrowed by Fit")
+    eq(sc, 1.0, "the widest tooltip fits its column at full size")
+    # a narrow screen: Fit narrows the columns and the tooltip still shrinks
+    h.lua("UIParent:SetWidth(700); ns.WishlistUI.Refresh()")
+    colW = float(h.lua("return ns.WishlistUI.Build().mine.rows[1]:GetWidth()"))
+    sc = float(h.lua("return ns.WishlistUI.Build().mine.rows[1].tip:GetScale()"))
+    ok(colW < tipW + 68, "Fit narrowed the columns (%s)" % colW)
+    ok(abs(sc - (colW - 68) / 300) < 1e-6, "the tooltip shrinks to the narrowed column (%s)" % sc)
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F16: Bars preview at Maximum bars 8 fits every bar inside its 110-unit stage; closing Settings restores the live scale", group="sweep9")
+def _():
+    h = fresh()
+    open_options(h)
+    h.lua("ns.Options.SelectPage('bars')")
+    # drag the Maximum bars stepper to 8 (its slider callback, as the client delivers it)
+    h.lua("""
+        for _, w in ipairs(ns.Options.widgets) do
+            if w.__kind == 'stepper' and w.__outer == ns.Options.pages.bars and w.__min == 1 and w.__max == 8 then
+                w:SetValue(8)
+            end
+        end
+    """)
+    h.lua("W.advance(0.5)")
+    got = h.lua("""
+        local frame = ns.Bars._bars[1]:GetParent()
+        local stage = frame:GetParent()
+        local shown = 0
+        for i = 1, 8 do if ns.Bars._bars[i]:IsShown() then shown = shown + 1 end end
+        return { max = ns.db.bars.max, shown = shown, isStage = (stage.Run ~= nil),
+                 fh = frame:GetHeight(), fs = frame:GetScale(), sh = stage:GetHeight() }
+    """)
+    g = dict(got)
+    eq(int(g["max"]), 8, "stepper did not set max: %r" % g)
+    ok(g["isStage"], "bars frame not parented to the preview stage: %r" % g)
+    eq(int(g["shown"]), 8, "not 8 bars shown: %r" % g)
+    drawn = float(g["fh"]) * float(g["fs"])
+    ok(drawn <= float(g["sh"]),
+       "preview bars drawn %.0f units tall (height %.0f x scale %.2f) in a %.0f-unit clipping stage: %.0f units clipped"
+       % (drawn, float(g["fh"]), float(g["fs"]), float(g["sh"]), drawn - float(g["sh"])))
+    # closing Settings ends the preview: the live frame is back at the anchor scale, not the shrink
+    h.lua('SlashCmdList["SALUSNOVUS"]("")')
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "options did not close")
+    live = h.lua("local f = ns.Bars._bars[1]:GetParent() return { p = (f:GetParent() == UIParent), s = f:GetScale(), a = ns.AnchorScale() }")
+    ok(live["p"], "bars frame still on the stage after closing Settings")
+    ok(abs(float(live["s"]) - float(live["a"])) < 0.001, "live bars kept the preview shrink: scale %r vs anchor %r" % (live["s"], live["a"]))
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F12: /sn probe trainer capture at a Hunter pet trainer does not replace the HUNTER class catalogue", "sweep9")
+def _():
+    h = fresh()
+    h.lua("""
+        UnitClass = function() return "Hunter", "HUNTER" end
+        UnitLevel = function() return 20 end
+        __trainer = {
+            { name = "Growl", rank = "Rank 2", cat = "available", level = 10, cost = 500, skill = "Beast Training", icon = 132270 },
+            { name = "Bite", rank = "Rank 3", cat = "unavailable", level = 24, cost = 1800, skill = "Beast Training", icon = 132278 },
+            { name = "Natural Armor", rank = "Rank 1", cat = "available", level = 20, cost = 800, skill = "Beast Training", icon = 136094 },
+        }
+        __trainerOpen = true
+        W.fireEvent("TRAINER_SHOW")
+    """)
+    h.lua("__chat = {} local orig = ns.Print ns.Print = function(m) __chat[#__chat + 1] = m orig(m) end")
+    shipped_n = int(h.lua("return #ns.Trainers.HUNTER.entries"))
+    h.lua("ns.Commands.probe('trainer capture')")
+    names = sorted(set(str(e["name"]) for e in h.lua("return ns.Trainer.Catalogue('HUNTER').entries").values()))
+    ok(h.lua("return SalusNovusDB.trainers == nil or SalusNovusDB.trainers.HUNTER == nil"),
+       "pet trainer rows were filed as the HUNTER class catalogue in SavedVariables: %r" % h.lua("return SalusNovusDB.trainers and #SalusNovusDB.trainers.HUNTER.entries"))
+    eq(int(h.lua("return #ns.Trainer.Catalogue('HUNTER').entries")), shipped_n,
+       "the Trainer tab's HUNTER catalogue is now the pet trainer's list %r" % names)
+    ok(any("nothing captured (not a class trainer)" in str(x) for x in h.lua("return __chat").values()), "the probe says why")
+    # a real class trainer still captures
+    h.lua("__trainer = { { name = ns.Trainers.HUNTER.entries[1].name, rank = 'Rank 1', cat = 'available', level = 1, cost = 10, icon = 1 } }; ns.Commands.probe('trainer capture')")
+    ok(h.lua("return SalusNovusDB.trainers and #SalusNovusDB.trainers.HUNTER.entries == 1"), "a class trainer capture is still saved")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 merged review: '1,000' in gold, click silver, then Post: nothing posts at the old price", group="sweep9")
+def _():
+    h = fresh()
+    h.lua(SELLMOCK)
+    h.lua("__live[14047] = 100; ns.AuctionUI.Open('sell')")
+    pick(h, "14047")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 14047)")
+    h.lua("__n = #__calls; local g = SalusNovusSell.price.parts[1]; g:SetFocus(); g:Type('1,000')")
+    h.lua("SalusNovusSell.price.parts[2]:SetFocus()")
+    h.lua("SalusNovusSell.post:Click()")
+    posts = [str(c) for c in h.lua("local t = {} for i = __n + 1, #__calls do if __calls[i]:find('^post') then t[#t+1] = __calls[i] end end return t").values()]
+    eq(posts, [], "the rejected '1,000' blocks Post even after focus moved to silver")
+    eq(str(h.lua("return SalusNovusSell.price.parts[1]:GetText()")), "0", "the gold box is restored")
+    h.lua("SalusNovusSell.post:Click()")
+    posts = [str(c) for c in h.lua("local t = {} for i = __n + 1, #__calls do if __calls[i]:find('^post') then t[#t+1] = __calls[i] end end return t").values()]
+    eq(posts, ["postc:1:2:40:299"], "the next Post posts the shown price")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep9 F01b: a timed-out 'Search list' line whose answer comes too late to place is unsearched, not 'none'", group="sweep9")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    h.lua("W.advance(1.1); __full = true; W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(0.1)")
+    h.lua("""
+        __slow = true
+        local get = C_AuctionHouse.GetBrowseResults
+        C_AuctionHouse.GetBrowseResults = function(...) if __slow then return {} end return get(...) end
+        local send = C_AuctionHouse.SendBrowseQuery
+        C_AuctionHouse.SendBrowseQuery = function(q) __ready = false return send(q) end
+    """)
+    h.lua("ns.Buy.Import('Mats', 'Runecloth\\ncloth'); ns.Buy.SetExact(2, false); ns.Buy.SearchList()")
+    h.lua("W.advance(4.1)")   # line 1 times out with nothing in
+    h.lua("__ready = true; W.fireEvent('AUCTION_HOUSE_THROTTLED_SYSTEM_READY')")
+    eq(str(h.lua("return __calls[#__calls]")), "browse:cloth", "line 2 sent")
+    ok(not h.lua("local r = ns.Buy.results[1] return r ~= nil and #r == 0"), "line 1 is not filed as found-nothing ('none')")
     eq(h.errors(), [], "errors")

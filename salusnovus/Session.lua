@@ -185,7 +185,7 @@ end
 -- ------------------------------------------------------------ gold
 
 local open = {}                 -- which money window is open
-local closedAt = {}             -- when the flight map / trade closed (the money lands after it)
+local closedAt = {}             -- when the flight map / trade / AH closed (the money lands after it)
 local lastMoney
 local lastLoot, lastQuestMoney, lastRepair = -100, -100, -100
 
@@ -212,6 +212,7 @@ local function Category(delta)
     if open.trainer then return "training" end
     if open.taxi or now - (closedAt.taxi or -100) <= MONEY_WINDOW then return "travel" end
     if open.merchant then return "vendor" end
+    if now - (closedAt.auction or -100) <= MONEY_WINDOW then return "auction" end
     return "other"
 end
 
@@ -233,7 +234,8 @@ function S.OnMoney()
     local bucket = delta > 0 and s.gold.inc or s.gold.out
     bucket[cat] = (bucket[cat] or 0) + math.abs(delta)
     if cat == "repair" then lastRepair = -100 end
-    if cat == "travel" then closedAt.taxi = nil elseif cat == "trade" then closedAt.trade = nil end
+    if cat == "travel" then closedAt.taxi = nil elseif cat == "trade" then closedAt.trade = nil
+    elseif cat == "auction" then closedAt.auction = nil end
     if S.OnChanged then S.OnChanged() end
 end
 
@@ -515,12 +517,11 @@ for ev, key in pairs({ MERCHANT_SHOW = "merchant", TRAINER_SHOW = "trainer", MAI
                        AUCTION_HOUSE_SHOW = "auction", TAXIMAP_OPENED = "taxi", TRADE_SHOW = "trade" }) do
     ns.On(ev, function() S.SetOpen(key, true) end)
 end
-for ev, key in pairs({ MERCHANT_CLOSED = "merchant", TRAINER_CLOSED = "trainer", MAIL_CLOSED = "mail",
-                       AUCTION_HOUSE_CLOSED = "auction" }) do
+for ev, key in pairs({ MERCHANT_CLOSED = "merchant", TRAINER_CLOSED = "trainer", MAIL_CLOSED = "mail" }) do
     ns.On(ev, function() S.SetOpen(key, false) end)
 end
--- the flight fee and trade gold arrive after the window closes
-for ev, key in pairs({ TAXIMAP_CLOSED = "taxi", TRADE_CLOSED = "trade" }) do
+-- the flight fee, trade gold and a just-confirmed AH purchase arrive after the window closes
+for ev, key in pairs({ TAXIMAP_CLOSED = "taxi", TRADE_CLOSED = "trade", AUCTION_HOUSE_CLOSED = "auction" }) do
     ns.On(ev, function() closedAt[key] = Now(); S.SetOpen(key, false) end)
 end
 ns.On("PLAYER_ENTERING_WORLD", function(isLogin, isReload)

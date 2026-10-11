@@ -243,7 +243,7 @@ local function MakeSwatch(parent, get, set, snapshot)
         T.OpenColorPicker({ r = pr, g = pg, b = pb }, Put, function()
             if restore then restore() else Put(pr, pg, pb) end
             self:Paint()
-        end)
+        end, "visualizer")
     end)
     return b
 end
@@ -302,7 +302,7 @@ local function BuildForm()
     form:Hide()
     V.form = form
     -- a close that isn't Okay is a Cancel: the revert runs, then it goes away
-    form:HookScript("OnHide", function() if T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end end)
+    form:HookScript("OnHide", function() if T.DropColorPicker then T.CancelColorPicker("visualizer"); T.DropColorPicker("visualizer") end end)
 
     form.title = T.MakeText(form, 14, T.TEXT)
     form.title:SetPoint("TOPLEFT", 14, -12)
@@ -377,7 +377,7 @@ local function BuildForm()
     form.useColor = MakeCheck(form, "")
     form.useColor:SetPoint("TOPLEFT", 14, -204)
     form.swatch = MakeSwatch(form,
-        function() return form.colorValue end,
+        function() return form.colorValue or ns.db.reminders.color end,
         function(r, g, b)
             form.colorValue = { r = r, g = g, b = b }
             form.useColor:SetChecked(true)
@@ -775,7 +775,7 @@ local function MakeCardEditor(row)
         end, function()
             A.Set(k, "color", prev)
             Rerender()
-        end)
+        end, "visualizer")
     end)
 
     ed.rolesCap = T.MakeText(ed, 11, T.TEXT_MUTE)
@@ -998,7 +998,7 @@ RenderDesc = function(f)
             T.SnapCheckBoxes()      -- the editor's rows hang under fractional text
         else
             if row.editor:IsShown() then row.editor.name:ClearFocus() end   -- disarm a mid-edit box
-            if row.editor:IsShown() and T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end   -- its card closed (the preview reverts)
+            if row.editor:IsShown() and T.DropColorPicker then T.CancelColorPicker("visualizer"); T.DropColorPicker("visualizer") end   -- its card closed (the preview reverts)
             row.editor:Hide()
         end
         row:SetHeight(base + (open and EDIT_H or 0))
@@ -1011,7 +1011,7 @@ RenderDesc = function(f)
         local row = win.descRows[i]
         if row.editor and row.editor:IsShown() then          -- its card went with the boss (the sweep)
             if row.editor.name and row.editor.name:HasFocus() == true then row.editor.name:ClearFocus() end
-            if T.DropColorPicker then T.CancelColorPicker(); T.DropColorPicker() end
+            if T.DropColorPicker then T.CancelColorPicker("visualizer"); T.DropColorPicker("visualizer") end
             row.editor:Hide()
         end
         row:Hide()
@@ -1028,9 +1028,9 @@ local function Build()
     win.shell = shell
     win:SetFrameLevel(120)
     win:SetScript("OnHide", function()
-        if T.CancelColorPicker then T.CancelColorPicker() end   -- before the form's hide drops it unreverted
+        if T.CancelColorPicker then T.CancelColorPicker("visualizer") end   -- before the form's hide drops it unreverted
         if form then form:Hide() end
-        if T.DropColorPicker then T.DropColorPicker() end   -- a card's picker doesn't outlive the window (the sweep)
+        if T.DropColorPicker then T.DropColorPicker("visualizer") end   -- a card's picker doesn't outlive the window (the sweep)
         if ns.ReturnToOptions then ns.ReturnToOptions() end
     end)
     shell.subtitle:SetText("")
@@ -1464,6 +1464,7 @@ local function RenderBossList()
                 br:SetScript("OnClick", function()
                     state.enc = b.encounterID; state.offset = 0; state.zoom = 1
                     state.openCard = nil     -- an open card does not follow to another boss
+                    win.descScroll:SetVerticalScroll(0); win.lanes:SetVerticalScroll(0)   -- nor the old scroll
                     if form then form:Hide() end
                     Remember()
                     Refresh()
@@ -1680,6 +1681,7 @@ function V.Toggle(forceShow, encounterID)
             state.enc = boss.encounterID
             state.offset, state.zoom = 0, 1
             state.openCard = nil
+            win.descScroll:SetVerticalScroll(0); win.lanes:SetVerticalScroll(0)
             if form then form:Hide() end
         end
     end

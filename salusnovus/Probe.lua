@@ -258,7 +258,9 @@ ns.Commands.probe = function(rest)
     elseif what == "trainer" and arg == "capture" then
         -- refresh a class catalogue: open the class trainer, run this, /reload,
         -- then harvest_routes.py + build_route.py compile it into Data/Trainers.lua
-        local cap, why = ns.Trainer.Capture(true)
+        local cap, why = ns.Trainer.ReadTrainer()
+        if cap and not ns.Trainer.SharesClassSpells(cap) then cap, why = nil, "not a class trainer"
+        else cap, why = ns.Trainer.Capture(true) end
         if not cap then ns.Print("probe: nothing captured (" .. tostring(why) .. "); open a class trainer first") end
     elseif what == "trainer" then
         for _, line in ipairs(P.Trainer()) do ns.Print(line) end

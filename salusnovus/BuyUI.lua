@@ -785,7 +785,7 @@ function UI.Refresh()
     panel.empty:SetShown(n == 0)
     panel.empty:SetText((detail and b.sel) and (b.sel.fresh and "None for sale." or "Looking it up...")
         or listMode and "This list is empty: type a name above and Add to list."
-        or (b.query and b.run.state == "idle") and "Nothing found."
+        or (b.searched and b.run.state == "idle") and "Nothing found."
         or (browse and "Search by name, or pick a category." or "Search by name, or pick a list."))
     local p = b.Progress()            -- the bar says it; no text (it ran off the panel's edge: Alex)
     panel.bar:SetShown(p ~= nil)

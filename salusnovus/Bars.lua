@@ -287,6 +287,10 @@ local function Apply()
     if state.preview then
         frame.unlockBg:Hide()
         Refresh()
+        -- taller than the stage (8 bars, tall bars): shrunk to fit, not clipped (the sweep)
+        local stage = state.preview
+        local sh, fh = tonumber(stage:GetHeight()) or 0, tonumber(frame:GetHeight()) or 0
+        frame:SetScale((sh > 8 and fh > sh - 8) and (sh - 8) / fh or 1)
         frame:Show()
         return
     end

@@ -291,6 +291,11 @@ local function UIFontTargets()
         local e = "ChatFrame" .. i .. "EditBox"
         if not seen[e] then seen[e] = true; names[#names + 1] = e end
     end
+    -- whisper and pet battle tabs (ChatFrame11 on) are fonted directly too
+    -- (their edit boxes inherit ChatFontNormal: left to it)
+    if type(CHAT_FRAMES) == "table" then
+        for _, f in ipairs(CHAT_FRAMES) do Take(f) end
+    end
     return names
 end
 
@@ -377,6 +382,14 @@ end
 if type(hooksecurefunc) == "function" and type(_G.FCF_SetChatWindowFontSize) == "function" then
     hooksecurefunc("FCF_SetChatWindowFontSize", function(_, chatFrame)
         if not uiApplied or not chatFrame or not chatFrame.GetFont then return end
+        -- a whisper tab opened while ours is on: its original is the stock
+        -- chat font, not ours (nor Friz)
+        local okN, name = pcall(chatFrame.GetName, chatFrame)
+        if okN and type(name) == "string" and _G[name] == chatFrame and not uiOriginal[name] then
+            local okO, _, oSize, oFlags = pcall(chatFrame.GetFont, chatFrame)
+            local co = uiOriginal.ChatFontNormal
+            uiOriginal[name] = { co and co[1] or StockFont(), okO and oSize or nil, okO and oFlags or nil }
+        end
         local ok, _, size, flags = pcall(chatFrame.GetFont, chatFrame)
         if ok then pcall(chatFrame.SetFont, chatFrame, uiApplied, size, flags or "") end
     end)

@@ -160,7 +160,22 @@ local function MoneyBox(parent)
     -- one item never lands on the next (the box can lose focus after a post).
     local function Commit()
         local v = {}
-        for i, eb in ipairs(box.parts) do v[i] = tonumber((eb:GetText() or ""):match("^%s*(%d+)")) or 0 end
+        -- digits only: "1,000" or "2.5" was read as 1 or 2 and posted (sweep9)
+        for i, eb in ipairs(box.parts) do
+            local t = (eb:GetText() or ""):match("^%s*(.-)%s*$")
+            v[i] = (t == "" and 0) or tonumber(t:match("^(%d+)$"))
+            if not v[i] then
+                local sel = S().sel
+                if sel and sel == box.forSel and box.typed then box.rejected = true end
+                box:Set(sel and sel.price)
+                -- focus went to another part: the bad text stays up, and so
+                -- does typed, so a Post from there still refuses it
+                local held = false
+                for _, p in ipairs(box.parts) do if p:HasFocus() == true then held = true end end
+                if not held then box.typed = false end
+                return
+            end
+        end
         local c = v[1] * 10000 + v[2] * 100 + v[3]
         local sel = S().sel
         -- only what was TYPED counts: digits left on screen while a reprice
@@ -303,7 +318,9 @@ local function Build()
     panel.qty:SetScript("OnEscapePressed", function() Drop() end)
     panel.qty:SetScript("OnTextChanged", function(self, user) if user then self.forSel = S().sel end end)
     panel.qty:SetScript("OnEditFocusLost", function(self)
-        local n = tonumber((self:GetText() or ""):match("^%s*(%d+)"))
+        local t = (self:GetText() or ""):match("^%s*(.-)%s*$")
+        local n = tonumber(t:match("^(%d+)$"))
+        if t ~= "" and not n and S().sel == self.forSel then self.rejected = true end    -- "1,000" isn't 1 (sweep9)
         if n and S().sel == self.forSel then S().SetQty(n) end
         UI.Refresh()
     end)
@@ -346,8 +363,10 @@ local function Build()
     panel.post:SetScript("OnClick", function(self)
         -- A box still being typed in counts first (clicking a button doesn't
         -- take its focus): post what's on screen, not what was there before.
+        panel.price.rejected, panel.qty.rejected = nil, nil
         for _, eb in ipairs(panel.price.parts) do if eb:HasFocus() == true then eb:ClearFocus() end end
         if panel.qty:HasFocus() == true then panel.qty:ClearFocus() end
+        if panel.price.rejected or panel.qty.rejected then return end   -- not what was typed
         if not self.enabledState then return end
         S().Post()
     end)
