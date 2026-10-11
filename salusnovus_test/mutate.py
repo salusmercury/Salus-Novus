@@ -13,6 +13,25 @@ ROOT = os.path.dirname(HERE)
 SRC = os.path.join(ROOT, "salusnovus")
 
 MUTATIONS = [
+    # ---- sweep 8
+    ("joining a group in one SM wing leaves the other wings unflagged", "Session.lua",
+     "e.wing ~= hereWing and Num(e.t) and now - e.t < HOUR then e.pre = true end",
+     "e.wing ~= hereWing and Num(e.t) and now - e.t < HOUR then local _ = 0 end"),
+    ("unshareable dungeon quests are announced as shareable", "DungeonQuests.lua",
+     "        if D.Pushable(q.questID) then\n            local piece",
+     "        if true then\n            local piece"),
+    ("turning the quest check on doesn't ask the group", "DungeonQuests.lua",
+     "        if dungeon then D.Broadcast(dungeon); D.Request(dungeon) end",
+     "        if dungeon then D.Broadcast(dungeon) end"),
+    ("an empty macro clause doesn't claim its layer", "Keybinds.lua",
+     "                    if not got[l[1]] and fires and (has or not cond) then",
+     "                    if not got[l[1]] and fires and has then"),
+    ("an empty macro clause claims through a can-fail condition", "Keybinds.lua",
+     "                    if not got[l[1]] and fires and (has or not cond) then",
+     "                    if not got[l[1]] and fires then"),
+    ("a chat link also runs a Buy search", "BuyUI.lua",
+     "        if okA and eb then return end",
+     "        if okA and eb then local _ = 0 end"),
     # ---- Unlock mode
     ("the unlock overlay is never built", "Core.lua",
      "    local driver = frame.unlockBg or frame.unlockLabel",

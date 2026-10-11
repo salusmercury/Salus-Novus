@@ -208,10 +208,13 @@ function D.Broadcast(dungeon, empty)
     local msg = "DQ|" .. Key(dungeon) .. "|"
     local first = true
     for _, q in ipairs(D.Mine(dungeon)) do
-        local piece = q.questID .. ":" .. Clean(q.title)
-        if #msg + #piece + 1 > 240 then break end
-        msg = msg .. (first and "" or ";") .. piece
-        first = false
+        -- only quests we can share: they'd be told '<you> can share' (sweep 8)
+        if D.Pushable(q.questID) then
+            local piece = q.questID .. ":" .. Clean(q.title)
+            if #msg + #piece + 1 > 240 then break end
+            msg = msg .. (first and "" or ";") .. piece
+            first = false
+        end
     end
     pcall(ci.SendAddonMessage, PREFIX, msg, ch)
 end
@@ -452,7 +455,7 @@ ns.RegisterApply(function()
     local on = Enabled() and true or false
     if on and wasOn == false then
         local dungeon = D.Dungeon()
-        if dungeon then D.Broadcast(dungeon) end
+        if dungeon then D.Broadcast(dungeon); D.Request(dungeon) end
     elseif wasOn and not on then
         -- switched off: the group drops our list (they kept '<you> can share'
         -- for quests dropped later: sweep 2)

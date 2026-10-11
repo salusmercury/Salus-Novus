@@ -118,6 +118,9 @@ local function Build()
     panel.rows = {}
     panel.empty = Th.MakeText(panel.scroll.child, 14, Th.TEXT_MUTE)
     panel.empty:SetPoint("TOPLEFT", 6, -8)
+    panel.capNote = Th.MakeText(panel.scroll.child, 13, Th.TEXT_MUTE)  -- past MAX_ROWS rows aren't drawn: say so (sweep 8)
+    panel.capNote:SetText("First " .. MAX_ROWS .. " shown: cancel some to see the rest.")
+    panel.capNote:Hide()
 
     local foot = CreateFrame("Frame", nil, panel)
     foot:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 12, 10)
@@ -221,7 +224,13 @@ function UI.Refresh()
         r:Show()
     end
     for i = n + 1, #panel.rows do panel.rows[i]:Hide() panel.rows[i].row = nil end
-    panel.scroll.child:SetHeight(math.max(10, n * ROW_H))
+    local capped = #list > MAX_ROWS
+    panel.capNote:SetShown(capped)
+    if capped then
+        panel.capNote:ClearAllPoints()
+        panel.capNote:SetPoint("TOPLEFT", panel.scroll.child, "TOPLEFT", 6, -(n * ROW_H) - 8)
+    end
+    panel.scroll.child:SetHeight(math.max(10, n * ROW_H + (capped and 36 or 0)))
     panel.empty:SetShown(n == 0)
     panel.empty:SetText(c.run.state == "loading" and "" or "You have no auctions up.")
     UI.Status()

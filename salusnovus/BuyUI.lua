@@ -806,6 +806,13 @@ local function FromLink(link)
     if IsShiftKeyDown and not IsShiftKeyDown() then return end
     -- an item or a caged pet only (a spell, quest or achievement link browsed its name: sweep 6)
     if not (link:find("|Hitem:", 1, true) or link:find("|Hbattlepet:", 1, true)) then return end
+    -- an open chat line took the link (Blizzard gives chat first claim): no search
+    local cfu = rawget(_G, "ChatFrameUtil")
+    local getActive = (type(cfu) == "table" and cfu.GetActiveWindow) or rawget(_G, "ChatEdit_GetActiveWindow")
+    if type(getActive) == "function" then
+        local okA, eb = pcall(getActive)
+        if okA and eb then return end
+    end
     local name = link:match("|h%[(.-)%]|h") or link:match("%[(.-)%]")
     if not name or name == "" then return end
     local now = (GetTime and GetTime()) or 0

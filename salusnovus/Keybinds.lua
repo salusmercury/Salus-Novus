@@ -257,17 +257,23 @@ function K.ParseMacro(body)
                 spell = spell:gsub("%[([^%]]*)%]", function(c) groups[#groups + 1] = c:lower() return "" end)
                 spell = spell:match("^%s*(.-)%s*$")
                 if spell then spell = spell:gsub("^!%s*", "") end   -- '!Prowl' toggles: the spell is Prowl
-                if spell and spell ~= "" then
-                    casts = true
-                    for _, l in ipairs(LAYER_HELD) do
-                        local fires, cond = Fires(groups, l[2])
-                        if not got[l[1]] and fires then
-                            got[l[1]] = true
+                -- an empty clause still wins its layers, casting nothing:
+                -- "[nomod] ; Wrath" is a bare key that does nothing. Only
+                -- when it fires for sure: "[nocombat] ; Wrath" still reads Wrath
+                local has = spell and spell ~= ""
+                if has then casts = true end
+                for _, l in ipairs(LAYER_HELD) do
+                    local fires, cond = Fires(groups, l[2])
+                    if not got[l[1]] and fires and (has or not cond) then
+                        got[l[1]] = true
+                        if has then
                             seq[l[1]] = seq[l[1]] or {}
                             table.insert(seq[l[1]], spell)
                         end
-                        if not gotPlain[l[1]] and fires and not cond then
-                            gotPlain[l[1]] = true
+                    end
+                    if not gotPlain[l[1]] and fires and not cond then
+                        gotPlain[l[1]] = true
+                        if has then
                             plain[l[1]] = plain[l[1]] or {}
                             table.insert(plain[l[1]], spell)
                         end

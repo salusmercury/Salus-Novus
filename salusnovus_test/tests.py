@@ -16018,3 +16018,237 @@ def _():
     h.lua("GameFontNormal = nil; GetFonts = nil")
     eq(got, FRIZ, "whole-UI switch is off but the retry put the addon font on the game UI")
     eq(h.errors(), [], "errors")
+
+
+@test("sweep8 F01: shift-clicking a bag item into an open chat line does not run a Buy search or drop the searched list", group="sweep8")
+def _():
+    h = fresh()
+    h.lua(BUYMOCK)
+    # The client: an open chat edit box; the bag button calls HandleModifiedItemClick, which calls
+    # ChatEdit_InsertLink, which inserts into the active chat box and returns true.
+    h.lua("""
+        __chatBox = CreateFrame('EditBox'); __chatText = ''
+        IsShiftKeyDown = function() return true end
+        ChatEdit_GetActiveWindow = function() return __chatBox end
+        ChatEdit_InsertLink = function(link)
+            local box = ChatEdit_GetActiveWindow()
+            if box then __chatText = __chatText .. link; return true end
+            return false
+        end
+        HandleModifiedItemClick = function(link) return ChatEdit_InsertLink(link) end
+    """)
+    h.lua("ns.AuctionUI.Show('buy'); W.advance(0.1)")
+    h.lua("ns.Buy.Import('Mats', 'Runecloth'); ns.Buy.SearchList(); W.fireEvent('AUCTION_HOUSE_BROWSE_RESULTS_UPDATED'); W.advance(1)")
+    ok(h.lua("return ns.Buy.mode == 'list' and SalusNovusDB.ahLists.current ~= nil"), "setup: list picked and searched")
+    link = "|cffffffff|Hitem:2592::|h[Wool Cloth]|h|r"
+    h.lua("__n = #__calls; HandleModifiedItemClick(%r)" % link)
+    ok(h.lua("return __chatText ~= ''"), "setup: the link went into the chat line")
+    eq(str(h.lua("return ns.Buy.mode .. '|' .. tostring(SalusNovusDB.ahLists.current) .. '|' .. (SalusNovusBuy.search:GetText() or '')")),
+       "list|1|", "a link put into chat starts no Buy search: list stays picked, search box untouched")
+    eq(int(h.lua("return #__calls - __n")), 0, "nothing sent to the AH")
+    # chat closed: the same shift-click still searches
+    h.lua("ChatEdit_GetActiveWindow = function() return nil end; HandleModifiedItemClick(%r)" % link)
+    eq(str(h.lua("return ns.Buy.mode .. '|' .. (SalusNovusBuy.search:GetText() or '')")),
+       "search|Wool Cloth", "with no chat line open a shift-click still searches")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep8 F03: Cancel tab with 250 auctions: every counted auction is drawn, or the list says it is cut short", group="sweep8")
+def _():
+    h = fresh()
+    h.lua(CANCELMOCK)
+    # 250 separate Wool Cloth posts (each its own owned auction), all ours and the only listing
+    h.lua("""__owned = {}
+        for i = 1, 250 do
+            __owned[i] = { auctionID = 1000 + i, itemKey = { itemID = 2592, itemLevel = 0, itemSuffix = 0 }, status = 0,
+                           quantity = 1, buyoutAmount = 20, timeLeftSeconds = 3600 + i * 60 }
+        end""")
+    h.lua("ns.AuctionUI.Open('cancel'); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    status = str(h.lua("return SalusNovusCancel.status:GetText()"))
+    ok("250 auctions" in status, "header counts all: %r" % status)
+    eq(int(h.lua("return #ns.Cancel.rows")), 250, "250 rows read")
+    drawn = int(h.lua("local n = 0 for _, r in ipairs(SalusNovusCancel.rows) do if r:IsShown() and r.row then n = n + 1 end end return n"))
+    note = h.lua("local t = SalusNovusCancel.capNote return t and t:IsShown() and t:GetText() or ''")
+    note = str(note or "")
+    ok(drawn == 250 or "200 shown" in note,
+       "drawn rows %d of 250 counted and no cut-off note (note=%r)" % (drawn, note))
+    if drawn < 250:
+        height = float(h.lua("return SalusNovusCancel.scroll.child:GetHeight()"))
+        ok(height > drawn * 26, "scroll child leaves room for the note: %r" % height)
+    # once the list is down to 200, the note goes away
+    h.lua("for i = 201, 250 do __owned[i] = nil end; ns.Cancel.Query(); W.fireEvent('OWNED_AUCTIONS_UPDATED')")
+    h.lua("W.fireEvent('COMMODITY_SEARCH_RESULTS_UPDATED', 2592)")
+    eq(int(h.lua("return #ns.Cancel.rows")), 200, "200 rows read")
+    ok(not h.lua("return SalusNovusCancel.capNote and SalusNovusCancel.capNote:IsShown()"), "note hidden at 200")
+    eq(float(h.lua("return SalusNovusCancel.scroll.child:GetHeight()")), 200 * 26, "height back to rows only")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep8 F04: joining a group inside one SM wing makes the other SM wings run solo new instances, like any other dungeon", group="sweep8")
+def _():
+    h = fresh()
+    session(h)
+    h.lua("C_Map = C_Map or {}; C_Map.GetBestMapForUnit = function() return __wing end")
+    def enter(wing, name, m):
+        h.lua("__inst = false; __wing = 1420; W.fireEvent('PLAYER_ENTERING_WORLD')")
+        h.lua("W.advanceTimersOnly(120)")
+        h.lua("__inst = true; __wing = %d; __instName, __instMap = '%s', %d; W.fireEvent('PLAYER_ENTERING_WORLD')" % (wing, name, m))
+    # solo: Deadmines, SM Graveyard, then SM Library (stay inside Library)
+    enter(291, 'The Deadmines', 36)
+    enter(302, 'Scarlet Monastery', 189)
+    enter(303, 'Scarlet Monastery', 189)
+    eq(int(h.lua("return #ns.Session.Recent()")), 3, "three solo instances")
+    # invited while standing in Library
+    h.lua("W.fireEvent('GROUP_JOINED')")
+    # the group runs Deadmines: a new instance
+    enter(291, 'The Deadmines', 36)
+    eq(int(h.lua("return #ns.Session.Recent()")), 4, "group Deadmines is a new instance")
+    # the group runs SM Graveyard: also a new instance (the solo GY is not the group's)
+    enter(302, 'Scarlet Monastery', 189)
+    eq(int(h.lua("return #ns.Session.Recent()")), 5, "group SM Graveyard is a new instance")
+    # back into Library: the one you were invited in keeps its ID
+    enter(303, 'Scarlet Monastery', 189)
+    eq(int(h.lua("return #ns.Session.Recent()")), 5, "Library keeps its ID")
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep8 F05: switching the dungeon quest check on inside a dungeon asks the group for their lists", "sweep8")
+def _():
+    h = fresh()
+    h.lua(DQMOCK)
+    # check off, then a /reload inside the Deadmines (D.party empty, PEW skips the request)
+    h.lua("ns.db.quests.dungeonCheck = false; ns.ApplyAll()")
+    h.lua("__dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    h.lua("__sent = {}")
+    # tick the setting back on
+    h.lua("ns.db.quests.dungeonCheck = true; ns.ApplyAll(); W.advance(1)")
+    sent = [str(x[2]) for x in h.lua("return __sent").values()]
+    # a peer running Salus Novus answers a request (D.OnAddonMessage's DQ? branch) with its list
+    if any(m == "DQ?|deadmines" for m in sent):
+        h.lua("ns.DungeonQuests.OnAddonMessage('SNDQ', 'DQ|deadmines|103:Oh Brother...', 'PARTY', 'Brakka'); W.advance(1)")
+    ok(any(m == "DQ?|deadmines" for m in sent), "turning it on in a dungeon asks the group for their lists: %r" % sent)
+    rows = dq_rows(h)
+    ok(any(r[0] == "Oh Brother..." and "Brakka" in r[1] for r in rows), "Brakka can share row shown: %r" % rows)
+    eq(h.errors(), [], "errors")
+
+
+@test("sweep8 F06: a dungeon quest the sender cannot share is not announced to the party as '<name> can share'", "sweep8")
+def _():
+    # sender (Grumble): holds 101 (shareable) and 102 (IsPushableQuest false) under The Deadmines
+    s = fresh()
+    s.lua(DQMOCK)
+    s.lua("C_QuestLog.IsPushableQuest = function(id) return id ~= 102 end")
+    s.lua("__dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    own = dq_rows(s)
+    ok(any(r[0] == "Collecting Memories" and r[2] == 0 for r in own), "sender's own card hides Share for 102: %r" % own)
+    sent = [str(x[2]) for x in s.lua("return __sent").values() if str(x[2]).startswith("DQ|")]
+    ok(len(sent) > 0, "sender broadcast its list")
+    # receiver (Grumble's party member): no Deadmines quests in its log; gets exactly what the sender sent
+    r = fresh()
+    r.lua(DQMOCK)
+    r.lua("__ql = { { questID = 0, title = 'Westfall', isHeader = true }, { questID = 201, title = 'The Defias Brotherhood', level = 14 } }")
+    r.lua("__dqInst = true; W.fireEvent('PLAYER_ENTERING_WORLD'); W.advance(1)")
+    for m in sent:
+        r.lua("W.fireEvent('CHAT_MSG_ADDON', 'SNDQ', %r, 'PARTY', 'Brakka-Forever'); W.advance(1)" % m)
+    rows = dq_rows(r)
+    ok(any(x[0] == "Red Silk Bandanas" and "can share" in x[1] for x in rows), "the shareable one is offered: %r" % rows)
+    ok(not any(x[0] == "Collecting Memories" and "can share" in x[1] for x in rows),
+       "unshareable 102 announced as shareable to the party: sent=%r rows=%r" % (sent, rows))
+    eq(s.errors(), [], "sender errors")
+    eq(r.errors(), [], "receiver errors")
+
+
+@test("sweep8 F07: an empty clause ('/cast [nomod] ; Wrath') still wins its layer: bare key casts nothing, Shift-1 is 'via' Wrath and binding it is a conflict", group="sweep8")
+def _():
+    h = fresh()
+    h.lua(KEYMOCK)
+    h.lua("""__slots[1] = { 'macro', 3 }
+             __macros[3] = { 'Wr', 136002, '/cast [nomod] ; Wrath' }
+             __icons['Wrath'] = 805""")
+    h.lua("SlashCmdList['SALUSNOVUS']('keys')")
+    cell = "local c for _, x in ipairs(SalusNovusKeybinds.cells) do if x.key == '1' and not x.dup then c = x end end "
+    h.lua("SalusNovusKeybinds.layers[2]:Click()")
+    st = str(h.lua(cell + "return c.res.state"))
+    eq((st, str(h.lua(cell + "return tostring(c.res.label)"))), ("via", "Wrath"), "Shift layer, SHIFT-1 unbound: Wrath via key 1's macro")
+    h.lua("__binds['SHIFT-1'] = 'MOVEFORWARD'; W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+    eq(str(h.lua(cell + "return c.res.state")), "conflict", "SHIFT-1 bound elsewhere shadows the macro's Shift Wrath")
+    h.lua("SalusNovusKeybinds.layers[1]:Click()")
+    det = str(h.lua(cell + "return tostring(c.res.detail)"))
+    ok("Wrath" not in det, "None layer: the bare key casts nothing ([nomod] matches an empty action), detail=%r" % det)
+    # the swapped form: '[mod:shift] ; Frostbolt' is bare Frostbolt, Shift nothing
+    h.lua("""__binds['SHIFT-1'] = nil
+             __macros[3] = { 'Fb', 136002, '/cast [mod:shift] ; Frostbolt' }
+             __icons['Frostbolt'] = 806
+             W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)""")
+    det = str(h.lua(cell + "return tostring(c.res.detail)"))
+    ok("Frostbolt" in det, "None layer: bare key casts Frostbolt, detail=%r" % det)
+    h.lua("SalusNovusKeybinds.layers[2]:Click()")
+    st = str(h.lua(cell + "return c.res.state"))
+    det = str(h.lua(cell + "return tostring(c.res.detail)"))
+    eq(st, "free", "Shift layer: SHIFT-1 free (the macro casts nothing with Shift)")
+    ok("Frostbolt" not in det, "Shift layer: no Frostbolt branch, detail=%r" % det)
+    # an empty clause behind a condition that can fail does not claim the
+    # layer: '[nocombat] ; Wrath' and '[@mouseover,harm] ; Wrath' still read Wrath
+    for body in ("/cast [nocombat] ; Wrath", "/cast [@mouseover,harm] ; Wrath"):
+        h.lua("__macros[3] = { 'Wr', 136002, %r }" % body)
+        got = h.lua("local o, _, _, n = ns.Keybinds.ParseMacro(%r) return tostring(o.base), tostring(o.shift), tostring(n and n.shift)" % body)
+        eq(tuple(str(x) for x in got), ("Wrath", "nil", "nil"), "%s: bare key Wrath, Shift same as bare" % body)
+        h.lua("SalusNovusKeybinds.layers[1]:Click(); W.fireEvent('UPDATE_BINDINGS'); W.advance(0.1)")
+        det = str(h.lua(cell + "return tostring(c.res.detail)"))
+        ok("Wrath" in det, "%s: None layer shows Wrath, detail=%r" % (body, det))
+    eq(h.errors(), [], "errors")
+
+
+# ---- sweep 8: ui ----
+
+@test("sweep8 F09: closing Settings leaves the Boss Visualizer card's color picker open with its color", group="sweep8")
+def _():
+    h = fresh()
+    open_vis(h)
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    h.lua("ns.Abilities.Set(11130, 'color', { r = 1, g = 0, b = 0 })")
+    h.lua("ns.Visualizer.ShowBoss(ns.Data[3065].bosses[3])")
+    eq(int(h.lua("return SalusNovusVisualizer.descRows[1].spellID")), 11130, "setup: card row")
+    open_options(h)
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "setup: Settings hid the Visualizer")
+    h.lua("local r = SalusNovusVisualizer.descRows[1] if not r.editor:IsShown() then r:GetScript('OnMouseUp')(r) end")
+    ok(h.lua("return SalusNovusVisualizer.descRows[1].editor:IsShown()"), "setup: editor not open")
+    h.lua("__cs = SalusNovusVisualizer.descRows[1].editor.swatch __cs:GetScript('OnClick')(__cs)")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "setup: card picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    c = h.lua("return { ns.Abilities.Color(11130) }")
+    ok(float(c[3]) > 0.99, "setup: preview did not apply live")
+    # close Settings with /sn (toggle)
+    h.lua('SlashCmdList["SALUSNOVUS"]("")')
+    ok(not h.lua("return SalusNovusOptions:IsShown()"), "setup: Settings did not close")
+    ok(h.lua("return SalusNovusVisualizer:IsShown()"), "setup: Visualizer closed with Settings")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "closing Settings closed the Visualizer's color picker")
+    c = h.lua("return { ns.Abilities.Color(11130) }")
+    ok(float(c[3]) > 0.99 and float(c[1]) < 0.01, "closing Settings reverted the Visualizer card's color: %r" % (list(c.values()),))
+    h.lua("ns.Theme.ColorPicker().okay:Click()")
+    c = h.lua("return { ns.Abilities.Color(11130) }")
+    ok(float(c[3]) > 0.99 and float(c[1]) < 0.01, "Okay did not keep the card's color: %r" % (list(c.values()),))
+    # Settings' own accent picker still goes (reverted) with Settings
+    open_options(h)
+    h.lua("ns.Options.SelectPage('global')")
+    h.lua("""
+        ns.db.theme.useClassColor = false
+        ns.db.theme.customColor = { r = 1, g = 0, b = 0 }
+        ns.ApplyAll()
+        local function walk(f)
+            if rawget(f, '__kind') == 'color' and f.__get and f.__get() == ns.db.theme.customColor then return f end
+            for _, c in ipairs({ f:GetChildren() }) do local t = walk(c) if t then return t end end
+        end
+        __sw = walk(SalusNovusOptions)
+    """)
+    ok(h.lua("return __sw ~= nil"), "accent swatch not found")
+    h.lua("__sw:Click()")
+    ok(h.lua("return SalusNovusColorPicker:IsShown()"), "accent picker did not open")
+    h.lua("local p = ns.Theme.ColorPicker(); p.sliders[1]:SetValue(0); p.sliders[3]:SetValue(255)")
+    ok(float(h.lua("return ns.db.theme.customColor.b")) > 0.99, "accent preview did not apply live")
+    h.lua('SlashCmdList["SALUSNOVUS"]("")')
+    ok(not h.lua("return SalusNovusColorPicker:IsShown()"), "Settings' own accent picker outlived Settings")
+    cc = h.lua("local c = ns.db.theme.customColor return { c.r, c.g, c.b }")
+    ok(float(cc[1]) > 0.99 and float(cc[3]) < 0.01, "closing Settings kept its abandoned accent preview: %r" % (list(cc.values()),))
+    eq(h.errors(), [], "errors")

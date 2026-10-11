@@ -371,7 +371,7 @@ function S.OnGroupChange(left)
     local l = Log()
     local who = CharKey()
     if not (l and who) then return end
-    local here = InstanceNow()
+    local here, _, _, hereWing = InstanceNow()
     local now = Epoch()
     for _, e in ipairs(l.entries) do
         if type(e) == "table" and e.char == who and Num(e.map) and (left or e.map ~= here) and Num(e.t) and now - e.t < HOUR then
@@ -380,6 +380,12 @@ function S.OnGroupChange(left)
     end
     -- re-invited inside before the port-out: you stay in that instance
     if not left and here then l.reset[who .. ":" .. here] = nil end
+    -- the other Scarlet Monastery wings are other instances: new for the group too
+    if not left and here and hereWing then
+        for _, e in ipairs(l.entries) do
+            if type(e) == "table" and e.char == who and e.map == here and e.wing and e.wing ~= hereWing and Num(e.t) and now - e.t < HOUR then e.pre = true end
+        end
+    end
 end
 
 local function Pattern(fmt)

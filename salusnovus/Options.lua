@@ -636,7 +636,7 @@ local function MakeColorSwatch(page, label, anchor, getColor, enabledWhen)
             ns.ApplyAll()
             Refresh()
         end
-        T.OpenColorPicker(c, Set, function() Set(prevR, prevG, prevB) end)
+        T.OpenColorPicker(c, Set, function() Set(prevR, prevG, prevB) end, "options")
     end)
     return row, swatch
 end
@@ -1788,8 +1788,8 @@ local function BuildPanel()
         if pickerList then pickerList:Hide() end
         -- its color picker goes with it, reverted like Escape/Cancel (it stayed
         -- up mid-screen through a pull: sweep 6)
-        if T.CancelColorPicker then T.CancelColorPicker() end
-        if T.DropColorPicker then T.DropColorPicker() end
+        if T.CancelColorPicker then T.CancelColorPicker("options") end   -- not the Visualizer's (sweep 8)
+        if T.DropColorPicker then T.DropColorPicker("options") end
         lastPanelHide = GetTime()
     end)
     shell.subtitle:SetText("")

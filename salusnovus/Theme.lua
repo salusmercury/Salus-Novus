@@ -867,22 +867,24 @@ end
 
 --- Put the picker away without calling anyone (its owner closed): a live
 -- picker wrote into the next form opened (the sweep).
-function T.DropColorPicker()
+function T.DropColorPicker(owner)
     if not picker then return end
+    if owner and picker.owner ~= owner then return end   -- another window's picker (sweep 8)
     picker.onChange, picker.onCancel = nil, nil
     picker:Hide()
 end
 
 --- Cancel a live picker now (its revert runs), leaving it shown: a swatch
 -- re-clicked over its own picker read the preview as its previous colour.
-function T.CancelColorPicker()
+function T.CancelColorPicker(owner)
     if not picker or not picker:IsShown() or not picker.onCancel then return end
+    if owner and picker.owner ~= owner then return end
     local cb = picker.onCancel
     picker.onChange, picker.onCancel = nil, nil
     pcall(cb)
 end
 
-function T.OpenColorPicker(c, onChange, onCancel)
+function T.OpenColorPicker(c, onChange, onCancel, owner)
     local p = BuildPicker()
     -- opened over a live one: that one is cancelled first (its preview was
     -- kept and its revert lost: sweep 2)
@@ -903,6 +905,7 @@ function T.OpenColorPicker(c, onChange, onCancel)
     p.preview.fill:SetVertexColor(r0, g0, b0, 1)
     p.hex:SetText(Hex(r0, g0, b0))
     p.onChange = onChange
+    p.owner = owner      -- a window closing cancels only its own picker (sweep 8)
     p:Show()
     p:Raise()
     return true
